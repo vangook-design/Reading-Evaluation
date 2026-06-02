@@ -12,12 +12,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
+  <!-- TensorFlow.js & BlazeFace (ระบบป้องกันจับใบหน้าผู้สอบพ้นหน้าจอ) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
   
-  <!-- Html5Qrcode Library (ปรับใช้การแสกนกล้องที่เสถียรบนทุกแพลตฟอร์ม) -->
+  <!-- QRCode.js (Cloudflare Library เสถียรสูงเรนเดอร์ทันที) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
+  <!-- Html5Qrcode Library (การสแกนกล้องเสถียรบนทุกแพลตฟอร์ม) -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
@@ -34,7 +40,7 @@
 
   <script>
     // *** สำคัญมาก: กรุณานำ Web App URL ที่ได้จากการ Deploy Google Apps Script มาใส่ลงตรงนี้ ***
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycby-xdS90pOdFpT5MCo1IsfJlIBzSYvxg2JC67R1COZ6Wd7OEnxw3914ss36dw6RasgS/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycby51yQj8VkJSv4O-_kWn4qhmhY7-J3sJk9Sgez7ZKgjUa1Ivj9d2oRUS9VDHMvSfgY-/exec";
   </script>
 
   <!-- Navigation bar -->
@@ -46,7 +52,7 @@
         </div>
         <div>
           <h1 class="font-bold text-base md:text-lg leading-tight text-indigo-900">ระบบประเมินการอ่านออกเสียงอัตโนมัติ</h1>
-          <p class="text-[10px] text-slate-500 font-semibold uppercase">Platform Vercel & GAS API</p>
+          <p class="text-[10px] text-slate-500 font-semibold uppercase font-mono">Platform Vercel & GAS API</p>
         </div>
       </div>
       
@@ -67,47 +73,22 @@
   <main class="flex-grow max-w-7xl w-full mx-auto p-4 flex flex-col justify-start">
 
     <!-- VIEW 1: หน้าหลัก / Landing Page -->
-    <section id="view-home" class="view-section py-8 md:py-16 flex flex-col items-center justify-center space-y-8 animate-fadeIn">
-      <div class="text-center max-w-2xl space-y-3">
-        <span class="bg-indigo-50 text-indigo-700 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">ระบบปัญญาประดิษฐ์ประเมินการอ่าน</span>
-        <h2 class="text-3xl md:text-5xl font-black text-indigo-950 tracking-tight leading-tight">
+    <section id="view-home" class="view-section py-8 md:py-20 flex flex-col items-center justify-center space-y-8 animate-fadeIn">
+      <div class="text-center max-w-2xl space-y-4">
+        <span class="bg-indigo-50 text-indigo-700 text-xs font-extrabold px-5 py-2 rounded-full uppercase tracking-wider">ระบบปัญญาประดิษฐ์ประเมินการอ่าน</span>
+        <h2 class="text-4xl md:text-6xl font-black text-indigo-950 tracking-tight leading-tight">
           ทดสอบความสามารถ<br>การอ่านออกเสียง ป.1–ป.6
         </h2>
-        <p class="text-slate-500 text-sm md:text-base max-w-md mx-auto">
-          เครื่องมือคัดกรองทักษะการสะกดคำภาษาไทยของนักเรียนแบบเรียลไทม์ พร้อมประมวลผลวิเคราะห์จุดเด่นรายทักษะสะกดคำอัตโนมัติ
+        <p class="text-slate-500 text-sm md:text-base max-w-md mx-auto leading-relaxed">
+          เครื่องมือคัดกรองทักษะการสะกดคำภาษาไทยของนักเรียนรายบุคคลแบบเรียลไทม์ พร้อมประมวลผลวิเคราะห์จุดเด่นรายทักษะสะกดคำอัตโนมัติ
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
-        <!-- สำหรับนักเรียน -->
-        <div class="bg-white p-8 rounded-2xl custom-shadow border border-slate-100 flex flex-col justify-between items-start space-y-6">
-          <div class="space-y-3">
-            <div class="bg-indigo-50 text-indigo-600 w-12 h-12 rounded-xl flex items-center justify-center text-2xl">
-              <i class="fa-solid fa-qrcode"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-800">สำหรับนักเรียน</h3>
-            <p class="text-xs text-slate-500 leading-relaxed">สแกนรหัสคิวอาร์ประจำตัวที่หน้าจอกล้อง หรือระบุรหัสประจำตัวของตนเองเพื่อเริ่มต้นเข้าแบบประเมินทักษะการอ่านออกเสียงสะกดคำ</p>
-          </div>
-          <button onclick="startStudentScreen()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-150">
-            <i class="fa-solid fa-camera"></i>
-            <span>เริ่มคัดกรองการอ่าน</span>
-          </button>
-        </div>
-
-        <!-- แดชบอร์ดสรุปผลคุณครู -->
-        <div class="bg-white p-8 rounded-2xl custom-shadow border border-slate-100 flex flex-col justify-between items-start space-y-6">
-          <div class="space-y-3">
-            <div class="bg-teal-50 text-teal-600 w-12 h-12 rounded-xl flex items-center justify-center text-2xl">
-              <i class="fa-solid fa-chart-line"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-800">แดชบอร์ดสรุปผล</h3>
-            <p class="text-xs text-slate-500 leading-relaxed">สำหรับคุณครูผู้สอนในการติดตามความก้าวหน้า ผลวิเคราะห์รายทักษะ และข้อมูลภาพรวมผลการสอบคัดกรองนักเรียนในระดับโรงเรียน</p>
-          </div>
-          <button onclick="checkAdminAccess()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-xl transition flex items-center justify-center space-x-2">
-            <i class="fa-solid fa-chart-pie"></i>
-            <span>เข้าสู่หน้าแดชบอร์ด</span>
-          </button>
-        </div>
+      <div class="w-full max-w-md mx-auto text-center pt-2">
+        <button onclick="startStudentScreen()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-5 px-8 rounded-2xl transition flex items-center justify-center space-x-3 text-lg shadow-xl shadow-indigo-150 transform hover:scale-105 duration-250">
+          <i class="fa-solid fa-camera text-xl animate-pulse"></i>
+          <span>เริ่มคัดกรองการอ่าน</span>
+        </button>
       </div>
     </section>
 
@@ -155,35 +136,61 @@
 
     <!-- VIEW 3: หน้าประวัติโปรไฟล์ผู้เรียนที่ได้รับเลือก -->
     <section id="view-student-profile" class="view-section hidden py-6 animate-fadeIn">
-      <div class="max-w-md mx-auto bg-white rounded-3xl custom-shadow p-8 text-center space-y-6 border border-slate-50">
-        <div class="mx-auto w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-3xl">
-          <i class="fa-solid fa-user-graduate"></i>
-        </div>
+      <div class="max-w-2xl mx-auto bg-white rounded-3xl custom-shadow p-8 border border-slate-150 grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         
-        <div class="space-y-1">
-          <span class="text-xs bg-emerald-100 text-emerald-700 py-1 px-3 rounded-full font-bold">ตรวจสอบยืนยันสิทธิ์สำเร็จ</span>
-          <h2 class="text-2xl font-extrabold text-slate-800 pt-2" id="profile-student-name">-</h2>
-          <p class="text-xs text-slate-400">รหัสประจำตัวผู้สอบ: <span id="profile-student-id" class="font-bold text-slate-700">-</span></p>
+        <!-- ซ้าย: ข้อมูลสัมฤทธิ์เดิม -->
+        <div class="md:col-span-5 text-center space-y-5 flex flex-col items-center">
+          <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-3xl">
+            <i class="fa-solid fa-user-graduate"></i>
+          </div>
+          
+          <div class="space-y-1">
+            <span class="text-xs bg-emerald-100 text-emerald-700 py-1 px-3 rounded-full font-bold">ยืนยันสิทธิ์สำเร็จ</span>
+            <h2 class="text-xl font-extrabold text-slate-800 pt-2" id="profile-student-name">-</h2>
+            <p class="text-[11px] text-slate-400">รหัสประจำตัว: <span id="profile-student-id" class="font-bold text-slate-700">-</span></p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 w-full">
+            <div>
+              <p class="text-[9px] text-slate-400 font-bold uppercase">ชั้นเรียน</p>
+              <p class="text-sm font-extrabold text-indigo-950" id="profile-student-grade">ป. -</p>
+            </div>
+            <div>
+              <p class="text-[9px] text-slate-400 font-bold uppercase">ห้อง</p>
+              <p class="text-sm font-extrabold text-indigo-950" id="profile-student-room">ห้อง -</p>
+            </div>
+          </div>
+
+          <div class="pt-4 flex flex-col space-y-3 w-full">
+            <button onclick="startReadingTest()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 rounded-xl transition text-sm shadow-lg shadow-indigo-100 flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-play"></i>
+              <span>เริ่มต้นทำการทดสอบ</span>
+            </button>
+            <button onclick="showView('home')" class="text-slate-400 hover:text-slate-600 text-[11px]">ข้อมูลไม่ถูกต้อง? ยกเลิกและย้อนกลับ</button>
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-          <div>
-            <p class="text-[10px] text-slate-400 font-bold uppercase">ชั้นเรียน</p>
-            <p class="text-base font-extrabold text-indigo-900" id="profile-student-grade">ป. -</p>
-          </div>
-          <div>
-            <p class="text-[10px] text-slate-400 font-bold uppercase">ห้อง</p>
-            <p class="text-base font-extrabold text-indigo-900" id="profile-student-room">ห้อง -</p>
+        <!-- ขวา: ตารางสถิติและประวัติการสอบครั้งก่อนรายบุคคล -->
+        <div class="md:col-span-7 space-y-4">
+          <h3 class="font-bold text-xs text-slate-500 uppercase tracking-wide flex items-center"><i class="fa-solid fa-clock-rotate-left mr-1.5 text-indigo-600"></i>ประวัติการคัดกรองครั้งก่อนหน้า</h3>
+          
+          <div class="overflow-hidden border border-slate-100 rounded-xl max-h-64 overflow-y-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 text-slate-500 font-bold border-b">
+                  <th class="p-3">วันที่สอบ</th>
+                  <th class="p-3 text-center">คะแนน</th>
+                  <th class="p-3 text-center">สัดส่วน</th>
+                  <th class="p-3 text-right">เกณฑ์คุณภาพ</th>
+                </tr>
+              </thead>
+              <tbody id="profile-student-history-body">
+                <!-- JS บันทึกประวัติแสดงผลตรงนี้ -->
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div class="pt-4 flex flex-col space-y-3">
-          <button onclick="startReadingTest()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl transition text-md shadow-lg shadow-indigo-100 flex items-center justify-center space-x-2">
-            <i class="fa-solid fa-play"></i>
-            <span>เริ่มต้นทำการทดสอบ</span>
-          </button>
-          <button onclick="showView('home')" class="text-slate-400 hover:text-slate-600 text-xs">ข้อมูลไม่ถูกต้อง? ยกเลิกและย้อนกลับ</button>
-        </div>
       </div>
     </section>
 
@@ -194,8 +201,8 @@
         <!-- ฝั่งซ้าย: หน้าจอกล้องเว็บแคม Realtime ตรวจจับความประพฤติ -->
         <div class="lg:col-span-4 bg-white p-5 rounded-2xl custom-shadow border border-slate-100 space-y-4">
           <div class="flex items-center justify-between border-b pb-3">
-            <h3 class="font-bold text-sm text-indigo-900"><i class="fa-solid fa-video mr-1"></i>กล้องสตรีมประเมินผล</h3>
-            <span class="text-[10px] text-slate-400">ไม่บันทึกไฟล์วิดีโอและเสียง</span>
+            <h3 class="font-bold text-xs text-indigo-900 flex items-center"><i class="fa-solid fa-video mr-1.5"></i>กล้องสตรีมประเมินผล</h3>
+            <span class="text-[9px] bg-red-100 text-red-600 font-black px-2 py-0.5 rounded animate-pulse"><i class="fa-solid fa-shield-halved mr-0.5"></i> Face ID On</span>
           </div>
 
           <div id="camera-border" class="relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-4 border-slate-200 flex items-center justify-center transition-all duration-300">
@@ -204,7 +211,7 @@
               <i class="fa-solid fa-video-slash text-2xl mb-2 text-slate-400"></i><br>ไม่สามารถดึงสัญญาณวิดีโอได้
             </div>
             <!-- สถานะสีข้อความซ้อนหน้ากล้อง -->
-            <div id="status-overlay" class="absolute top-4 right-4 text-base font-bold hidden px-3 py-1 rounded-full bg-white/95 shadow-md"></div>
+            <div id="status-overlay" class="absolute top-4 right-4 text-xs font-bold hidden px-3 py-1 rounded-full bg-white/95 shadow-md"></div>
           </div>
 
           <div class="bg-indigo-50/50 p-4 rounded-xl space-y-2">
@@ -223,21 +230,32 @@
         </div>
 
         <!-- ฝั่งขวา: คำศัพท์ขนาดใหญ่ และควบคุมไมโครโฟน -->
-        <div class="lg:col-span-8 bg-white p-6 md:p-10 rounded-2xl custom-shadow border border-slate-100 flex flex-col justify-between space-y-8 min-h-[480px]">
+        <div class="lg:col-span-8 bg-white p-6 md:p-10 rounded-2xl custom-shadow border border-slate-100 flex flex-col justify-between space-y-6 min-h-[480px]">
           
           <div class="flex justify-between items-center border-b pb-4">
             <div>
-              <h2 class="text-base font-bold text-slate-700">คำสั่ง: ให้นักเรียนอ่านออกเสียงสะกดคำด้านล่าง</h2>
-              <p class="text-xs text-slate-400">กดปุ่มไมค์เพื่อพูด หรือกดฟังเสียงอ่านตัวอย่างเพื่อเป็นแนวทางได้</p>
+              <h2 class="text-sm font-bold text-slate-700">จงอ่านสะกดคำศัพท์ภาษาไทยที่ปรากฏขึ้นมาดังนี้</h2>
+              <p class="text-xs text-slate-400">กรุณาพูดภายในระยะเวลาที่กำหนดเท่านั้นเพื่อเก็บคะแนน</p>
             </div>
             <button id="tts-audio-btn" onclick="playTtsSound()" class="bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold py-2 px-3.5 rounded-full border border-amber-200 transition flex items-center space-x-1">
               <i class="fa-solid fa-volume-high"></i>
-              <span>🔊 ฟังตัวอย่างเสียง</span>
+              <span>🔊 ฟังคำตัวอย่าง</span>
             </button>
           </div>
 
+          <!-- แถบระบุนับเวลาถอยหลังรายคำ -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-extrabold text-slate-500">
+              <span class="flex items-center"><i class="fa-regular fa-clock text-amber-500 mr-1 animate-spin"></i>เวลาคัดกรองคงเหลือรายข้อ:</span>
+              <span class="text-rose-500" id="word-timer-text">15 วินาที</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+              <div id="word-timer-bar" class="bg-gradient-to-r from-indigo-500 to-rose-500 h-1.5 rounded-full transition-all duration-1000" style="width: 100%"></div>
+            </div>
+          </div>
+
           <!-- แสดงคำเป้าหมายเด่นใหญ่ -->
-          <div class="text-center py-4">
+          <div class="text-center py-2">
             <h1 id="target-word-display" class="text-6xl md:text-8xl font-black text-indigo-950 tracking-wider">กำลังสุ่มคำ...</h1>
             <p id="target-word-category" class="text-xs text-slate-400 mt-4">หมวดหมู่: - | ระดับความยาก: -</p>
           </div>
@@ -263,7 +281,7 @@
           </div>
 
           <div class="border-t pt-4 flex justify-between items-center text-xs text-slate-400">
-            <span>Thai Automated Speech Matching Engine v1.1</span>
+            <span>Thai Automated Speech Matching Engine v1.2</span>
             <button onclick="skipCurrentWord()" class="hover:text-red-500 font-bold transition">ข้ามคำศัพท์ (0 คะแนน) <i class="fa-solid fa-angles-right ml-0.5"></i></button>
           </div>
         </div>
@@ -626,6 +644,24 @@
     let html5QrcodeScanner = null;
     let isAdminLoggedIn = false;
 
+    // ตัวแปรและฟังก์ชั่นความปลอดภัยระดับสูง (จับใบหน้าผู้สอบ และจับเวลารายข้อ)
+    let faceModel = null;
+    let faceTrackingInterval = null;
+    let violationsCounter = 0; // สะสมจำนวนวินาทีที่ผิดเงื่อนไขใบหน้า
+    let countdownTimer = null;
+    let timeRemainingForWord = 15;
+
+    // เริ่มต้นดึงและสร้างโมเดลตรวจสอบใบหน้า (BlazeFace) ตั้งแต่เปิดหน้าต่างเว็บ
+    async function initAntiCheatingModel() {
+      try {
+        faceModel = await blazeface.load();
+        console.log("Anti-Cheating Face Detector Loaded successfully.");
+      } catch (err) {
+        console.warn("ไม่สามารถเตรียมระบบตรวจจับผู้สอบได้เนื่องจากสเปคเครื่องหรือเบราว์เซอร์: ", err);
+      }
+    }
+    initAntiCheatingModel();
+
     // ระบบตรวจวิเคราะห์เสียงพูด
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -665,7 +701,6 @@
         const response = await fetch(`${BACKEND_URL}?${queryParams}`);
         return await response.json();
       } else {
-        // ใช้การส่งแบบ text/plain เสมอ เพื่อหลีกเลี่ยง OPTIONS Preflight Request ของ GAS
         const response = await fetch(BACKEND_URL, {
           method: 'POST',
           body: JSON.stringify({ action, ...data }),
@@ -762,6 +797,14 @@
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStream = null;
       }
+      if (faceTrackingInterval) {
+        clearInterval(faceTrackingInterval);
+        faceTrackingInterval = null;
+      }
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
     }
 
     function handleManualSubmit() {
@@ -773,7 +816,7 @@
       fetchStudentProfile(sId);
     }
 
-    // ตรวจสอบฐานข้อมูลประวัตินักเรียน
+    // ตรวจสอบฐานข้อมูลประวัตินักเรียนพร้อมดึงประวัติการทดสอบครั้งก่อน
     async function fetchStudentProfile(studentId) {
       Swal.fire({
         title: 'กำลังเชื่อมต่อตรวจค้นข้อมูล...',
@@ -783,15 +826,22 @@
 
       try {
         const student = await apiRequest('getStudentInfo', 'GET', { studentId });
-        Swal.close();
         if (student) {
           currentStudent = student;
+          
+          // ดึงประวัติผลประเมินย้อนหลังของผู้เรียนรายบุคคล
+          const history = await apiRequest('getStudentHistory', 'GET', { studentId });
+          Swal.close();
+          
+          renderStudentHistoryTable(history);
+          
           document.getElementById('profile-student-name').textContent = `${student.prefix} ${student.firstName} ${student.lastName}`;
           document.getElementById('profile-student-id').textContent = student.studentId;
           document.getElementById('profile-student-grade').textContent = `ประถมศึกษาปีที่ ${student.grade}`;
           document.getElementById('profile-student-room').textContent = `ห้อง ${student.room}`;
           showView('student-profile');
         } else {
+          Swal.close();
           Swal.fire('ไม่พบคิวอาร์สิทธิ์', 'ไม่พบรหัสนักเรียนที่คุณเรียกในทะเบียนประวัติ', 'error');
           if (!document.getElementById('scan-qr-section').classList.contains('hidden')) {
             startQRScannerCamera();
@@ -801,6 +851,26 @@
         Swal.close();
         Swal.fire('การเชื่อมต่อล้มเหลว', 'เกิดข้อผิดพลาดในการดึงข้อมูลฐาน API', 'error');
       }
+    }
+
+    function renderStudentHistoryTable(history) {
+      const tbody = document.getElementById('profile-student-history-body');
+      tbody.innerHTML = '';
+      if (!history || history.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 font-medium">ไม่พบประวัติการคัดกรองครั้งก่อนหน้า (ผู้สอบใหม่)</td></tr>';
+        return;
+      }
+      history.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = "border-b hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="p-3 font-semibold text-slate-500">${row.date}</td>
+          <td class="p-3 text-center font-bold text-indigo-700">${row.score}/10</td>
+          <td class="p-3 text-center font-bold text-teal-600">${row.percent}%</td>
+          <td class="p-3 text-right"><span class="px-2.5 py-1 text-[10px] font-black rounded-full ${row.level === 'ดี' ? 'bg-green-100 text-green-700' : row.level === 'พอใช้' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}">${row.level}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
     // เริ่มต้นกระบวนการสุ่มคำประเมินการอ่านออกเสียง
@@ -846,17 +916,60 @@
       const video = document.getElementById('test-video');
       const offlineMsg = document.getElementById('camera-offline-msg');
       
-      navigator.mediaDevices.getUserMedia({ video: true })
+      navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 320 } })
         .then(stream => {
           cameraStream = stream;
           video.srcObject = stream;
           offlineMsg.classList.add('hidden');
           video.classList.remove('hidden');
+          
+          // ล้างสถานะความปลอดภัยเมื่อเริ่มเฟรมใหม่
+          violationsCounter = 0;
+          if (faceTrackingInterval) clearInterval(faceTrackingInterval);
+          
+          // สั่งวนจับตรวจสอบใบหน้า (Face ID Safety Routine) ทุกๆ 1 วินาที
+          faceTrackingInterval = setInterval(evaluateFacePresence, 1000);
         })
         .catch(() => {
           offlineMsg.classList.remove('hidden');
           video.classList.add('hidden');
         });
+    }
+
+    // ฟังก์ชั่นประมวลจับตรวจใบหน้าป้องกันการสลับสับเปลี่ยนตัวบุคคล
+    async function evaluateFacePresence() {
+      if (!faceModel || !cameraStream) return;
+      const video = document.getElementById('test-video');
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        try {
+          const predictions = await faceModel.estimateFaces(video, false);
+          
+          // เกณฑ์ความโปร่งใส: ต้องพบใบหน้าพิกัดโครงสร้างอย่างเป็นเอกภาพเพียง 1 หน้าเท่านั้นในเฟรมกล้อง
+          if (predictions.length !== 1) {
+            violationsCounter++;
+            document.getElementById('camera-border').style.borderColor = "#F43F5E"; // เปลี่ยนขอบกรอบเป็นสีส้ม/แดงเตือน
+            
+            if (violationsCounter >= 3) {
+              // หากผิดเกณฑ์ต่อเนื่องกันเกิน 3 วินาที
+              stopAllWebcams();
+              stopListeningState();
+              Swal.fire({
+                icon: 'error',
+                title: 'การคัดกรองถูกระงับ',
+                text: 'ตรวจพบความผิดปกติบนเฟรมประเมินผล (ไม่มีคนอยู่หน้ากล้อง หรือมีบุคคลปะปนในเฟรมมากกว่า 1 คน) ระบบล็อกเอาท์เพื่อความโปร่งใส',
+                confirmButtonText: 'ตกลง'
+              }).then(() => {
+                showView('home');
+              });
+            }
+          } else {
+            violationsCounter = 0; // รีเซ็ตแต้มหากภาพเป็นปกติ
+            document.getElementById('camera-border').style.borderColor = "#10B981"; // กรอบสีเขียวปกติ
+          }
+        } catch (e) {
+          console.error("Anti-cheating estimation failed: ", e);
+        }
+      }
     }
 
     function renderWordStage() {
@@ -879,6 +992,43 @@
         }
         scoreByWordType[currentWordObj.wordType].count++;
       }
+
+      // รีเซ็ตตั้งค่าระบบนับถอยหลัง (15 วินาทีต่อคำ)
+      resetCountdownTimerForWord();
+    }
+
+    // ฟังก์ชั่นดูแลควบคุมเวลานับถอยหลัง
+    function resetCountdownTimerForWord() {
+      if (countdownTimer) clearInterval(countdownTimer);
+      
+      timeRemainingForWord = 15;
+      document.getElementById('word-timer-text').textContent = `${timeRemainingForWord} วินาที`;
+      document.getElementById('word-timer-bar').style.width = '100%';
+      document.getElementById('word-timer-bar').style.backgroundColor = '#6366F1'; // สีครามปกติ
+
+      countdownTimer = setInterval(() => {
+        timeRemainingForWord--;
+        document.getElementById('word-timer-text').textContent = `${timeRemainingForWord} วินาที`;
+        document.getElementById('word-timer-bar').style.width = `${(timeRemainingForWord / 15) * 100}%`;
+
+        if (timeRemainingForWord <= 5) {
+          document.getElementById('word-timer-bar').style.backgroundColor = '#F43F5E'; // เปลี่ยนเป็นสีแดงเตือนใจเมื่อเหลือต่ำกว่า 5 วิ
+        }
+
+        if (timeRemainingForWord <= 0) {
+          clearInterval(countdownTimer);
+          stopListeningState();
+          Swal.fire({
+            icon: 'warning',
+            title: 'หมดเวลาสำหรับการทดสอบข้อนี้!',
+            text: 'นักเรียนไม่ได้ออกเสียงอ่านสะกดคำตามระยะเวลาที่กำหนด',
+            timer: 2000,
+            showConfirmButton: false
+          }).then(() => {
+            skipCurrentWord();
+          });
+        }
+      }, 1000);
     }
 
     function toggleSpeechRecognition() {
@@ -929,7 +1079,7 @@
     // อัลกอริทึมวิเคราะห์ความถูกต้องสัทศาสตร์เปรียบเทียบคำอ่านสะกด
     function getPhoneticSimilarity(s1, s2) {
       const cleanWord = (str) => {
-        return str.replace(/[่้๊๋]/g, "").trim(); // ลดรูปการตัดเกณฑ์วรรณยุกต์เพื่อรองรับภาษาถิ่นอย่างผ่อนปรน
+        return str.replace(/[่้๊๋]/g, "").trim(); 
       };
       
       const target = cleanWord(s1);
@@ -957,6 +1107,8 @@
     }
 
     function processPronunciationResult(speechText, confidence) {
+      if (countdownTimer) clearInterval(countdownTimer); // หยุดเวลานับถอยหลังทันทีที่ส่งเสียงสำเร็จ
+      
       const currentWordObj = testWords[currentWordIndex];
       const cleanTarget = currentWordObj.word.trim();
       const cleanSpeech = speechText.trim();
@@ -964,7 +1116,7 @@
       document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
       
       const similarity = getPhoneticSimilarity(cleanTarget, cleanSpeech);
-      const isMatch = (similarity >= 0.70); // เกณฑ์ผ่านที่ 70% 
+      const isMatch = (similarity >= 0.70); 
 
       if (isMatch) {
         setCorrectUI();
@@ -978,7 +1130,7 @@
           Swal.fire({
             icon: 'warning',
             title: 'ลองใหม่อีกครั้ง',
-            text: `การประเมินออกเสียงของคุณใกล้เคียงแล้ว เหลือโอกาสอีก 1 ครั้ง`,
+            text: `การประเมินออกเสียงของคุณยังคลาดเคลื่อน เหลือโอกาสแก้ตัวอีก 1 ครั้ง`,
             timer: 2000,
             showConfirmButton: false
           }).then(() => { renderWordStage(); });
@@ -990,6 +1142,7 @@
     }
 
     function skipCurrentWord() {
+      if (countdownTimer) clearInterval(countdownTimer);
       recordWordAttemptResult('ไม่ผ่าน', 0);
       proceedToNextWord();
     }
@@ -1034,11 +1187,12 @@
       playSynthesizedBeep(true);
     }
 
+    // แก้ไข UI กรณีตอบผิด
     function setWrongUI() {
       const border = document.getElementById('camera-border');
       const overlay = document.getElementById('status-overlay');
-      border.className = "relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-4 border-rose-500 flex items-center justify-center transition-all duration-300";
-      overlay.innerHTML = "<span class='text-rose-600'><i class='fa-solid fa-xmark mr-1'></i> พยายามอีกครั้ง</span>";
+      border.className = "relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-4 border-amber-500 flex items-center justify-center transition-all duration-300";
+      overlay.innerHTML = "<span class='text-amber-500'><i class='fa-solid fa-xmark mr-1'></i> ออกเสียงคลาดเคลื่อน</span>";
       overlay.classList.remove('hidden');
       playSynthesizedBeep(false);
     }
@@ -1564,7 +1718,7 @@
             <td class="p-3">ห้อง ${s.room}</td>
             <td class="p-3 text-right">
               <button onclick="printSingleQRCode('${s.studentId}', '${s.firstName} ${s.lastName}', 'ป.${s.grade}/${s.room}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-1.5 px-3 rounded-md font-bold transition">
-                <i class="fa-solid fa-print"></i> ผลิต QR
+                <i class="fa-solid fa-print text-xs"></i> ผลิต QR
               </button>
             </td>
           `;
@@ -1575,6 +1729,7 @@
       }
     }
 
+    // เรนเดอร์สร้างคิวอาร์โค้ดรายบุคคลลงกระดาษพร้อมพิมพ์
     function printSingleQRCode(studentId, name, gradeClass) {
       const printArea = document.getElementById('print-qrcode-area');
       printArea.innerHTML = '';
@@ -1593,10 +1748,12 @@
       printArea.appendChild(card);
       
       setTimeout(() => {
+        // เรียก QRCode.js แบบ Synchronous เพื่อความแม่นยำ
         new QRCode(document.getElementById("qrcode-temp-canvas"), {
           text: studentId,
           width: 140,
-          height: 140
+          height: 140,
+          correctLevel: QRCode.CorrectLevel.H
         });
         
         setTimeout(() => {
@@ -1609,6 +1766,7 @@
       }, 100);
     }
 
+    // สร้าง QR Code บอร์ดพิมพ์จำนวณมากแยกห้องเรียนอัตโนมัติ
     async function printAllQRCodes() {
       try {
         const students = await apiRequest('getAllStudents', 'GET');
@@ -1641,7 +1799,8 @@
             new QRCode(printWindow.document.getElementById(`qrcode-batch-${i}`), {
               text: students[i].studentId,
               width: 100,
-              height: 100
+              height: 100,
+              correctLevel: QRCode.CorrectLevel.H
             });
           }
           
@@ -1657,6 +1816,7 @@
       }
     }
 
+    // การจัดการแท็บตั้งค่า
     async function renderAdminSettingsTab() {
       try {
         const settings = await apiRequest('getSystemSettings', 'GET');
