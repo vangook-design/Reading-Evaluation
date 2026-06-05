@@ -12,15 +12,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- TensorFlow.js & BlazeFace (ระบบป้องกันจับใบหน้าผู้สอบพ้นหน้าจอ) -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   
-  <!-- QRCode.js (Cloudflare Library เสถียรสูงเรนเดอร์ทันที) -->
+  <!-- QRCode.js (Cloudflare Library เสถียรสูงเรนเดอร์ภาพคิวอาร์อัตโนมัติ) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   
   <!-- Html5Qrcode Library (การสแกนกล้องเสถียรบนทุกแพลตฟอร์ม) -->
@@ -34,17 +30,31 @@
     .custom-shadow {
       box-shadow: 0 10px 30px -5px rgba(79, 70, 229, 0.1), 0 5px 15px -1px rgba(0, 0, 0, 0.05);
     }
+    
+    /* สไตล์คัสตอมสำหรับปรับปรุงเฟรมกล้องลอยตัวบนอุปกรณ์พกพาขนาดเล็ก */
+    @media (max-width: 1023px) {
+      .mobile-floating-camera {
+        position: fixed;
+        top: 4.5rem;
+        right: 1rem;
+        width: 100px;
+        height: 100px;
+        border-radius: 9999px;
+        z-index: 50;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+        border: 3px solid #6366F1;
+        overflow: hidden;
+      }
+      .mobile-camera-title {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
 
-  <script>
-    // *** สำคัญมาก: กรุณานำ Web App URL ที่ได้จากการ Deploy Google Apps Script มาใส่ลงตรงนี้ ***
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxgrT4GIvpVoYEZpoDK_Dj1DwD7DUHRufZuLgNaEETvRZU5ZaAhtEO8Oqy_AR8VpFwZ/exec";
-  </script>
-
   <!-- Navigation bar -->
-  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 py-3 px-4 shadow-sm">
+  <header class="sticky top-0 z-45 bg-white/95 backdrop-blur border-b border-slate-100 py-3 px-4 shadow-sm">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div class="flex items-center space-x-3 cursor-pointer" onclick="showView('home')">
         <div class="bg-indigo-600 text-white p-2 rounded-xl flex items-center justify-center shadow-md shadow-indigo-200">
@@ -196,25 +206,25 @@
 
     <!-- VIEW 4: หน้าเวทีประเมินการอ่านออกเสียงสะกดคำ -->
     <section id="view-test" class="view-section hidden py-4 animate-fadeIn">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start relative">
         
-        <!-- ฝั่งซ้าย: หน้าจอกล้องเว็บแคม Realtime ตรวจจับความประพฤติ -->
-        <div class="lg:col-span-4 bg-white p-5 rounded-2xl custom-shadow border border-slate-100 space-y-4">
-          <div class="flex items-center justify-between border-b pb-3">
-            <h3 class="font-bold text-xs text-indigo-900 flex items-center"><i class="fa-solid fa-video mr-1.5"></i>กล้องสตรีมประเมินผล</h3>
-            <span class="text-[9px] bg-red-100 text-red-600 font-black px-2 py-0.5 rounded animate-pulse"><i class="fa-solid fa-shield-halved mr-0.5"></i> Face ID On</span>
+        <!-- ฝั่งซ้าย: หน้าจอกล้องเว็บแคม ตรวจจับพิกเซลสุ่มถ่ายรูป (ในมือถือจะเปลี่ยนสไตล์เป็นลอยตัวมุมจอ) -->
+        <div id="test-camera-panel" class="lg:col-span-4 bg-white p-5 rounded-2xl custom-shadow border border-slate-100 space-y-4 mobile-floating-camera">
+          <div class="flex items-center justify-between border-b pb-3 mobile-camera-title">
+            <h3 class="font-bold text-xs text-indigo-900 flex items-center"><i class="fa-solid fa-video mr-1.5"></i>กล้องสตรีมประเมิน</h3>
+            <span class="text-[9px] bg-red-150 text-red-600 font-black px-2 py-0.5 rounded animate-pulse"><i class="fa-solid fa-shield mr-0.5"></i> Active Audit</span>
           </div>
 
-          <div id="camera-border" class="relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-4 border-slate-200 flex items-center justify-center transition-all duration-300">
+          <div id="camera-border" class="relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-2 border-indigo-600 flex items-center justify-center transition-all duration-300">
             <video id="test-video" class="absolute inset-0 w-full h-full object-cover scale-x-[-1]" playsinline autoplay muted></video>
             <div id="camera-offline-msg" class="z-10 text-slate-500 text-xs hidden text-center p-4">
-              <i class="fa-solid fa-video-slash text-2xl mb-2 text-slate-400"></i><br>ไม่สามารถดึงสัญญาณวิดีโอได้
+              <i class="fa-solid fa-video-slash text-xl text-slate-400"></i>
             </div>
             <!-- สถานะสีข้อความซ้อนหน้ากล้อง -->
             <div id="status-overlay" class="absolute top-4 right-4 text-xs font-bold hidden px-3 py-1 rounded-full bg-white/95 shadow-md"></div>
           </div>
 
-          <div class="bg-indigo-50/50 p-4 rounded-xl space-y-2">
+          <div class="bg-indigo-50/50 p-4 rounded-xl space-y-2 mobile-camera-title">
             <div class="flex justify-between text-xs font-bold text-slate-600">
               <span>ความคืบหน้าการอ่าน</span>
               <span class="text-indigo-700" id="test-progress-text">คำที่ 1 จาก 10</span>
@@ -281,7 +291,7 @@
           </div>
 
           <div class="border-t pt-4 flex justify-between items-center text-xs text-slate-400">
-            <span>Thai Automated Speech Matching Engine v1.2</span>
+            <span>Thai Automated Speech Matching Engine v1.3</span>
             <button onclick="skipCurrentWord()" class="hover:text-red-500 font-bold transition">ข้ามคำศัพท์ (0 คะแนน) <i class="fa-solid fa-angles-right ml-0.5"></i></button>
           </div>
         </div>
@@ -292,32 +302,46 @@
     <section id="view-result" class="view-section hidden py-6 animate-fadeIn">
       <div class="max-w-4xl mx-auto space-y-6">
         
-        <div class="bg-white rounded-3xl custom-shadow p-8 border border-slate-100 text-center space-y-6">
-          <div class="space-y-1">
-            <span class="text-xs font-black uppercase bg-indigo-100 text-indigo-700 py-1 px-4 rounded-full">สรุปรายงานการประเมินรายบุคคล</span>
-            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 pt-2" id="result-student-name">-</h2>
-            <p class="text-xs text-slate-400">ระดับชั้นประถมศึกษาปีที่ <span id="result-student-grade">-</span> | วันที่ประเมิน: <span id="result-datetime">-</span></p>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
-              <p class="text-xs font-semibold text-slate-400">คะแนนเต็ม</p>
-              <h1 class="text-5xl font-black text-indigo-600 my-1"><span id="result-score-raw">0</span><span class="text-xl text-slate-400">/10</span></h1>
-              <p class="text-[10px] text-slate-400">จำนวนที่ตอบและอ่านสะกดได้ถูกต้อง</p>
-            </div>
-            
-            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
-              <p class="text-xs font-semibold text-slate-400">เปอร์เซ็นต์สะสม</p>
-              <h1 class="text-5xl font-black text-emerald-600 my-1"><span id="result-score-percent">0</span><span class="text-xl text-slate-400">%</span></h1>
-              <p class="text-[10px] text-slate-400">สัดส่วนเปรียบเทียบมาตรฐาน</p>
-            </div>
-
-            <div id="result-level-card" class="p-6 rounded-2xl border flex flex-col items-center justify-center">
-              <p class="text-xs font-semibold text-slate-400">เกณฑ์ผลประเมิน</p>
-              <h1 class="text-4xl font-extrabold my-1" id="result-score-level">-</h1>
-              <p class="text-[10px] text-slate-500" id="result-score-suggestion">-</p>
+        <div class="bg-white rounded-3xl custom-shadow p-8 border border-slate-150 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          
+          <!-- ซ้าย: รูปถ่าย Snapshot ของผู้สอบจริงระหว่างทำข้อสอบป้องกันการเปลี่ยนตัวอ่านแทน -->
+          <div class="md:col-span-3 text-center space-y-2">
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider"><i class="fa-solid fa-camera mr-1"></i>ภาพถ่ายพยานผู้เข้ารับการสอบ</p>
+            <div class="w-36 h-36 rounded-2xl bg-slate-100 border-2 border-indigo-600 overflow-hidden mx-auto shadow-inner flex items-center justify-center">
+              <img id="result-student-snapshot" src="" alt="Student Snapshot" class="w-full h-full object-cover hidden">
+              <div id="result-student-snapshot-placeholder" class="text-slate-400 text-xs px-2"><i class="fa-solid fa-user-clock text-2xl mb-1 block"></i>ไม่มีกล้องขณะสอบ</div>
             </div>
           </div>
+
+          <!-- ขวา: ผลสัมฤทธิ์หลัก -->
+          <div class="md:col-span-9 text-center md:text-left space-y-4">
+            <div class="space-y-1">
+              <span class="text-xs font-black uppercase bg-indigo-100 text-indigo-700 py-1 px-4 rounded-full">สรุปรายงานการประเมินรายบุคคล</span>
+              <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 pt-2" id="result-student-name">-</h2>
+              <p class="text-xs text-slate-400">ระดับชั้นประถมศึกษาปีที่ <span id="result-student-grade">-</span> | วันที่ประเมิน: <span id="result-datetime">-</span></p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                <p class="text-[10px] font-semibold text-slate-400">คะแนนเต็ม</p>
+                <h1 class="text-4xl font-black text-indigo-600 my-0.5"><span id="result-score-raw">0</span><span class="text-sm text-slate-400">/10</span></h1>
+                <p class="text-[9px] text-slate-400">จำนวนคำที่อ่านได้ถูกต้อง</p>
+              </div>
+              
+              <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                <p class="text-[10px] font-semibold text-slate-400">เปอร์เซ็นต์สะสม</p>
+                <h1 class="text-4xl font-black text-emerald-600 my-0.5"><span id="result-score-percent">0</span><span class="text-sm text-slate-400">%</span></h1>
+                <p class="text-[9px] text-slate-400">สัดส่วนตามเกณฑ์รวม</p>
+              </div>
+
+              <div id="result-level-card" class="p-4 rounded-xl border text-center flex flex-col justify-center items-center">
+                <p class="text-[10px] font-semibold text-slate-400">ผลสัมฤทธิ์รวม</p>
+                <h1 class="text-3xl font-extrabold my-0.5" id="result-score-level">-</h1>
+                <p class="text-[9px] text-slate-500" id="result-score-suggestion">-</p>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- รายงานวิเคราะห์แยกประเภทคำทางภาษาไทย -->
@@ -644,55 +668,11 @@
     let html5QrcodeScanner = null;
     let isAdminLoggedIn = false;
 
-    // ตัวแปรและฟังก์ชั่นความปลอดภัยระดับสูง (จับใบหน้าผู้สอบ และจับเวลารายข้อ)
-    let faceModel = null;
-    let faceTrackingInterval = null;
-    let violationsCounter = 0; // สะสมจำนวนวินาทีที่ผิดเงื่อนไขใบหน้า
+    // ตัวแปรดูแลความโปร่งใสและตรวจสอบความซื่อสัตย์ของการอ่าน (Snapshot & Word Timer)
     let countdownTimer = null;
     let timeRemainingForWord = 15;
-
-    // เริ่มต้นดึงและสร้างโมเดลตรวจสอบใบหน้า (BlazeFace) ตั้งแต่เปิดหน้าต่างเว็บ
-    async function initAntiCheatingModel() {
-      try {
-        faceModel = await blazeface.load();
-        console.log("Anti-Cheating Face Detector Loaded successfully.");
-      } catch (err) {
-        console.warn("ไม่สามารถเตรียมระบบตรวจจับผู้สอบได้เนื่องจากสเปคเครื่องหรือเบราว์เซอร์: ", err);
-      }
-    }
-    initAntiCheatingModel();
-
-    // ระบบตรวจวิเคราะห์เสียงพูด
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'th-TH';
-
-      recognition.onstart = function() {
-        isListening = true;
-        setMicUIAwake(true);
-      };
-
-      recognition.onerror = function(e) {
-        console.error('Speech recognition error: ', e.error);
-        stopListeningState();
-      };
-
-      recognition.onend = function() {
-        isListening = false;
-        setMicUIAwake(false);
-      };
-
-      recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript;
-        const confidence = event.results[0][0].confidence;
-        processPronunciationResult(transcript, confidence);
-      };
-    } else {
-      document.getElementById('fallback-test-inputs').classList.remove('hidden');
-    }
+    let snapshotTriggerIndex = 3; // ดัชนีคำศัพท์ที่จะสั่งสุ่มถ่ายรูปอัตโนมัติ (จะสุ่มระหว่างคำที่ 2 ถึง 9)
+    let capturedSnapshotBase64 = ""; // เก็บค่า Base64 ของรูปผู้เรียนที่จับได้
 
     // ฟังก์ชันช่วยในการทำ API Call แบบ POST/GET เพื่อป้องกันปัญหา CORS บน GAS
     async function apiRequest(action, method = 'GET', data = {}) {
@@ -797,10 +777,6 @@
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStream = null;
       }
-      if (faceTrackingInterval) {
-        clearInterval(faceTrackingInterval);
-        faceTrackingInterval = null;
-      }
       if (countdownTimer) {
         clearInterval(countdownTimer);
         countdownTimer = null;
@@ -829,7 +805,6 @@
         if (student) {
           currentStudent = student;
           
-          // ดึงประวัติผลประเมินย้อนหลังของผู้เรียนรายบุคคล
           const history = await apiRequest('getStudentHistory', 'GET', { studentId });
           Swal.close();
           
@@ -891,6 +866,10 @@
           currentWordIndex = 0;
           attemptsCount = 1;
           currentWordResults = [];
+          capturedSnapshotBase64 = ""; // ล้างค่าภาพถ่ายเก่าออก
+          
+          // สุ่มดัชนีข้อสอบที่จะทำการบันทึกภาพผู้สอบเงียบ (ระหว่างคำที่ 2 ถึง 9 เพื่อให้แน่ใจว่าเปิดกล้องอยู่)
+          snapshotTriggerIndex = Math.floor(Math.random() * 8) + 1; 
           
           scoreByWordType = {
             'คำพื้นฐาน': { count: 0, correct: 0 },
@@ -922,54 +901,11 @@
           video.srcObject = stream;
           offlineMsg.classList.add('hidden');
           video.classList.remove('hidden');
-          
-          // ล้างสถานะความปลอดภัยเมื่อเริ่มเฟรมใหม่
-          violationsCounter = 0;
-          if (faceTrackingInterval) clearInterval(faceTrackingInterval);
-          
-          // สั่งวนจับตรวจสอบใบหน้า (Face ID Safety Routine) ทุกๆ 1 วินาที
-          faceTrackingInterval = setInterval(evaluateFacePresence, 1000);
         })
         .catch(() => {
           offlineMsg.classList.remove('hidden');
           video.classList.add('hidden');
         });
-    }
-
-    // ฟังก์ชั่นประมวลจับตรวจใบหน้าป้องกันการสลับสับเปลี่ยนตัวบุคคล
-    async function evaluateFacePresence() {
-      if (!faceModel || !cameraStream) return;
-      const video = document.getElementById('test-video');
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        try {
-          const predictions = await faceModel.estimateFaces(video, false);
-          
-          // เกณฑ์ความโปร่งใส: ต้องพบใบหน้าพิกัดโครงสร้างอย่างเป็นเอกภาพเพียง 1 หน้าเท่านั้นในเฟรมกล้อง
-          if (predictions.length !== 1) {
-            violationsCounter++;
-            document.getElementById('camera-border').style.borderColor = "#F43F5E"; // เปลี่ยนขอบกรอบเป็นสีส้ม/แดงเตือน
-            
-            if (violationsCounter >= 3) {
-              // หากผิดเกณฑ์ต่อเนื่องกันเกิน 3 วินาที
-              stopAllWebcams();
-              stopListeningState();
-              Swal.fire({
-                icon: 'error',
-                title: 'การคัดกรองถูกระงับ',
-                text: 'ตรวจพบความผิดปกติบนเฟรมประเมินผล (ไม่มีคนอยู่หน้ากล้อง หรือมีบุคคลปะปนในเฟรมมากกว่า 1 คน) ระบบล็อกเอาท์เพื่อความโปร่งใส',
-                confirmButtonText: 'ตกลง'
-              }).then(() => {
-                showView('home');
-              });
-            }
-          } else {
-            violationsCounter = 0; // รีเซ็ตแต้มหากภาพเป็นปกติ
-            document.getElementById('camera-border').style.borderColor = "#10B981"; // กรอบสีเขียวปกติ
-          }
-        } catch (e) {
-          console.error("Anti-cheating estimation failed: ", e);
-        }
-      }
     }
 
     function renderWordStage() {
@@ -993,26 +929,31 @@
         scoreByWordType[currentWordObj.wordType].count++;
       }
 
-      // รีเซ็ตตั้งค่าระบบนับถอยหลัง (15 วินาทีต่อคำ)
+      // รีเซ็ตเวลานับถอยหลัง (15 วินาทีต่อคำ)
       resetCountdownTimerForWord();
     }
 
-    // ฟังก์ชั่นดูแลควบคุมเวลานับถอยหลัง
+    // ฟังก์ชั่นดูแลควบคุมเวลานับถอยหลังรายข้อ
     function resetCountdownTimerForWord() {
       if (countdownTimer) clearInterval(countdownTimer);
       
       timeRemainingForWord = 15;
       document.getElementById('word-timer-text').textContent = `${timeRemainingForWord} วินาที`;
       document.getElementById('word-timer-bar').style.width = '100%';
-      document.getElementById('word-timer-bar').style.backgroundColor = '#6366F1'; // สีครามปกติ
+      document.getElementById('word-timer-bar').style.backgroundColor = '#6366F1'; 
 
       countdownTimer = setInterval(() => {
         timeRemainingForWord--;
         document.getElementById('word-timer-text').textContent = `${timeRemainingForWord} วินาที`;
         document.getElementById('word-timer-bar').style.width = `${(timeRemainingForWord / 15) * 100}%`;
 
+        // บังคับถ่ายภาพ Snapshot เมื่อเวลาถอยหลังถึงวินาทีที่ 10 ในข้อที่สุ่มถูกเลือกไว้
+        if (currentWordIndex === snapshotTriggerIndex && timeRemainingForWord === 10) {
+          executeSilentSnapshot();
+        }
+
         if (timeRemainingForWord <= 5) {
-          document.getElementById('word-timer-bar').style.backgroundColor = '#F43F5E'; // เปลี่ยนเป็นสีแดงเตือนใจเมื่อเหลือต่ำกว่า 5 วิ
+          document.getElementById('word-timer-bar').style.backgroundColor = '#F43F5E'; 
         }
 
         if (timeRemainingForWord <= 0) {
@@ -1029,6 +970,30 @@
           });
         }
       }, 1000);
+    }
+
+    // ฟังก์ชันสั่งสุ่มถ่ายรูปเงียบระหว่างที่นักเรียนกำลังทำการทดสอบเพื่อส่งตรวจสอบความซื่อสัตย์
+    function executeSilentSnapshot() {
+      const video = document.getElementById('test-video');
+      if (!video || !cameraStream) return;
+      
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 320;
+        canvas.height = 320;
+        const ctx = canvas.getContext('2d');
+        
+        // วาดภาพจากสตรีมวีดีโอสดลงแคนวาส (กลับซ้ายขวาเพื่อให้รูปเหมือนจริง)
+        ctx.translate(320, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, 320, 320);
+        
+        // แปลงเป็นข้อมูลดิบ Base64 เพื่อเตรียมส่งไปเก็บยัง Google Drive ปลายทาง
+        capturedSnapshotBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        console.log("Anti-cheat Snapshot captured successfully.");
+      } catch (e) {
+        console.warn("ไม่สามารถบันทึกภาพถ่าย Snapshot เพื่อป้องกันการทุจริตได้ในข้อนี้: ", e);
+      }
     }
 
     function toggleSpeechRecognition() {
@@ -1107,7 +1072,7 @@
     }
 
     function processPronunciationResult(speechText, confidence) {
-      if (countdownTimer) clearInterval(countdownTimer); // หยุดเวลานับถอยหลังทันทีที่ส่งเสียงสำเร็จ
+      if (countdownTimer) clearInterval(countdownTimer); 
       
       const currentWordObj = testWords[currentWordIndex];
       const cleanTarget = currentWordObj.word.trim();
@@ -1187,7 +1152,6 @@
       playSynthesizedBeep(true);
     }
 
-    // แก้ไข UI กรณีตอบผิด
     function setWrongUI() {
       const border = document.getElementById('camera-border');
       const overlay = document.getElementById('status-overlay');
@@ -1241,8 +1205,14 @@
     // คิดผลคะแนนและวิเคราะห์รายประเภทคำเมื่อทำเสร็จสิ้น
     async function finishAndEvaluateTest() {
       stopAllWebcams();
+      
+      // บังคับสแนปช็อตช็อตสุดท้ายหากเกิดกรณีอุปกรณ์ทำงานช้าจนฟังก์ชันจับภาพระหว่างข้อไม่ทำหน้าที่
+      if (!capturedSnapshotBase64 && cameraStream) {
+        executeSilentSnapshot();
+      }
+
       Swal.fire({
-        title: 'กำลังเชื่อมต่อและคิดผลวิเคราะห์...',
+        title: 'กำลังอัปโหลดและประมวลผลประวัติภาพถ่ายคุณครู...',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
       });
@@ -1277,7 +1247,7 @@
       document.getElementById('result-score-percent').textContent = percent;
       
       const levelCard = document.getElementById('result-level-card');
-      levelCard.className = `p-6 rounded-2xl border flex flex-col items-center justify-center ${levelColor}`;
+      levelCard.className = `p-4 rounded-xl border text-center flex flex-col justify-center items-center ${levelColor}`;
       document.getElementById('result-score-level').textContent = level;
       document.getElementById('result-score-suggestion').textContent = suggestion;
 
@@ -1300,14 +1270,39 @@
       };
 
       try {
-        await apiRequest('saveSummaryResult', 'POST', { summary });
+        const response = await apiRequest('saveSummaryResult', 'POST', { 
+          summary: summary,
+          snapshotBase64: capturedSnapshotBase64 
+        });
+        
         Swal.close();
+        
+        // แนบแสดงผลรูปผู้สอบจริงบนแผ่นประกาศผลลัพธ์
+        if (response && response.snapshotUrl && !response.snapshotUrl.startsWith("Error")) {
+          // ใช้เทคนิคดัดแปลง URL Google Drive เพื่อให้สามารถดึงข้อมูลแบบแสดงผลรูปภาพผ่าน IMG tag ได้โดยตรง
+          const directImgUrl = response.snapshotUrl.replace("open?id=", "thumbnail?id=").replace("file/d/", "thumbnail?id=").split("/view")[0];
+          document.getElementById('result-student-snapshot').src = directImgUrl;
+          document.getElementById('result-student-snapshot').classList.remove('hidden');
+          document.getElementById('result-student-snapshot-placeholder').classList.add('hidden');
+        } else if (capturedSnapshotBase64) {
+          // หากอัปโหลดไม่สำเร็จหรือช้า ให้แสดงเป็นพรีวิว base64 ท้องถิ่นชั่วคราว
+          document.getElementById('result-student-snapshot').src = capturedSnapshotBase64;
+          document.getElementById('result-student-snapshot').classList.remove('hidden');
+          document.getElementById('result-student-snapshot-placeholder').classList.add('hidden');
+        } else {
+          document.getElementById('result-student-snapshot').classList.add('hidden');
+          document.getElementById('result-student-snapshot-placeholder').classList.remove('hidden');
+        }
+        
         showView('result');
       } catch (err) {
         Swal.close();
-        Swal.fire('สำเร็จ', 'บันทึกคะแนนรวมการคัดกรองเรียบร้อยแล้ว', 'success').then(() => {
-          showView('result');
-        });
+        if (capturedSnapshotBase64) {
+          document.getElementById('result-student-snapshot').src = capturedSnapshotBase64;
+          document.getElementById('result-student-snapshot').classList.remove('hidden');
+          document.getElementById('result-student-snapshot-placeholder').classList.add('hidden');
+        }
+        showView('result');
       }
     }
 
@@ -1748,7 +1743,6 @@
       printArea.appendChild(card);
       
       setTimeout(() => {
-        // เรียก QRCode.js แบบ Synchronous เพื่อความแม่นยำ
         new QRCode(document.getElementById("qrcode-temp-canvas"), {
           text: studentId,
           width: 140,
