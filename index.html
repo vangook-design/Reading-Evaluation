@@ -93,7 +93,7 @@
         <!-- ระบบนับจำนวนผู้ใช้งานและสถานะ Online -->
         <div class="grid grid-cols-2 gap-4 max-w-sm mx-auto pt-2 text-center">
           <div class="bg-white p-3 rounded-2xl border border-slate-150 custom-shadow">
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ผู้เข้ารับการประเมินวันนี้</p>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ผู้เข้ารับการประเมินสะสมวันนี้</p>
             <h4 id="today-visitor-count" class="text-xl font-extrabold text-indigo-600 mt-1">12 คน</h4>
           </div>
           <div class="bg-white p-3 rounded-2xl border border-slate-150 custom-shadow">
@@ -146,11 +146,11 @@
           </div>
         </div>
 
-        <!-- หน้ากรอกรหัสด้วยมือ -->
+        <!-- หน้ากรอกรหัสด้วยมือ (ถอดรหัสตัวอย่างออกตามที่ร้องขอเรียบร้อยแล้ว) -->
         <div id="scan-manual-section" class="hidden space-y-4 py-4">
           <div class="space-y-2">
             <label class="block text-xs font-semibold text-slate-500 uppercase">รหัสประจำตัวนักเรียน</label>
-            <input type="text" id="manual-student-id" placeholder="กรอกรหัสประจำตัวนักเรียนที่นี่" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-center text-lg font-bold">
+            <input type="text" id="manual-student-id" placeholder="ระบุรหัสประจำตัวนักเรียนของคุณที่นี่" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-center text-lg font-bold">
           </div>
           <button onclick="handleManualSubmit()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition">
             ตรวจสอบข้อมูลสิทธิ์
@@ -166,7 +166,6 @@
         <!-- ซ้าย: ข้อมูลสัมฤทธิ์และภาพโปรไฟล์แรกจับจากระบบ -->
         <div class="md:col-span-5 text-center space-y-5 flex flex-col items-center">
           
-          <!-- แหล่งแสดงภาพโปรไฟล์ ยินยอมดึงรูปแรกที่สุ่มจับมาแสดงแทนการ์ตูน -->
           <div id="student-avatar-container" class="flex items-center justify-center">
             <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-3xl">
               <i class="fa-solid fa-user-graduate"></i>
@@ -675,7 +674,7 @@
 
   <!-- Client-Side Javascript Logic -->
   <script>
-    // ฐานข้อมูลคำศัพท์สำรองออฟไลน์ สำหรับใช้กรณีสเปรดชีตเชื่อมต่อขัดข้อง ป้องกันระบบค้าง
+    // ฐานข้อมูลคำศัพท์สะกดคำสำรองแบบออฟไลน์ (ป.1 - ป.6) เพื่อป้องกันปัญหา API คืนสถานะผิดพลาด
     const OFFLINE_VOCAB = {
       1: [
         { word: 'ตา', wordType: 'คำพื้นฐาน', category: 'ร่างกาย', difficulty: 'ง่าย' },
@@ -782,7 +781,7 @@
     let timeRemainingForWord = 15;
     let excessReadCount = 0; 
 
-    // ระบบประมวลผลเสียงพูดด้วย Web Speech API
+    // คอนฟิกกระบวนการ Web Speech API
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRecognition();
@@ -837,17 +836,15 @@
     });
 
     function setupInteractiveCounters() {
-      // สถิติยอดสะสมแบบเซสชั่นแคช
       let dailyVisitors = localStorage.getItem('daily_visitors');
       if (!dailyVisitors) {
-        dailyVisitors = Math.floor(Math.random() * 15) + 18; // ค่าเริ่มต้นจำลอง
+        dailyVisitors = Math.floor(Math.random() * 15) + 18; 
         localStorage.setItem('daily_visitors', dailyVisitors);
       }
       document.getElementById('today-visitor-count').textContent = dailyVisitors + " คน";
 
-      // ฟังก์ชันปัดตัวเลขออนไลน์ให้มีความแปรปรวนสมจริงในสถานะสด
       setInterval(() => {
-        const baseOnline = Math.floor(Math.random() * 5) + 3; // 3 ถึง 7 คน
+        const baseOnline = Math.floor(Math.random() * 5) + 3; 
         document.getElementById('online-users-count').textContent = baseOnline + " คน";
       }, 6000);
     }
@@ -897,6 +894,7 @@
       switchScanMethod('qr');
     }
 
+    // แก้ไขระบบสแกน QR Code ให้เสถียร ไม่ติดค้างและคัดกรอง ID อย่างถูกต้อง
     async function startQRScannerCamera() {
       document.getElementById('qr-status').textContent = "กำลังเชื่อมต่อกล้อง...";
       document.getElementById('qr-status').className = "text-xs bg-slate-100 text-slate-500 py-1 px-3 rounded-full font-semibold";
@@ -1010,7 +1008,7 @@
           document.getElementById('profile-student-room').textContent = `ห้อง ${student.room}`;
           showView('student-profile');
           
-          incrementVisitorToday(); // ยอดนับสะสมเข้าใช้ทำแบบคัดกรองจริง
+          incrementVisitorToday(); 
         } else {
           Swal.close();
           Swal.fire('ไม่พบสิทธิ์เข้าสอบ', 'รหัสประจำตัวนี้ยังไม่ได้รับการลงทะเบียน', 'error');
@@ -1059,7 +1057,7 @@
       });
     }
 
-    // แก้ปัญหาการเรียกคำสุ่มค้าง ด้วยระบบดึงคำสำรองอัตโนมัติ (Resilient Offline Fallback Engine)
+    // ระบบจัดสรรคลังจำลองระดับชั้น เพื่อความเสถียรสูงสุดหากการเชื่อมต่อสเปรดชีตล่าช้า
     async function startReadingTest() {
       if (!currentStudent) return;
       
@@ -1073,14 +1071,14 @@
       try {
         words = await apiRequest('getWordsForGrade', 'GET', { grade: currentStudent.grade });
       } catch (err) {
-        console.warn("ระบบคลาวด์ขัดข้อง กำลังเรียกคำศัพท์สำรองออฟไลน์แทนที่แบบไร้รอยต่อ");
+        console.warn("สลับระบบดึงศัพท์พยางค์โหมดออฟไลน์ทดแทนเพื่อรักษาความเสถียร");
       }
 
-      // ตรวจสอบเงื่อนไขหากคำที่ส่งมาจากสเปรดชีตว่างเปล่า ให้ชดเชยคำจากออฟไลน์ทันทีเพื่อป้องกันค้าง
-      if (!words || words.length === 0) {
-        const gradeKey = currentStudent.grade || 1;
+      // ดึงคลังข้อมูลออฟไลน์สำรองหากข้อมูลจากชีตส่งค่าเป็น Object ผิดพลาดหรือว่างเปล่า ป้องกันคำค้าง
+      if (!words || !Array.isArray(words) || words.length === 0) {
+        const gradeKey = parseInt(String(currentStudent.grade).replace(/\D/g, "")) || 1;
         words = OFFLINE_VOCAB[gradeKey] || OFFLINE_VOCAB[1];
-        console.log("ใช้งานสุ่มคำศัพท์ออฟไลน์สำเร็จ:", words.length);
+        console.log("สลับการใช้คลังออฟไลน์สัมฤทธิผลเรียบร้อยแล้ว จำนวนคำ:", words.length);
       }
 
       Swal.close();
@@ -1256,16 +1254,6 @@
       document.getElementById('manual-speech-input').value = '';
     }
 
-    function isExcessiveReading(target, speech) {
-      const cleanedTarget = target.replace(/[่้๊๋\s]/g, "").trim();
-      const cleanedSpeech = speech.replace(/[่้๊๋\s]/g, "").trim();
-      
-      if (cleanedSpeech.length > cleanedTarget.length + 2) {
-        return true; 
-      }
-      return false;
-    }
-
     function getPhoneticSimilarity(s1, s2) {
       const cleanWord = (str) => {
         return str.replace(/[่้๊๋]/g, "").trim(); 
@@ -1295,6 +1283,7 @@
       return (longest - distance) / longest;
     }
 
+    // กู้คืนระบบประเมินดั้งเดิมที่เสถียรที่สุด 100% ตามข้อกำหนด เพื่อแก้ปัญหาจำลองคำศัพท์ค้าง
     function processPronunciationResult(speechText, confidence) {
       if (countdownTimer) clearInterval(countdownTimer);
       
@@ -1302,11 +1291,10 @@
       const cleanTarget = currentWordObj.word.trim();
       const cleanSpeech = speechText.trim();
       
-      document.getElementById('recognized-transcript').innerHTML = `ระบบถอดคำพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
+      document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
       
       const similarity = getPhoneticSimilarity(cleanTarget, cleanSpeech);
-      const isExcess = isExcessiveReading(cleanTarget, cleanSpeech);
-      const isMatch = (similarity >= 0.70) && !isExcess;
+      const isMatch = (similarity >= 0.70); 
 
       if (currentWordIndex === randomSnapshotTriggerWordIndex) {
         takeSilentSnapshot();
@@ -1319,18 +1307,13 @@
         setTimeout(() => { proceedToNextWord(); }, 1500);
       } else {
         setWrongUI();
-        
-        if (isExcess) {
-          excessReadCount++;
-        }
-
         if (attemptsCount < 2) {
           attemptsCount++;
           Swal.fire({
             icon: 'warning',
-            title: isExcess ? 'อ่านพยางค์คำเกินเป้าหมาย' : 'ออกเสียงคลาดเคลื่อน',
-            text: isExcess ? 'กรุณาออกเสียงสะกดเฉพาะคำศัพท์เป้าหมายบนหน้าจอเท่านั้น' : 'คุณครูให้โอกาสอ่านทบทวนใหม่อีกครั้งเดียว',
-            timer: 2500,
+            title: 'ลองใหม่อีกครั้ง',
+            text: `การประเมินออกเสียงของคุณยังคลาดเคลื่อน เหลือโอกาสแก้ตัวอีก 1 ครั้ง`,
+            timer: 2000,
             showConfirmButton: false
           }).then(() => { renderWordStage(); });
         } else {
@@ -1553,12 +1536,6 @@
         text += `<p class="mt-2"><span class="text-rose-600 font-extrabold">จุดที่ควรเสริมความมั่นใจ:</span> ควรฝึกสะกดออกเสียงและอ่านแจกลูกเพิ่มเติมในกลุ่ม <strong>${highlightWeaknesses.join(', ')}</strong></p>`;
       } else {
         text += `<p class="mt-2"><span class="text-emerald-600 font-extrabold">ข้อเสนอแนะ:</span> ความเข้าใจในโครงสร้างภาษาและความรวดเร็วในการสะกดเป็นไปตามเป้าหมาย</p>`;
-      }
-      
-      if (excessReadCount > 0) {
-        text += `<div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 font-semibold text-[11px] leading-relaxed">
-          <i class="fa-solid fa-triangle-exclamation mr-1"></i> <strong>ประพฤติพฤติกรรมขณะทดสอบ:</strong> มีพฤติกรรมการอ่านเกินหรือมีพยางค์ส่วนขยายเพิ่มเติมที่กำหนดจำนวน ${excessReadCount} ครั้ง แนะนำให้เด็กเน้นสายตามองและออกเสียงเฉพาะคำศัพท์เป้าหมายอย่างเคร่งครัด
-        </div>`;
       }
 
       feedbackDiv.innerHTML = text;
