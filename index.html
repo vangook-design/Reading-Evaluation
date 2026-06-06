@@ -252,7 +252,6 @@
               <h2 class="text-sm font-bold text-slate-700">จงอ่านสะกดคำศัพท์ภาษาไทยที่ปรากฏขึ้นมาดังนี้</h2>
               <p class="text-xs text-slate-400">กรุณาพูดภายในระยะเวลาที่กำหนดเพื่อรับการประเมินคะแนน</p>
             </div>
-            <!-- ปุ่มเสียงตัวอย่าง -->
             <button id="tts-audio-btn" onclick="playTtsSound()" class="hidden bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold py-2 px-3.5 rounded-full border border-amber-200 transition flex items-center space-x-1">
               <i class="fa-solid fa-volume-high"></i>
               <span>🔊 ฟังคำตัวอย่างออกเสียง</span>
@@ -467,11 +466,11 @@
           </div>
         </div>
 
-        <!-- 6.3 แท็บจัดการนักเรียนและพิมพ์การเข้าสอบ (ระบบเพิ่ม/ลบนักเรียนใหม่) -->
+        <!-- 6.3 แท็บจัดการนักเรียนและพิมพ์การเข้าสอบ (เพิ่มระบบเพิ่ม/ลบนักเรียนใหม่) -->
         <div id="admin-tab-students" class="admin-tab-content hidden bg-white rounded-2xl custom-shadow p-6 space-y-4">
           <div class="border-b pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
-              <h3 class="font-bold text-slate-800">ระบบประวัติและแผ่นสแกนบัตรสิทธิ์</h3>
+              <h3 class="font-bold text-slate-800">ระบบประวัติรายบุคคลและบัตรประจำตัว</h3>
               <p class="text-xs text-slate-400">ควบคุมฐานข้อมูลนักเรียน พิมพ์แผ่นป้ายสิทธิ์ หรือเจาะลึกตรวจสอบพยานเอกสารความถูกต้อง</p>
             </div>
             <div class="flex flex-wrap gap-1.5">
@@ -479,7 +478,7 @@
                 <i class="fa-solid fa-user-plus mr-1"></i> ลงทะเบียนนักเรียนใหม่
               </button>
               <button onclick="printAllQRCodes()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 px-4 rounded-lg">
-                <i class="fa-solid fa-print mr-1"></i> พิมพ์ QR-code สำหรับสอบทุกคน
+                <i class="fa-solid fa-print mr-1"></i> พิมพ์คิวอาร์ผู้สอบทั้งหมด
               </button>
             </div>
           </div>
@@ -564,7 +563,7 @@
 
   <!-- MODALS -->
   <!-- MODAL 1: ล็อกอินแอดมิน -->
-  <div id="admin-login-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 font-sans">
+  <div id="admin-login-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4 font-sans">
       <div class="flex justify-between items-center border-b pb-3">
         <h3 class="font-bold text-slate-800"><i class="fa-solid fa-lock text-indigo-600 mr-2"></i>เข้าใช้ระบบความปลอดภัยครู</h3>
@@ -588,7 +587,7 @@
 
   <!-- MODAL 2: คอนฟิกคำคัดกรอง -->
   <div id="word-crud-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 font-sans">
-    <div class="bg-white w-full max-w-md rounded-2xl p-6 space-y-4 font-sans">
+    <div class="bg-white w-full max-w-md rounded-2xl p-6 space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
         <h3 class="font-bold text-slate-800" id="word-modal-title">ปรับปรุงข้อกำหนดคำศัพท์</h3>
         <button onclick="closeWordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
@@ -679,7 +678,7 @@
     </div>
   </div>
 
-  <!-- MODAL 4: ลงทะเบียนนักเรียนใหม่ -->
+  <!-- MODAL 4: ลงทะเบียน / แก้ไขนักเรียนรายบุคคล -->
   <div id="student-crud-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 font-sans">
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
@@ -728,6 +727,89 @@
   </div>
 
   <script>
+    // การจัดการสถานะ
+    let currentStudent = null;
+    let testWords = [];
+    let currentWordIndex = 0;
+    let attemptsCount = 0;
+    let currentWordResults = [];
+    let scoreByWordType = {
+      'คำพื้นฐาน': { count: 0, correct: 0 },
+      'คำประสม': { count: 0, correct: 0 },
+      'คำควบกล้ำ': { count: 0, correct: 0 },
+      'คำที่มีตัวสะกด': { count: 0, correct: 0 },
+      'คำหลายพยางค์': { count: 0, correct: 0 }
+    };
+
+    let recognition = null;
+    let isListening = false;
+    let systemSettings = {
+      SystemName: 'ระบบคัดกรองการอ่านออกเสียงสะกดคำ ป.1-ป.6',
+      OrgName: 'กลุ่มการศึกษาประถมศึกษา',
+      ScoreExcellent: '8',
+      ScoreFair: '5'
+    };
+    
+    let cameraStream = null;
+    let html5QrcodeScanner = null;
+    let isAdminLoggedIn = false;
+    
+    let capturedVerificationBase64 = null;
+    let randomSnapshotTriggerWordIndex = 0; 
+    let countdownTimer = null;
+    let timeRemainingForWord = 15;
+
+    // ตั้งค่าระบบประมวลเสียงสะกดคำ
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'th-TH';
+
+      recognition.onstart = function() {
+        isListening = true;
+        setMicUIAwake(true);
+      };
+
+      recognition.onerror = function(e) {
+        console.error('Speech recognition error: ', e.error);
+        stopListeningState();
+      };
+
+      recognition.onend = function() {
+        isListening = false;
+        setMicUIAwake(false);
+      };
+
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        const confidence = event.results[0][0].confidence;
+        processPronunciationResult(transcript, confidence);
+      };
+    } else {
+      document.getElementById('fallback-test-inputs').classList.remove('hidden');
+    }
+
+    async function apiRequest(action, method = 'GET', data = {}) {
+      if (method === 'GET') {
+        const queryParams = new URLSearchParams({ action, ...data }).toString();
+        const response = await fetch(`${BACKEND_URL}?${queryParams}`);
+        return await response.json();
+      } else {
+        const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action, ...data }),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        return await response.json();
+      }
+    }
+
+    window.addEventListener('load', () => {
+      loadSystemSettings();
+    });
+
     async function loadSystemSettings() {
       try {
         const settings = await apiRequest('getSystemSettings', 'GET');
@@ -986,27 +1068,24 @@
         });
     }
 
-    // ครอบฟังก์ชันชัตเตอร์กล้องเงียบแบบ Non-blocking แยกเธรดอย่างสมบูรณ์
     function takeSilentSnapshot() {
-      setTimeout(() => {
-        if (!cameraStream) return;
-        const video = document.getElementById('test-video');
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = 320;
-          canvas.height = 320;
-          const ctx = canvas.getContext('2d');
-          
-          ctx.translate(320, 0);
-          ctx.scale(-1, 1);
-          ctx.drawImage(video, 0, 0, 320, 320);
-          
-          capturedVerificationBase64 = canvas.toDataURL('image/jpeg', 0.85);
-          console.log("บันทึกพยานรูปภาพเรียบร้อย");
-        } catch (e) {
-          console.warn("ล้มเหลวขณะสั่งเก็บภาพพยานแบบเงียบ:", e);
-        }
-      }, 50);
+      if (!cameraStream) return;
+      const video = document.getElementById('test-video');
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 320;
+        canvas.height = 320;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.translate(320, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, 320, 320);
+        
+        capturedVerificationBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        console.log("บันทึกพยานรูปภาพเรียบร้อย");
+      } catch (e) {
+        console.warn("ล้มเหลวขณะสั่งเก็บภาพพยานแบบเงียบ:", e);
+      }
     }
 
     function renderWordStage() {
@@ -1105,11 +1184,7 @@
     }
 
     function stopListeningState() {
-      if (recognition) {
-        try {
-          recognition.stop();
-        } catch(e){}
-      }
+      if (recognition) recognition.stop();
       isListening = false;
       setMicUIAwake(false);
     }
@@ -1121,26 +1196,20 @@
       document.getElementById('manual-speech-input').value = '';
     }
 
-    // ฟังก์ชันความสะอาดสัทศาสตร์การสะกด
+    // ฟังก์ชันเคลียร์วรรณยุกต์ การันต์ และช่องว่าง เพื่อจำลองสมานความคล้ายคลึงแบบเสถียรดั้งเดิม
     function cleanThaiWord(word) {
       if (!word) return "";
-      try {
-        return word.toString().trim()
-          .replace(/[่้๊๋]/g, "") 
-          .replace(/[์]/g, "")    
-          .replace(/[\s\-\_\.\,\?\!\(\)\[\]\{\}\'\"\`\~\@\#\$\%\^\&\*\+\=\\\/\|\:\;]/g, "") 
-          .toLowerCase();
-      } catch (e) {
-        console.error("Error cleaning word:", e);
-        return "";
-      }
+      return word.trim()
+        .replace(/[่้๊๋]/g, "") 
+        .replace(/[์]/g, "")    
+        .replace(/[\s\-\_\.\,\?]/g, "") 
+        .toLowerCase();
     }
 
     function getPhoneticSimilarity(s1, s2) {
       const target = cleanThaiWord(s1);
       const output = cleanThaiWord(s2);
       
-      if (!target || !output) return 0.0;
       if (target === output) return 1.0;
       if (target.includes(output) || output.includes(target)) return 0.85;
 
@@ -1162,48 +1231,42 @@
       return (longest - distance) / longest;
     }
 
-    // ครอบความปลอดภัยกระบวนการทำงานเพื่อลดการค้างนิ่งของ API ตรวจสอบ
     function processPronunciationResult(speechText, confidence) {
-      try {
-        if (countdownTimer) clearInterval(countdownTimer);
-        
-        const currentWordObj = testWords[currentWordIndex];
-        const cleanTarget = currentWordObj.word.trim();
-        const cleanSpeech = speechText.trim();
-        
-        document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
-        
-        const similarity = getPhoneticSimilarity(cleanTarget, cleanSpeech);
-        const isMatch = (similarity >= 0.60); 
+      if (countdownTimer) clearInterval(countdownTimer);
+      
+      const currentWordObj = testWords[currentWordIndex];
+      const cleanTarget = currentWordObj.word.trim();
+      const cleanSpeech = speechText.trim();
+      
+      document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
+      
+      const similarity = getPhoneticSimilarity(cleanTarget, cleanSpeech);
+      const isMatch = (similarity >= 0.60); // ลดเหลือ 60% เพื่อสมานเสียงเด็กให้เสถียรที่สุด
 
-        if (currentWordIndex === randomSnapshotTriggerWordIndex) {
-          takeSilentSnapshot();
-        }
+      if (currentWordIndex === randomSnapshotTriggerWordIndex) {
+        takeSilentSnapshot();
+      }
 
-        if (isMatch) {
-          setCorrectUI();
-          recordWordAttemptResult('ผ่าน', confidence);
-          scoreByWordType[currentWordObj.wordType].correct++;
-          setTimeout(() => { proceedToNextWord(); }, 1500);
+      if (isMatch) {
+        setCorrectUI();
+        recordWordAttemptResult('ผ่าน', confidence);
+        scoreByWordType[currentWordObj.wordType].correct++;
+        setTimeout(() => { proceedToNextWord(); }, 1500);
+      } else {
+        setWrongUI();
+        if (attemptsCount < 2) {
+          attemptsCount++;
+          Swal.fire({
+            icon: 'warning',
+            title: 'ลองใหม่อีกครั้ง',
+            text: `การประเมินออกเสียงของคุณยังคลาดเคลื่อน เหลือโอกาสแก้ตัวอีก 1 ครั้ง`,
+            timer: 2000,
+            showConfirmButton: false
+          }).then(() => { renderWordStage(); });
         } else {
-          setWrongUI();
-          if (attemptsCount < 2) {
-            attemptsCount++;
-            Swal.fire({
-              icon: 'warning',
-              title: 'ลองใหม่อีกครั้ง',
-              text: `การประเมินออกเสียงของคุณยังคลาดเคลื่อน เหลือโอกาสแก้ตัวอีก 1 ครั้ง`,
-              timer: 2000,
-              showConfirmButton: false
-            }).then(() => { renderWordStage(); });
-          } else {
-            recordWordAttemptResult('ไม่ผ่าน', confidence);
-            setTimeout(() => { proceedToNextWord(); }, 1500);
-          }
+          recordWordAttemptResult('ไม่ผ่าน', confidence);
+          setTimeout(() => { proceedToNextWord(); }, 1500);
         }
-      } catch (err) {
-        console.error("Match evaluation failed, auto bypassing to prevent freezing:", err);
-        proceedToNextWord();
       }
     }
 
@@ -1786,7 +1849,7 @@
               <button onclick="viewStudentIndividualHistory('${s.studentId}', '${s.prefix}${s.firstName} ${s.lastName}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-1.5 px-3 rounded-md font-bold text-xs transition">
                 <i class="fa-solid fa-clock-rotate-left mr-1"></i> ประวัติการอ่าน
               </button>
-              <button onclick="printSingleQRCode('${s.studentId}', '${s.firstName} ${s.lastName}', 'ป.${s.grade}/${s.room}')" class="bg-slate-100 hover:bg-slate-200 text-slate-755 py-1.5 px-3 rounded-md font-bold text-xs transition inline-block">
+              <button onclick="printSingleQRCode('${s.studentId}', '${s.firstName} ${s.lastName}', 'ป.${s.grade}/${s.room}')" class="bg-slate-100 hover:bg-slate-200 text-slate-750 py-1.5 px-3 rounded-md font-bold text-xs transition inline-block">
                 <i class="fa-solid fa-print"></i> QR
               </button>
               <button onclick="confirmDeleteStudent('${s.studentId}')" class="bg-red-50 hover:bg-red-100 text-red-600 py-1.5 px-3 rounded-md font-bold text-xs transition inline-block">
@@ -1913,54 +1976,6 @@
         printWindow.document.close();
       } catch (err) {
         Swal.fire('พิมพ์ไม่สำเร็จ', 'ไม่สามารถเชื่อมฐานนักเรียนมาผลิตคิวอาร์โค้ดสิทธิ์สอบจำนวนมากได้', 'error');
-      }
-    }
-
-    async function renderAdminSettingsTab() {
-      try {
-        const settings = await apiRequest('getSystemSettings', 'GET');
-        if (settings) {
-          document.getElementById('setting-SystemName').value = settings.SystemName || 'ระบบคัดกรองการอ่านออกเสียงสะกดคำ ป.1-ป.6';
-          document.getElementById('setting-OrgName').value = settings.OrgName || 'กลุ่มการศึกษาประถมศึกษา';
-          document.getElementById('setting-AdminUsername').value = settings.AdminUsername || 'admin';
-          document.getElementById('setting-AdminPassword').value = settings.AdminPassword || '123456';
-          document.getElementById('setting-ScoreExcellent').value = settings.ScoreExcellent || '8';
-          document.getElementById('setting-ScoreFair').value = settings.ScoreFair || '5';
-        }
-      } catch (err) {
-        console.warn("ไม่สามารถเรียกประมวลผลการตั้งค่าจาก API: ", err);
-      }
-    }
-
-    async function handleSettingsSave(event) {
-      event.preventDefault();
-      const settings = {
-        SystemName: document.getElementById('setting-SystemName').value.trim(),
-        OrgName: document.getElementById('setting-OrgName').value.trim(),
-        AdminUsername: document.getElementById('setting-AdminUsername').value.trim(),
-        AdminPassword: document.getElementById('setting-AdminPassword').value.trim(),
-        ScoreExcellent: document.getElementById('setting-ScoreExcellent').value,
-        ScoreFair: document.getElementById('setting-ScoreFair').value
-      };
-
-      Swal.fire({
-        title: 'กำลังบันทึกการตั้งค่า...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-      });
-
-      try {
-        const response = await apiRequest('saveSettings', 'POST', { settings });
-        Swal.close();
-        if (response && response.success) {
-          systemSettings = settings;
-          applyDynamicTexts();
-          Swal.fire('บันทึกสำเร็จ', 'อัปเดตค่าของระบบ เกณฑ์สัมฤทธิ์ และสิทธิ์ผู้ใช้ลงสเปรดชีตแล้ว', 'success');
-          loadAdminDashboard();
-        }
-      } catch (err) {
-        Swal.close();
-        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเข้าปรับแต่งบันทึกระบบความปลอดภัย', 'error');
       }
     }
   </script>
