@@ -217,7 +217,7 @@
         <div class="lg:col-span-4 bg-white p-5 rounded-2xl custom-shadow border border-slate-100 space-y-4">
           <div class="flex items-center justify-between border-b pb-3">
             <h3 class="font-bold text-xs text-indigo-900 flex items-center"><i class="fa-solid fa-video mr-1.5"></i>กล้องตรวจผล</h3>
-            <span class="text-[9px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded"><i class="fa-solid fa-shield-halved mr-0.5"></i> ตรวจสอบแบบสุ่ม</span>
+            <span class="text-[9px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded"><i class="fa-solid fa-shield-halved mr-0.5"></i> ตรวจสอบพยาน</span>
           </div>
 
           <div id="camera-border" class="relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-4 border-slate-200 flex items-center justify-center transition-all duration-300">
@@ -758,7 +758,6 @@
     let isAdminLoggedIn = false;
     
     let capturedVerificationBase64 = null;
-    let randomSnapshotTriggerWordIndex = 0; 
     let countdownTimer = null;
     let timeRemainingForWord = 15;
 
@@ -1031,8 +1030,6 @@
           attemptsCount = 1;
           currentWordResults = [];
           capturedVerificationBase64 = null;
-          
-          randomSnapshotTriggerWordIndex = Math.floor(Math.random() * 6) + 2; 
 
           scoreByWordType = {
             'คำพื้นฐาน': { count: 0, correct: 0 },
@@ -1085,7 +1082,7 @@
         ctx.drawImage(video, 0, 0, 320, 320);
         
         capturedVerificationBase64 = canvas.toDataURL('image/jpeg', 0.85);
-        console.log("บันทึกพยานรูปภาพเรียบร้อย");
+        console.log("บันทึกภาพตัวตน ณ ครึ่งทางแรกเรียบร้อย");
       } catch (e) {
         console.warn("ล้มเหลวขณะสั่งเก็บภาพพยานแบบเงียบ:", e);
       }
@@ -1246,11 +1243,7 @@
       document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
       
       const similarity = getPhoneticSimilarity(cleanTarget, cleanSpeech);
-      const isMatch = (similarity >= 0.60); // ลดแต้มเกณฑ์เปรียบเทียบเหลือ 60% เพื่อสมานความแปรปรวนเสียงของเด็กเล็ก
-
-      if (currentWordIndex === randomSnapshotTriggerWordIndex) {
-        takeSilentSnapshot();
-      }
+      const isMatch = (similarity >= 0.80); // เกณฑ์ใหม่ความใกล้เคียงต้องไม่ต่ำกว่า 80% เท่านั้นจึงจะให้ผ่าน
 
       if (isMatch) {
         setCorrectUI();
@@ -1277,9 +1270,6 @@
 
     function skipCurrentWord() {
       if (countdownTimer) clearInterval(countdownTimer);
-      if (currentWordIndex === randomSnapshotTriggerWordIndex) {
-        takeSilentSnapshot();
-      }
       recordWordAttemptResult('ไม่ผ่าน', 0);
       proceedToNextWord();
     }
@@ -1306,6 +1296,44 @@
     }
 
     function proceedToNextWord() {
+      // ตรวจจับเมื่อทำข้อที่ 5 เสร็จสิ้น (index = 4) เพื่อเข้าสู่โหมดพักครึ่งเพื่อถ่ายรูปและสรุปผล โดยไม่มีการแทรกแซงคอร์ระบบแปลงเสียง
+      if (currentWordIndex === 4) {
+        if (countdownTimer) clearInterval(countdownTimer);
+        stopListeningState();
+        
+        // ถ่ายภาพพยานตัวตนแบบเงียบ ณ จังหวะหยุดพักครึ่ง เพื่อลดการสะดุด
+        takeSilentSnapshot();
+
+        // คำนวณสรุปความก้าวหน้าครึ่งแรก (ข้อ 1-5)
+        let firstHalfCorrect = 0;
+        currentWordResults.forEach((r, idx) => {
+          if (idx <= 4 && r.result === 'ผ่าน') firstHalfCorrect++;
+        });
+
+        Swal.fire({
+          title: 'พักครึ่งการทดสอบ (บันทึกภาพตัวตนเรียบร้อย)',
+          html: `
+            <div class="space-y-3 text-sans text-slate-700">
+              <p class="text-xs">ระบบทำการบันทึกภาพถ่ายยืนยันสิทธิ์เรียบร้อยแล้ว เพื่อให้การแปลงสัญญาณครึ่งหลังดำเนินต่อไปได้อย่างเสถียรสูงสุด</p>
+              <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                <p class="text-xs font-semibold text-slate-500">ผลประเมินครึ่งทางแรก (คำที่ 1 - 5):</p>
+                <h3 class="text-2xl font-black text-indigo-700 mt-1">ผ่าน ${firstHalfCorrect} จาก 5 <span class="text-xs text-slate-400">คำ</span></h3>
+              </div>
+              <p class="text-[11px] text-slate-400">เมื่อนักเรียนพร้อมทำแบบทดสอบช่วงต่อไปแล้ว ให้กดปุ่มด้านล่างเพื่อเริ่มทำข้อที่ 6 - 10</p>
+            </div>
+          `,
+          icon: 'info',
+          confirmButtonText: 'เริ่มทำครึ่งหลังต่อ (คำที่ 6-10) <i class="fa-solid fa-circle-chevron-right ml-1"></i>',
+          confirmButtonColor: '#4f46e5',
+          allowOutsideClick: false
+        }).then(() => {
+          currentWordIndex++;
+          attemptsCount = 1;
+          renderWordStage();
+        });
+        return;
+      }
+
       if (currentWordIndex < 9) {
         currentWordIndex++;
         attemptsCount = 1;
