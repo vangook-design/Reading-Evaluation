@@ -274,11 +274,11 @@
 
           <!-- เครื่องมือตรวจสอบประมวลเสียง -->
           <div class="flex flex-col items-center justify-center space-y-3">
-            <button id="mic-btn" onclick="toggleSpeechRecognition()" class="w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-indigo-100 focus:outline-none transition transform hover:scale-105 active:scale-95">
+            <button id="mic-btn" onclick="toggleSpeechRecognition()" class="hidden w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-indigo-100 focus:outline-none transition transform hover:scale-105 active:scale-95">
               <i id="mic-icon" class="fa-solid fa-microphone"></i>
             </button>
             <div class="text-center min-h-[48px] space-y-1">
-              <p id="mic-status-text" class="text-xs font-semibold text-slate-400">คลิกที่สัญลักษณ์ไมโครโฟนเพื่อเริ่มต้นพูด</p>
+              <p id="mic-status-text" class="text-xs font-semibold text-slate-400">ระบบอัตโนมัติจะควบคุมจังหวะบันทึกเสียง</p>
               <p id="recognized-transcript" class="text-indigo-600 font-bold text-lg italic max-w-md mx-auto">&nbsp;</p>
             </div>
 
@@ -586,7 +586,7 @@
     <div class="bg-white w-full max-w-md rounded-2xl p-6 space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
         <h3 class="font-bold text-slate-800" id="word-modal-title">ปรับแต่งคลังข้อสอบสะกดคำ</h3>
-        <button onclick="closeWordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeWordModal()" class="text-slate-400 hover:text-indigo-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <form id="word-form" onsubmit="handleWordSubmit(event)" class="space-y-4">
         <input type="hidden" id="form-word-id">
@@ -721,6 +721,9 @@
       </form>
     </div>
   </div>
+
+  <!-- แหล่งพักข้อมูลสำหรับสั่งผลิตแผ่นคิวอาร์โค้ดผู้เรียน -->
+  <div id="print-qrcode-area" class="hidden"></div>
 
   <!-- SCRIPT LOGIC -->
   <script>
@@ -1081,6 +1084,22 @@
       }
     }
 
+    // ฟังก์ชันย่อยสำหรับปรับสีขอบกรอบหน้าจอเพื่อบ่งบอกสถานะการทำงาน
+    function setCameraBorderStatus(phase) {
+      const border = document.getElementById('camera-border');
+      if (!border) return;
+      if (phase === 'prepare') {
+        border.className = "relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-4 border-amber-500 flex items-center justify-center transition-all duration-300";
+      } else if (phase === 'speak') {
+        border.className = "relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-4 border-emerald-500 flex items-center justify-center transition-all duration-300";
+      } else if (phase === 'evaluate') {
+        border.className = "relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-4 border-slate-400 flex items-center justify-center transition-all duration-300";
+      } else {
+        border.className = "relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-4 border-slate-200 flex items-center justify-center transition-all duration-300";
+      }
+    }
+
+    // ฟังก์ชันบริหารจัดการขั้นตอนหลักการทดสอบแบบอัตโนมัติ
     function renderWordStage() {
       const currentWordObj = testWords[currentWordIndex];
       
@@ -1092,56 +1111,69 @@
       document.getElementById('target-word-display').textContent = currentWordObj.word;
       document.getElementById('target-word-category').textContent = `หมวดหมู่: ${currentWordObj.category} | ความยากง่าย: ${currentWordObj.difficulty}`;
       document.getElementById('recognized-transcript').innerHTML = '&nbsp;';
-      setNormalCameraBorder();
       
-      const ttsBtn = document.getElementById('tts-audio-btn');
-      if (attemptsCount > 1) {
-        ttsBtn.classList.remove('hidden');
-      } else {
-        ttsBtn.classList.add('hidden');
-      }
+      // ป้องกันการสะสมคำสั่งเสียงเก่าค้าง
+      stopListeningState(); 
+      if (countdownTimer) clearInterval(countdownTimer);
 
-      if (attemptsCount === 1) {
-        if (!scoreByWordType[currentWordObj.wordType]) {
-          scoreByWordType[currentWordObj.wordType] = { count: 0, correct: 0 };
+      // --- ขั้นตอนที่ 1: ระยะเวลาเตรียมตัว (3 วินาที) ---
+      let prepareCountdown = 3;
+      setCameraBorderStatus('prepare');
+      document.getElementById('mic-status-text').innerHTML = `<span class="text-amber-500 font-bold"><i class="fa-solid fa-hourglass-start animate-spin mr-1"></i> เตรียมตัวอ่านออกเสียงสะกดคำใน ${prepareCountdown}...</span>`;
+      
+      countdownTimer = setInterval(() => {
+        prepareCountdown--;
+        if (prepareCountdown > 0) {
+          document.getElementById('mic-status-text').innerHTML = `<span class="text-amber-500 font-bold"><i class="fa-solid fa-hourglass-start animate-spin mr-1"></i> เตรียมตัวอ่านออกเสียงสะกดคำใน ${prepareCountdown}...</span>`;
+        } else {
+          clearInterval(countdownTimer);
+          startSpeakPhase(); // ขยับเข้าสู่ช่วงเริ่มเปล่งเสียงอ่านสะกดคำ
         }
-        scoreByWordType[currentWordObj.wordType].count++;
-      }
-
-      resetCountdownTimerForWord();
+      }, 1000);
     }
 
-    function resetCountdownTimerForWord() {
-      if (countdownTimer) clearInterval(countdownTimer);
+    // --- ขั้นตอนที่ 2: ระยะเวลาสตรีมบันทึกเสียงพูด (6 วินาที) ---
+    function startSpeakPhase() {
+      setCameraBorderStatus('speak');
+      document.getElementById('mic-status-text').innerHTML = `<span class="text-emerald-500 font-bold animate-pulse"><i class="fa-solid fa-microphone mr-1"></i> เริ่มอ่านออกเสียงสะกดคำเป้าหมายได้เลย!</span>`;
       
-      timeRemainingForWord = 15;
+      try {
+        if (recognition && !isListening) {
+          recognition.start();
+        }
+      } catch (e) {
+        console.warn("ระบบไมโครโฟนบันทึกไม่สำเร็จชั่วคราว: ", e);
+      }
+
+      timeRemainingForWord = 6; // หน้าต่างเวลาพูด 6 วินาที
       document.getElementById('word-timer-text').textContent = `${timeRemainingForWord} วินาที`;
       document.getElementById('word-timer-bar').style.width = '100%';
-      document.getElementById('word-timer-bar').style.backgroundColor = '#6366F1';
+      document.getElementById('word-timer-bar').style.backgroundColor = '#10B981'; 
 
       countdownTimer = setInterval(() => {
         timeRemainingForWord--;
         document.getElementById('word-timer-text').textContent = `${timeRemainingForWord} วินาที`;
-        document.getElementById('word-timer-bar').style.width = `${(timeRemainingForWord / 15) * 100}%`;
-
-        if (timeRemainingForWord <= 5) {
-          document.getElementById('word-timer-bar').style.backgroundColor = '#F43F5E';
-        }
+        document.getElementById('word-timer-bar').style.width = `${(timeRemainingForWord / 6) * 100}%`;
 
         if (timeRemainingForWord <= 0) {
           clearInterval(countdownTimer);
-          stopListeningState();
-          Swal.fire({
-            icon: 'warning',
-            title: 'หมดเวลาสำหรับการทดสอบข้อนี้!',
-            text: 'หมดเวลาสำหรับการทดสอบข้อนี้',
-            timer: 2000,
-            showConfirmButton: false
-          }).then(() => {
-            skipCurrentWord();
-          });
+          evaluateAndClosePhase(); // ขยับเข้าสู่ช่วงปิดและวินิจฉัยข้อมูลข้อสอบ
         }
       }, 1000);
+    }
+
+    // --- ขั้นตอนที่ 3: ระบบปิดรับเสียงสะกดคำ (1.5 วินาที) ---
+    function evaluateAndClosePhase() {
+      stopListeningState(); // บังคับตัดสัญญาณเสียงเพื่อป้องกันเสียงรบกวนสะสมลากยาว
+      setCameraBorderStatus('evaluate');
+      document.getElementById('mic-status-text').innerHTML = `<span class="text-slate-500 font-bold"><i class="fa-solid fa-spinner animate-spin mr-1"></i> กำลังประมวลผลคำตอบ...</span>`;
+      
+      setTimeout(() => {
+        // หากไม่มีข้อมูลเสียงพูดส่งผลตอบกลับเข้ามาเลย ให้ปรับข้อนี้เป็นไม่ผ่าน
+        if (document.getElementById('recognized-transcript').innerHTML === '&nbsp;') {
+          processPronunciationResult('', 0);
+        }
+      }, 1500);
     }
 
     function toggleSpeechRecognition() {
@@ -1168,11 +1200,9 @@
       if (awake) {
         micBtn.className = "w-16 h-16 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-rose-200 animate-pulse focus:outline-none";
         micIcon.className = "fa-solid fa-microphone-lines";
-        statusText.textContent = "ระบบ AI กำลังฟังเสียงอ่านของคุณสะกดคำ...";
       } else {
         micBtn.className = "w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-indigo-100 focus:outline-none";
         micIcon.className = "fa-solid fa-microphone";
-        statusText.textContent = "คลิกที่สัญลักษณ์ไมโครโฟนเพื่อเริ่มต้นพูด";
       }
     }
 
@@ -1225,9 +1255,9 @@
       return (longest - distance) / longest;
     }
 
-    // ฟังก์ชันประมวลผลการตรวจสอบเสียงอ่านสะกดคำ
     function processPronunciationResult(speechText, confidence) {
-      if (countdownTimer) clearInterval(countdownTimer);
+      if (countdownTimer) clearInterval(countdownTimer); // หยุดเวลานับถอยหลังอัตโนมัติรายข้อ
+      stopListeningState(); // ปิดสิทธิ์การบันทึกคลื่นเสียงทันทีเมื่อแปลงคำเสร็จสิ้น เพื่อคืนทรัพยากรให้เครื่อง
       
       const currentWordObj = testWords[currentWordIndex];
       const cleanTarget = currentWordObj.word.trim();
@@ -1236,7 +1266,7 @@
       document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
       
       const similarity = getPhoneticSimilarity(cleanTarget, cleanSpeech);
-      const isMatch = (similarity >= 0.80); // บังคับใช้เกณฑ์มาตรฐาน 80% เป็นต้นไป
+      const isMatch = (similarity >= 0.70); // เกณฑ์ผ่านลดเหลือ 70% เพื่อความสอดคล้องกับพัฒนาการของเด็กเล็ก
 
       if (isMatch) {
         setCorrectUI();
@@ -1250,10 +1280,10 @@
           Swal.fire({
             icon: 'warning',
             title: 'ลองใหม่อีกครั้ง',
-            text: `การประเมินออกเสียงของคุณยังคลาดเคลื่อน เหลือโอกาสแก้ตัวอีก 1 ครั้ง`,
+            text: `การประเมินออกเสียงยังคลาดเคลื่อน เหลือโอกาสแก้ตัวอีก 1 ครั้ง`,
             timer: 2000,
             showConfirmButton: false
-          }).then(() => { renderWordStage(); });
+          }).then(() => { renderWordStage(); }); // ย้อนกลับสู่ลูปเตรียมตัวรอบที่ 2
         } else {
           recordWordAttemptResult('ไม่ผ่าน', confidence);
           setTimeout(() => { proceedToNextWord(); }, 1500);
@@ -2118,3 +2148,679 @@
   </script>
 </body>
 </html>
+```
+
+---
+
+### ส่วนที่ 2: ไฟล์ `code.gs` (หลังบ้านสเปรดชีตสิทธิการเข้าสอบและจัดการระเบียนรายคน)
+
+```javascript
+/**
+ * ระบบคัดกรองการอ่านออกเสียงอัตโนมัติ ป.1-ป.6 (REST API)
+ * ทำหน้าที่เป็นหลังบ้านควบคุมฐานข้อมูล Google Sheets
+ */
+
+function handleResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  initDatabase();
+  const action = e.parameter.action;
+  
+  try {
+    if (action === "getStudentInfo") {
+      return handleResponse(getStudentById(e.parameter.studentId));
+    }
+    if (action === "getStudentHistory") {
+      return handleResponse(getStudentHistory(e.parameter.studentId));
+    }
+    if (action === "getWordsForGrade") {
+      return handleResponse(getRandomWordsForGrade(e.parameter.grade));
+    }
+    if (action === "getSystemSettings") {
+      return handleResponse(getSystemSettings());
+    }
+    if (action === "getDashboardStatistics") {
+      return handleResponse(getDashboardStatistics());
+    }
+    if (action === "getPublicStats") {
+      return handleResponse(getPublicStats());
+    }
+    if (action === "getAllWords") {
+      return handleResponse(getAllWords());
+    }
+    if (action === "getAllStudents") {
+      return handleResponse(getAllStudents());
+    }
+    return handleResponse({ success: false, message: "Invalid GET action" });
+  } catch (err) {
+    return handleResponse({ success: false, message: "Error: " + err.message });
+  }
+}
+
+function doPost(e) {
+  initDatabase();
+  try {
+    const postData = JSON.parse(e.postData.contents);
+    const action = postData.action;
+    
+    if (action === "verifyAdmin") {
+      const verified = verifyAdminLogin(postData.username, postData.password);
+      return handleResponse({ success: verified });
+    }
+    if (action === "saveWordResult") {
+      const result = saveWordResult(postData.record);
+      return handleResponse({ success: result });
+    }
+    if (action === "saveSummaryResult") {
+      let fileUrl = "";
+      if (postData.base64Image) {
+        fileUrl = uploadImageToDrive(postData.base64Image, postData.summary.studentId);
+      }
+      const result = saveSummaryResult(postData.summary, fileUrl);
+      return handleResponse({ success: result, imageUrl: fileUrl });
+    }
+    if (action === "saveWord") {
+      const result = saveWord(postData.wordObj);
+      return handleResponse({ success: result });
+    }
+    if (action === "deleteWord") {
+      const result = deleteWord(postData.id);
+      return handleResponse({ success: result });
+    }
+    if (action === "importWords") {
+      const result = importWordsList(postData.list);
+      return handleResponse({ success: result });
+    }
+    if (action === "saveSettings") {
+      const result = saveSystemSettings(postData.settings);
+      return handleResponse({ success: result });
+    }
+    if (action === "saveStudent") {
+      const result = saveStudent(postData.studentObj);
+      return handleResponse({ success: result });
+    }
+    if (action === "deleteStudent") {
+      const result = deleteStudent(postData.studentId);
+      return handleResponse({ success: result });
+    }
+    return handleResponse({ success: false, message: "Invalid POST action" });
+  } catch (err) {
+    return handleResponse({ success: false, message: "Error parsing request: " + err.message });
+  }
+}
+
+function uploadImageToDrive(base64Data, studentId) {
+  try {
+    const splitData = base64Data.split(',');
+    const contentType = splitData[0].match(/:(.*?);/)[1];
+    const rawBytes = Utilities.base64Decode(splitData[1]);
+    const blob = Utilities.newBlob(rawBytes, contentType, "verify_" + studentId + "_" + new Date().getTime() + ".jpg");
+    
+    let folder;
+    const folderName = "ReadingScreening_Verification";
+    const folders = DriveApp.getFoldersByName(folderName);
+    
+    if (folders.hasNext()) {
+      folder = folders.next();
+    } else {
+      folder = DriveApp.createFolder(folderName);
+    }
+    
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const fileId = file.getId();
+    return "https://lh3.googleusercontent.com/d/" + fileId;
+  } catch (e) {
+    Logger.log("Error uploading image: " + e.toString());
+    return "";
+  }
+}
+
+function getLatestVerificationPhoto(studentId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('SummaryResults');
+  if (!sheet) return "";
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return "";
+  
+  const headers = data[0];
+  const photoIndex = headers.indexOf('VerificationPhoto');
+  if (photoIndex === -1) return "";
+  
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (data[i][1].toString().trim() === studentId.toString().trim()) {
+      if (data[i][photoIndex]) {
+        return data[i][photoIndex].toString();
+      }
+    }
+  }
+  return "";
+}
+
+function getStudentById(studentId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Students');
+  if (!sheet) return null;
+  
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const statusIndex = headers.indexOf('Status');
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0].toString().trim() === studentId.toString().trim()) {
+      let status = statusIndex !== -1 ? data[i][statusIndex].toString().trim() : "Active";
+      if (status === "Inactive" || status === "Deleted") continue;
+
+      const latestPhotoUrl = getLatestVerificationPhoto(studentId);
+      return {
+        studentId: data[i][0],
+        prefix: data[i][1],
+        firstName: data[i][2],
+        lastName: data[i][3],
+        grade: data[i][4],
+        room: data[i][5],
+        latestPhotoUrl: latestPhotoUrl
+      };
+    }
+  }
+  return null;
+}
+
+function getPublicStats() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetSummary = ss.getSheetByName('SummaryResults');
+  let total = 0;
+  let daily = 0;
+  
+  if (sheetSummary) {
+    const data = sheetSummary.getDataRange().getValues();
+    total = data.length - 1;
+    if (total < 0) total = 0;
+    
+    const todayStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    for (let i = 1; i < data.length; i++) {
+      const dateStr = Utilities.formatDate(new Date(data[i][0]), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      if (dateStr === todayStr) {
+        daily++;
+      }
+    }
+  }
+  return { total: total, daily: daily };
+}
+
+function ensureStudentStatusColumn(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  if (headers.indexOf('Status') === -1) {
+    sheet.getRange(1, headers.length + 1).setValue('Status');
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      const fillValues = Array(lastRow - 1).fill(["Active"]);
+      sheet.getRange(2, headers.length + 1, lastRow - 1, 1).setValues(fillValues);
+    }
+  }
+}
+
+function initDatabase() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  let sheetStudents = ss.getSheetByName('Students');
+  if (!sheetStudents) {
+    sheetStudents = ss.insertSheet('Students');
+    sheetStudents.appendRow(['StudentID', 'Prefix', 'FirstName', 'LastName', 'Grade', 'Room', 'Status']);
+    const sampleStudents = [
+      ['10001', 'ด.ช.', 'สมชาย', 'ใจดี', '1', '1', 'Active'],
+      ['10002', 'ด.ญ.', 'สมหญิง', 'รักเรียน', '1', '1', 'Active'],
+      ['20001', 'ด.ช.', 'ปกรณ์', 'ขยันยิ่ง', '2', '1', 'Active'],
+      ['30001', 'ด.ญ.', 'กนกวรรณ', 'เรียนดี', '3', '1', 'Active'],
+      ['40001', 'ด.ช.', 'ธนพล', 'ปัญญาเลิศ', '4', '2', 'Active'],
+      ['50001', 'ด.ญ.', 'วิภาดา', 'รักดี', '5', '1', 'Active'],
+      ['60001', 'ด.ช.', 'นที', 'ขยันเรียน', '6', '1', 'Active']
+    ];
+    sheetStudents.getRange(2, 1, sampleStudents.length, 7).setValues(sampleStudents);
+  } else {
+    ensureStudentStatusColumn(sheetStudents);
+  }
+  
+  let sheetWords = ss.getSheetByName('ReadingWords');
+  if (!sheetWords) {
+    sheetWords = ss.insertSheet('ReadingWords');
+    sheetWords.appendRow(['ID', 'Grade', 'Word', 'Category', 'Difficulty', 'WordType']);
+    const dummyWords = generateDummyWords();
+    sheetWords.getRange(2, 1, dummyWords.length, 6).setValues(dummyWords);
+  }
+  
+  let sheetResults = ss.getSheetByName('ReadingResults');
+  if (!sheetResults) {
+    sheetResults = ss.insertSheet('ReadingResults');
+    sheetResults.appendRow(['DateTime', 'StudentID', 'Name', 'Grade', 'Room', 'Word', 'Result', 'Confidence', 'WordType']);
+  }
+  
+  let sheetSummary = ss.getSheetByName('SummaryResults');
+  if (!sheetSummary) {
+    sheetSummary = ss.insertSheet('SummaryResults');
+    sheetSummary.appendRow(['Date', 'StudentID', 'Name', 'Grade', 'Room', 'Score', 'Percent', 'Level', 'BasicScore', 'CompoundScore', 'ClusterScore', 'SpellingScore', 'MultiSyllableScore', 'VerificationPhoto']);
+  } else {
+    const headers = sheetSummary.getRange(1, 1, 1, sheetSummary.getLastColumn()).getValues()[0];
+    if (headers.indexOf('VerificationPhoto') === -1) {
+      sheetSummary.getRange(1, headers.length + 1).setValue('VerificationPhoto');
+    }
+  }
+
+  let sheetSettings = ss.getSheetByName('Settings');
+  if (!sheetSettings) {
+    sheetSettings = ss.insertSheet('Settings');
+    sheetSettings.appendRow(['Key', 'Value']);
+    sheetSettings.appendRow(['SystemName', 'ระบบคัดกรองการอ่านออกเสียงสะกดคำ ป.1-ป.6']);
+    sheetSettings.appendRow(['OrgName', 'กลุ่มการศึกษาประถมศึกษา']);
+    sheetSettings.appendRow(['AdminUsername', 'admin']);
+    sheetSettings.appendRow(['AdminPassword', '123456']);
+    sheetSettings.appendRow(['ScoreExcellent', '8']); 
+    sheetSettings.appendRow(['ScoreFair', '5']);      
+  }
+}
+
+function verifyAdminLogin(username, password) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Settings');
+  if (!sheet) return false;
+  
+  const data = sheet.getDataRange().getValues();
+  let correctUser = '';
+  let correctPass = '';
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === 'AdminUsername') correctUser = data[i][1].toString();
+    if (data[i][0] === 'AdminPassword') correctPass = data[i][1].toString();
+  }
+  return (username === correctUser && password === correctPass);
+}
+
+function getStudentHistory(studentId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('SummaryResults');
+  if (!sheet) return [];
+  
+  const data = sheet.getDataRange().getValues();
+  const history = [];
+  
+  const headers = data[0];
+  const photoIndex = headers.indexOf('VerificationPhoto');
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][1].toString().trim() === studentId.toString().trim()) {
+      history.push({
+        date: Utilities.formatDate(new Date(data[i][0]), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm'),
+        score: data[i][5],
+        percent: data[i][6],
+        level: data[i][7],
+        basicScore: data[i][8] || 0,
+        compoundScore: data[i][9] || 0,
+        clusterScore: data[i][10] || 0,
+        spellingScore: data[i][11] || 0,
+        multiSyllableScore: data[i][12] || 0,
+        photoUrl: photoIndex !== -1 ? data[i][photoIndex] : ""
+      });
+    }
+  }
+  return history.reverse();
+}
+
+function getRandomWordsForGrade(grade) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ReadingWords');
+  if (!sheet) return [];
+  
+  const data = sheet.getDataRange().getValues();
+  const gradeWords = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][1].toString() === grade.toString()) {
+      gradeWords.push({
+        id: data[i][0],
+        grade: data[i][1],
+        word: data[i][2],
+        category: data[i][3],
+        difficulty: data[i][4],
+        wordType: data[i][5] || 'คำพื้นฐาน'
+      });
+    }
+  }
+  
+  for (let i = gradeWords.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [gradeWords[i], gradeWords[j]] = [gradeWords[j], gradeWords[i]];
+  }
+  
+  return gradeWords.slice(0, 10);
+}
+
+function saveWordResult(record) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ReadingResults');
+  if (!sheet) return false;
+  
+  sheet.appendRow([
+    new Date(),
+    record.studentId,
+    record.name,
+    record.grade,
+    record.room,
+    record.word,
+    record.result, 
+    record.confidence,
+    record.wordType
+  ]);
+  return true;
+}
+
+function saveSummaryResult(summary, photoUrl) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('SummaryResults');
+  if (!sheet) return false;
+  
+  sheet.appendRow([
+    new Date(),
+    summary.studentId,
+    summary.name,
+    summary.grade,
+    summary.room,
+    summary.score,
+    summary.percent,
+    summary.level,
+    summary.scoresByType['คำพื้นฐาน'] || 0,
+    summary.scoresByType['คำประสม'] || 0,
+    summary.scoresByType['คำควบกล้ำ'] || 0,
+    summary.scoresByType['คำที่มีตัวสะกด'] || 0,
+    summary.scoresByType['คำหลายพยางค์'] || 0,
+    photoUrl || ""
+  ]);
+  return true;
+}
+
+function getSystemSettings() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Settings');
+  const settings = {};
+  if (sheet) {
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      settings[data[i][0]] = data[i][1];
+    }
+  }
+  return settings;
+}
+
+function saveSystemSettings(settingsObj) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Settings');
+  if (!sheet) return false;
+  
+  sheet.clearContents();
+  sheet.appendRow(['Key', 'Value']);
+  for (let key in settingsObj) {
+    sheet.appendRow([key, settingsObj[key]]);
+  }
+  return true;
+}
+
+function getDashboardStatistics() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetStudents = ss.getSheetByName('Students');
+  const sheetSummary = ss.getSheetByName('SummaryResults');
+  
+  const totalStudents = sheetStudents ? sheetStudents.getLastRow() - 1 : 0;
+  const totalAssessments = sheetSummary ? sheetSummary.getLastRow() - 1 : 0;
+  
+  let passedCount = 0;
+  let improvementCount = 0;
+  let gradeStats = {};
+  
+  if (sheetSummary && totalAssessments > 0) {
+    const summaryData = sheetSummary.getDataRange().getValues();
+    for (let i = 1; i < summaryData.length; i++) {
+      const score = Number(summaryData[i][5]);
+      const level = summaryData[i][7];
+      const grade = summaryData[i][3];
+      
+      if (level === 'ดี' || level === 'พอใช้') {
+        passedCount++;
+      } else {
+        improvementCount++;
+      }
+      
+      if (!gradeStats[grade]) {
+        gradeStats[grade] = { total: 0, sumScore: 0 };
+      }
+      gradeStats[grade].total++;
+      gradeStats[grade].sumScore += score;
+    }
+  }
+  
+  return {
+    totalStudents: totalStudents,
+    totalAssessments: totalAssessments,
+    passedCount: passedCount,
+    improvementCount: improvementCount,
+    gradeStats: gradeStats
+  };
+}
+
+function getAllWords() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ReadingWords');
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  const words = [];
+  for (let i = 1; i < data.length; i++) {
+    words.push({
+      id: data[i][0],
+      grade: data[i][1],
+      word: data[i][2],
+      category: data[i][3],
+      difficulty: data[i][4],
+      wordType: data[i][5] || 'คำพื้นฐาน'
+    });
+  }
+  return words;
+}
+
+function saveWord(wordObj) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ReadingWords');
+  if (!sheet) return false;
+  
+  const data = sheet.getDataRange().getValues();
+  if (wordObj.id) {
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0].toString() === wordObj.id.toString()) {
+        sheet.getRange(i + 1, 2, 1, 5).setValues([[
+          wordObj.grade,
+          wordObj.word,
+          wordObj.category,
+          wordObj.difficulty,
+          wordObj.wordType
+        ]]);
+        return true;
+      }
+    }
+  } else {
+    let maxId = 0;
+    for (let i = 1; i < data.length; i++) {
+      let currentId = Number(data[i][0]);
+      if (currentId > maxId) maxId = currentId;
+    }
+    sheet.appendRow([
+      maxId + 1,
+      wordObj.grade,
+      wordObj.word,
+      wordObj.category,
+      wordObj.difficulty,
+      wordObj.wordType
+    ]);
+    return true;
+  }
+  return false;
+}
+
+function deleteWord(wordId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ReadingWords');
+  if (!sheet) return false;
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0].toString() === wordId.toString()) {
+      sheet.deleteRow(i + 1);
+      return true;
+    }
+  }
+  return false;
+}
+
+function importWordsList(list) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('ReadingWords');
+  if (!sheet) return false;
+  
+  let lastRow = sheet.getLastRow();
+  let maxId = 0;
+  if (lastRow > 1) {
+    const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    maxId = Math.max(...ids.map(r => Number(r[0]) || 0));
+  }
+  
+  const rowsToAdd = [];
+  list.forEach((item, index) => {
+    rowsToAdd.push([
+      maxId + index + 1,
+      item.grade,
+      item.word,
+      item.category,
+      item.difficulty,
+      item.wordType
+    ]);
+  });
+  
+  if (rowsToAdd.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAdd.length, 6).setValues(rowsToAdd);
+  }
+  return true;
+}
+
+function getAllStudents() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Students');
+  if (!sheet) return [];
+  
+  ensureStudentStatusColumn(sheet);
+  
+  const data = sheet.getDataRange().getValues();
+  const students = [];
+  const headers = data[0];
+  const statusIndex = headers.indexOf('Status');
+  
+  for (let i = 1; i < data.length; i++) {
+    let status = statusIndex !== -1 ? data[i][statusIndex].toString().trim() : "Active";
+    if (status === "Inactive" || status === "Deleted") continue;
+    
+    students.push({
+      studentId: data[i][0],
+      prefix: data[i][1],
+      firstName: data[i][2],
+      lastName: data[i][3],
+      grade: data[i][4],
+      room: data[i][5]
+    });
+  }
+  return students;
+}
+
+function saveStudent(studentObj) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Students');
+  if (!sheet) return false;
+  
+  ensureStudentStatusColumn(sheet);
+  
+  const data = sheet.getDataRange().getValues();
+  const sId = studentObj.studentId.toString().trim();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0].toString().trim() === sId) {
+      sheet.getRange(i + 1, 2, 1, 6).setValues([[
+        studentObj.prefix,
+        studentObj.firstName,
+        studentObj.lastName,
+        studentObj.grade,
+        studentObj.room,
+        "Active"
+      ]]);
+      return true;
+    }
+  }
+  
+  sheet.appendRow([
+    sId,
+    studentObj.prefix,
+    studentObj.firstName,
+    studentObj.lastName,
+    studentObj.grade,
+    studentObj.room,
+    "Active"
+  ]);
+  return true;
+}
+
+function deleteStudent(studentId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Students');
+  if (!sheet) return false;
+  
+  ensureStudentStatusColumn(sheet);
+  
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const statusIndex = headers.indexOf('Status');
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0].toString().trim() === studentId.toString().trim()) {
+      sheet.getRange(i + 1, statusIndex + 1).setValue("Inactive");
+      return true;
+    }
+  }
+  return false;
+}
+
+function generateDummyWords() {
+  const types = ['คำพื้นฐาน', 'คำประสม', 'คำควบกล้ำ', 'คำที่มีตัวสะกด', 'คำหลายพยางค์'];
+  const levels = ['ง่าย', 'ปานกลาง', 'ยาก'];
+  const wordsData = [];
+  
+  const vocab = {
+    1: ['กา', 'ตา', 'มา', 'ขา', 'ยา', 'รู', 'ปู', 'ดู', 'หู', 'งู', 'พ่อ', 'แม่', 'พี่', 'น้อง', 'บ้าน', 'กิน', 'นอน', 'เดิน', 'วิ่ง', 'ดีใจ', 'กล้วย', 'ส้ม', 'มด', 'นก', 'ปลา', 'แมว', 'หมา', 'ควาย', 'หมู', 'ช้าง', 'เด็ก', 'โรงเรียน', 'สมุด', 'ดินสอ', 'กระดาษ', 'กล่อง', 'โต๊ะ', 'เก้าอี้', 'จาน', 'ช้อน', 'สีแดง', 'สีดำ', 'น้ำเงิน', 'ร้อน', 'หนาว', 'กลม', 'ยาว', 'สั้น', 'ใหญ่', 'เล็ก'],
+    2: ['โรงเรียน', 'ห้องเรียน', 'หนังสือ', 'คุณครู', 'นักเรียน', 'เพื่อน', 'ใจดี', 'ขยัน', 'รัก', 'เล่น', 'กวาดบ้าน', 'ล้างจาน', 'ทำครัว', 'กับข้าว', 'มะม่วง', 'ทุเรียน', 'แตงโม', 'ขนม', 'นม', 'น้ำส้ม', 'เสื้อผ้า', 'กางเกง', 'กระโปรง', 'รองเท้า', 'ถุงเท้า', 'หมวก', 'แว่นตา', 'นาฬิกา', 'แหวน', 'สร้อย', 'กระต่าย', 'เสือ', 'ลิง', 'กวาง', 'นกแก้ว', 'เต่า', 'จระเข้', 'กบ', 'หอย', 'ปูม้า', 'รถยนต์', 'จักรยาน', 'เรือใบ', 'เครื่องบิน', 'ถนน', 'แม่น้ำ', 'ภูเขา', 'ทะเล', 'ท้องฟ้า', 'ก้อนเมฆ'],
+    3: ['ครอบครัว', 'ธรรมชาติ', 'สิ่งแวดล้อม', 'ประวัติศาสตร์', 'วิชาการ', 'คณิตศาสตร์', 'ภาษาไทย', 'วิทยาศาสตร์', 'สังคมศึกษา', 'ศิลปะ', 'คุณธรรม', 'จริยธรรม', 'กตัญญู', 'เสียสละ', 'ซื่อสัตย์', 'อดทน', 'ประหยัด', 'สามัคคี', 'เมตตา', 'กรุณา', 'อาหารกลางวัน', 'ผลไม้', 'ผักสวนครัว', 'กระเพรา', 'ไข่เจียว', 'ข้าวผัด', 'แกงจืด', 'น้ำพริก', 'ผัดผัก', 'ขนมปัง', 'คอมพิวเตอร์', 'โทรศัพท์', 'โทรทัศน์', 'พัดลม', 'ตู้เย็น', 'เครื่องซักผ้า', 'ไมโครเวฟ', 'วิทยุ', 'กล้องถ่ายรูป', 'ไฟฉาย', 'จังหวัด', 'อำเภอ', 'ตำบล', 'หมู่บ้าน', 'ประเทศไทย', 'กรุงเทพฯ', 'แม่น้ำเจ้าพระยา', 'ภูเขาหลวง', 'น้ำตก', 'ถ้ำหลวง'],
+    4: ['เกษตรกรรม', 'อุตสาหกรรม', 'พาณิชยกรรม', 'เศรษฐกิจ', 'การค้า', 'การเงิน', 'ธนาคาร', 'การลงทุน', 'ธุรกิจ', 'ตลาดหุ้น', 'เทคโนโลยี', 'อินเทอร์เน็ต', 'เว็บไซต์', 'แอปพลิเคชัน', 'ซอฟต์แวร์', 'ฮาร์ดแวร์', 'เครือข่าย', 'ระบบปฏิบัติการ', 'ข้อมูล', 'สารสนเทศ', 'วัฒนธรรม', 'ประเพณี', 'ศิลปกรรม', 'สถาปัตยกรรม', 'วรรณคดี', 'กวีนิพนธ์', 'จิตรกรรม', 'ประติมากรรม', 'ดนตรีไทย', 'การแสดง', 'สุขภาพ', 'อนามัย', 'โรงพยาบาล', 'คุณหมอ', 'พยาบาล', 'ยารักษาโรค', 'การรักษา', 'สุขภาพจิต', 'ความเครียด', 'ออกกำลังกาย', 'ทรัพยากร', 'สิ่งแวดล้อม', 'อนุรักษ์', 'พัฒนา', 'มลพิษ', 'ขยะมูลฝอย', 'โลกร้อน', 'ภูมิอากาศ', 'พลังงาน', 'แสงอาทิตย์'],
+    5: ['อารยธรรม', 'โบราณคดี', 'พจนานุกรม', 'วรรณกรรม', 'อัตชีวประวัติ', 'สารานุกรม', 'บรรณารักษ์', 'ห้องสมุดประชาชน', 'เอกสารอ้างอิง', 'แหล่งค้นคว้า', 'พระมหากษัตริย์', 'รัฐธรรมนูญ', 'ประชาธิปไตย', 'กฎหมาย', 'สิทธิเสรีภาพ', 'หน้าที่พลเมือง', 'การเลือกตั้ง', 'รัฐบาล', 'รัฐสภา', 'ศาลสถิตยุติธรรม', 'ภูมิศาสตร์', 'ดาราศาสตร์', 'จักรวาล', 'กาแล็กซี', 'ดาวเคราะห์', 'ระบบสุริยะ', 'อุตุนิยมวิทยา', 'แผ่นดินไหว', 'ภูเขาไฟระเบิด', 'คลื่นยักษ์', 'วิศวกรรม', 'สถาปัตยกรรม', 'นวัตกรรม', 'จินตนาการ', 'สร้างสรรค์', 'ประดิษฐ์คิดค้น', 'สิทธิบัตร', 'เครื่องจักรกล', 'ระบบอัตโนมัติ', 'ปัญญาประดิษฐ์', 'มิตรภาพ', 'มนุษยสัมพันธ์', 'ความร่วมมือ', 'กัลยาณมิตร', 'ความสามัคคี', 'ความผูกพัน', 'ความเข้าใจ', 'ความเอื้ออาทร', 'การแบ่งปัน'],
+    6: ['วิเคราะห์', 'สังเคราะห์', 'วิจารณญาณ', 'จินตนาการ', 'ทฤษฎี', 'สมมติฐาน', 'กระบวนการ', 'วิจัย', 'ผลลัพธ์', 'ข้อสรุป', 'กตัญญูกตเวที', 'คุณงามความดี', 'จรรยาบรรณ', 'ศีลธรรมอันดี', 'มนุษยธรรม', 'ความรับผิดชอบ', 'ความพากเพียร', 'ความเสียสละ', 'จิตสาธารณะ', 'จิตอาสา', 'การเปลี่ยนแปลง', 'โลกาภิวัตน์', 'ยุคดิจิทัล', 'การแข่งขัน', 'เป้าหมายชีวิต', 'ความสำเร็จ', 'อุปสรรค', 'ความท้าทาย', 'ประสบการณ์', 'การเรียนรู้ตลอดชีวิต', 'สัญลักษณ์', 'เอกลักษณ์', 'สุนทรียภาพ', 'ความภาคภูมิใจ', 'มรดกโลก', 'ภูมิปัญญาท้องถิ่น', 'การสืบทอด', 'การบูรณาการ', 'ความหลากหลายทางชีวภาพ', 'นิเวศวิทยา', 'อุดมการณ์', 'แรงบันดาลใจ', 'ทัศนคติ', 'วิสัยทัศน์', 'กลยุทธ์', 'การบริหารจัดการ', 'ประสิทธิภาพ', 'ประสิทธิผล', 'มาตรฐานสากล', 'ความเป็นเลิศ']
+  };
+
+  let idCounter = 1;
+  for (let grade = 1; grade <= 6; grade++) {
+    const wordList = vocab[grade] || [];
+    wordList.forEach((word, idx) => {
+      const wordType = types[idx % types.length];
+      const diff = levels[idx % levels.length];
+      wordsData.push([
+        idCounter++,
+        grade,
+        word,
+        'คำศัพท์ทั่วไป',
+        diff,
+        wordType
+      ]);
+    });
+  }
+  return wordsData;
+}
