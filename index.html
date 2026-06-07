@@ -105,7 +105,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code หรือระบุรหัสประจำตัว -->
+    <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code -->
     <section id="view-scan" class="view-section hidden py-6 animate-fadeIn">
       <div class="max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-6 space-y-6">
         <div class="flex items-center space-x-3 border-b pb-4">
@@ -144,11 +144,10 @@
       </div>
     </section>
 
-    <!-- VIEW 3: หน้าประวัติโปรไฟล์ผู้เรียนที่ได้รับเลือก -->
+    <!-- VIEW 3: หน้าประวัติโปรไฟล์ผู้เรียน -->
     <section id="view-student-profile" class="view-section hidden py-6 animate-fadeIn">
       <div class="max-w-2xl mx-auto bg-white rounded-3xl custom-shadow p-8 border border-slate-150 grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         
-        <!-- ซ้าย: ข้อมูลสัมฤทธิ์เดิม -->
         <div class="md:col-span-5 text-center space-y-5 flex flex-col items-center">
           <div class="relative w-24 h-24 mb-1 flex items-center justify-center">
             <div id="profile-pic-container" class="w-24 h-24 rounded-full overflow-hidden border-4 border-indigo-150 flex items-center justify-center bg-indigo-50 shadow-inner">
@@ -183,7 +182,6 @@
           </div>
         </div>
 
-        <!-- ขวา: ตารางสถิติและประวัติการสอบครั้งก่อนรายบุคคล -->
         <div class="md:col-span-7 space-y-4 w-full font-sans">
           <h3 class="font-bold text-xs text-slate-500 uppercase tracking-wide flex items-center"><i class="fa-solid fa-clock-rotate-left mr-1.5 text-indigo-600"></i>ประวัติการคัดกรองครั้งก่อนหน้า</h3>
           
@@ -215,13 +213,13 @@
         <div class="lg:col-span-4 bg-white p-5 rounded-2xl custom-shadow border border-slate-100 space-y-4">
           <div class="flex items-center justify-between border-b pb-3">
             <h3 class="font-bold text-xs text-indigo-900 flex items-center"><i class="fa-solid fa-video mr-1.5"></i>กล้องตรวจผล</h3>
-            <span class="text-[9px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded"><i class="fa-solid fa-shield-halved mr-0.5"></i> ตรวจสอบพยาน</span>
+            <span class="text-[9px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded"><i class="fa-solid fa-shield-halved mr-0.5"></i> พยานช่วงพักครึ่ง</span>
           </div>
 
           <div id="camera-border" class="relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-4 border-slate-200 flex items-center justify-center transition-all duration-300">
             <video id="test-video" class="absolute inset-0 w-full h-full object-cover scale-x-[-1]" playsinline autoplay muted></video>
-            <div id="camera-offline-msg" class="z-10 text-slate-500 text-xs hidden text-center p-4">
-              <i class="fa-solid fa-video-slash text-2xl mb-2 text-slate-400"></i><br>ไม่สามารถดึงสัญญาณกล้องได้
+            <div id="camera-offline-msg" class="z-10 text-slate-500 text-xs text-center p-4">
+              <i class="fa-solid fa-video-slash text-2xl mb-2 text-slate-400"></i><br>กล้องสแตนด์บายถ่ายช่วงพักครึ่ง
             </div>
             <div id="status-overlay" class="absolute top-4 right-4 text-xs font-bold hidden px-3 py-1 rounded-full bg-white/95 shadow-md"></div>
           </div>
@@ -236,7 +234,7 @@
             </div>
             <div class="flex justify-between text-[10px] text-slate-400 pt-1">
               <span>ประเภทหลักคำ: <strong id="test-word-type-meta" class="text-indigo-600">-</strong></span>
-              <span>ครั้งที่ออกเสียง: <strong id="test-attempt-meta" class="text-indigo-600">1/2</strong></span>
+              <span>สถานะสัญญาณ: <strong id="test-unclear-meta" class="text-indigo-600">ปกติ (0/3)</strong></span>
             </div>
           </div>
         </div>
@@ -247,7 +245,7 @@
           <div class="flex justify-between items-center border-b pb-4">
             <div>
               <h2 class="text-sm font-bold text-slate-700">จงอ่านสะกดคำศัพท์ภาษาไทยที่ปรากฏขึ้นมาดังนี้</h2>
-              <p class="text-xs text-slate-400">กรุณาพูดภายในระยะเวลาที่กำหนดเพื่อรับการประเมินคะแนน</p>
+              <p class="text-xs text-slate-400">กรุณาพูดภายในระยะเวลาประเมินผลรอบตัววิ่ง 6 วินาที</p>
             </div>
             <button id="tts-audio-btn" onclick="playTtsSound()" class="hidden bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold py-2 px-3.5 rounded-full border border-amber-200 transition flex items-center space-x-1">
               <i class="fa-solid fa-volume-high"></i>
@@ -728,10 +726,14 @@
   <!-- SCRIPT LOGIC -->
   <script>
     // การจัดการสถานะ
+    let masterGradeWords = []; // คลังคำศัพท์ทั้งหมดของระดับชั้น
+    let nextPoolIndex = 10;     // ชี้ตำแหน่งคำศัพท์สำรองถัดไป
+    let unclearCount = 0;      // นับจำนวนสัญญาณเสียงไม่ชัดเจน
+    
     let currentStudent = null;
     let testWords = [];
     let currentWordIndex = 0;
-    let attemptsCount = 0;
+    let attemptsCount = 1;
     let currentWordResults = [];
     let scoreByWordType = {
       'คำพื้นฐาน': { count: 0, correct: 0 },
@@ -1021,7 +1023,11 @@
         const words = await apiRequest('getWordsForGrade', 'GET', { grade: currentStudent.grade });
         Swal.close();
         if (words && words.length > 0) {
-          testWords = words;
+          masterGradeWords = words; // เก็บคำศัพท์ของระดับชั้นทั้งหมด
+          nextPoolIndex = 10;        // ตั้งค่าตัวชี้คลังคำศัพท์สำรอง
+          unclearCount = 0;         // รีเซ็ตค่านับความไม่ชัดเจนของเสียง
+          
+          testWords = masterGradeWords.slice(0, 10); // ดึงคำศัพท์ชุดแรก 10 ข้อ
           currentWordIndex = 0;
           attemptsCount = 1;
           currentWordResults = [];
@@ -1036,7 +1042,12 @@
           };
 
           showView('test');
-          initTestWebcamStream();
+          
+          // ซ่อนสตรีมมิ่งกล้องหน้าในเวลาคัดกรองเพื่อความเร็วของไมโครโฟน
+          const video = document.getElementById('test-video');
+          video.classList.add('hidden');
+          document.getElementById('camera-offline-msg').classList.remove('hidden');
+
           renderWordStage();
         } else {
           Swal.fire('ฐานข้อมูลว่าง', 'คุณครูยังไม่ได้อัปโหลดคำศัพท์ของระดับชั้น ป.' + currentStudent.grade, 'warning');
@@ -1050,8 +1061,7 @@
     function initTestWebcamStream() {
       const video = document.getElementById('test-video');
       const offlineMsg = document.getElementById('camera-offline-msg');
-      
-      navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 320 } })
+      return navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 320 } })
         .then(stream => {
           cameraStream = stream;
           video.srcObject = stream;
@@ -1072,11 +1082,9 @@
         canvas.width = 320;
         canvas.height = 320;
         const ctx = canvas.getContext('2d');
-        
         ctx.translate(320, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(video, 0, 0, 320, 320);
-        
         capturedVerificationBase64 = canvas.toDataURL('image/jpeg', 0.85);
         console.log("บันทึกภาพตัวตน ณ ครึ่งทางแรกเรียบร้อย");
       } catch (e) {
@@ -1084,7 +1092,7 @@
       }
     }
 
-    // ฟังก์ชันย่อยสำหรับปรับสีขอบกรอบหน้าจอเพื่อบ่งบอกสถานะการทำงาน
+    // ฟังก์ชันปรับสถานะความสว่างขอบกล้องเพื่อสมานสมาธิของเด็กเล็ก
     function setCameraBorderStatus(phase) {
       const border = document.getElementById('camera-border');
       if (!border) return;
@@ -1099,24 +1107,23 @@
       }
     }
 
-    // ฟังก์ชันบริหารจัดการขั้นตอนหลักการทดสอบแบบอัตโนมัติ
+    // ฟังก์ชันควบคุมวงรอบการทดสอบอัตโนมัติ (Automated State-Machine)
     function renderWordStage() {
       const currentWordObj = testWords[currentWordIndex];
       
-      document.getElementById('test-progress-text').textContent = `คำที่ ${currentWordIndex + 1} จาก 10`;
-      document.getElementById('test-progress-bar').style.width = `${((currentWordIndex + 1) / 10) * 100}%`;
+      document.getElementById('test-progress-text').textContent = `คำที่ ${currentWordResults.length + 1} จาก 10`;
+      document.getElementById('test-progress-bar').style.width = `${((currentWordResults.length) / 10) * 100}%`;
       document.getElementById('test-word-type-meta').textContent = currentWordObj.wordType;
-      document.getElementById('test-attempt-meta').textContent = `${attemptsCount}/2`;
+      document.getElementById('test-unclear-meta').textContent = `สัญญาณเสียงเบา (${unclearCount}/3)`;
       
       document.getElementById('target-word-display').textContent = currentWordObj.word;
       document.getElementById('target-word-category').textContent = `หมวดหมู่: ${currentWordObj.category} | ความยากง่าย: ${currentWordObj.difficulty}`;
       document.getElementById('recognized-transcript').innerHTML = '&nbsp;';
       
-      // ป้องกันการสะสมคำสั่งเสียงเก่าค้าง
       stopListeningState(); 
       if (countdownTimer) clearInterval(countdownTimer);
 
-      // --- ขั้นตอนที่ 1: ระยะเวลาเตรียมตัว (3 วินาที) ---
+      // --- ขั้นที่ 1: นับเตรียมตัว (PREPARE) 3 วินาที ---
       let prepareCountdown = 3;
       setCameraBorderStatus('prepare');
       document.getElementById('mic-status-text').innerHTML = `<span class="text-amber-500 font-bold"><i class="fa-solid fa-hourglass-start animate-spin mr-1"></i> เตรียมตัวอ่านออกเสียงสะกดคำใน ${prepareCountdown}...</span>`;
@@ -1127,12 +1134,12 @@
           document.getElementById('mic-status-text').innerHTML = `<span class="text-amber-500 font-bold"><i class="fa-solid fa-hourglass-start animate-spin mr-1"></i> เตรียมตัวอ่านออกเสียงสะกดคำใน ${prepareCountdown}...</span>`;
         } else {
           clearInterval(countdownTimer);
-          startSpeakPhase(); // ขยับเข้าสู่ช่วงเริ่มเปล่งเสียงอ่านสะกดคำ
+          startSpeakPhase(); // ย้ายไปสู่ขั้นตอนพูด
         }
       }, 1000);
     }
 
-    // --- ขั้นตอนที่ 2: ระยะเวลาสตรีมบันทึกเสียงพูด (6 วินาที) ---
+    // --- ขั้นที่ 2: ช่วงเปิดไมค์พูด (SPEAK) 6 วินาที ---
     function startSpeakPhase() {
       setCameraBorderStatus('speak');
       document.getElementById('mic-status-text').innerHTML = `<span class="text-emerald-500 font-bold animate-pulse"><i class="fa-solid fa-microphone mr-1"></i> เริ่มอ่านออกเสียงสะกดคำเป้าหมายได้เลย!</span>`;
@@ -1142,13 +1149,13 @@
           recognition.start();
         }
       } catch (e) {
-        console.warn("ระบบไมโครโฟนบันทึกไม่สำเร็จชั่วคราว: ", e);
+        console.warn("ไม่สามารถดึงข้อมูลไมโครโฟนอัตโนมัติได้: ", e);
       }
 
-      timeRemainingForWord = 6; // หน้าต่างเวลาพูด 6 วินาที
+      timeRemainingForWord = 6;
       document.getElementById('word-timer-text').textContent = `${timeRemainingForWord} วินาที`;
       document.getElementById('word-timer-bar').style.width = '100%';
-      document.getElementById('word-timer-bar').style.backgroundColor = '#10B981'; 
+      document.getElementById('word-timer-bar').style.backgroundColor = '#10B981';
 
       countdownTimer = setInterval(() => {
         timeRemainingForWord--;
@@ -1157,66 +1164,23 @@
 
         if (timeRemainingForWord <= 0) {
           clearInterval(countdownTimer);
-          evaluateAndClosePhase(); // ขยับเข้าสู่ช่วงปิดและวินิจฉัยข้อมูลข้อสอบ
+          evaluateAndClosePhase(); // ขยับไปสู่ช่วงวิเคราะห์ปิดท้าย
         }
       }, 1000);
     }
 
-    // --- ขั้นตอนที่ 3: ระบบปิดรับเสียงสะกดคำ (1.5 วินาที) ---
+    // --- ขั้นที่ 3: ปิดประมวลวิเคราะห์ความชัดเจน (EVALUATE) ---
     function evaluateAndClosePhase() {
-      stopListeningState(); // บังคับตัดสัญญาณเสียงเพื่อป้องกันเสียงรบกวนสะสมลากยาว
+      stopListeningState();
       setCameraBorderStatus('evaluate');
-      document.getElementById('mic-status-text').innerHTML = `<span class="text-slate-500 font-bold"><i class="fa-solid fa-spinner animate-spin mr-1"></i> กำลังประมวลผลคำตอบ...</span>`;
+      document.getElementById('mic-status-text').innerHTML = `<span class="text-slate-500 font-bold"><i class="fa-solid fa-spinner animate-spin mr-1"></i> ปิดไมโครโฟนชั่วคราวและกำลังประมวลผลคำตอบ...</span>`;
       
       setTimeout(() => {
-        // หากไม่มีข้อมูลเสียงพูดส่งผลตอบกลับเข้ามาเลย ให้ปรับข้อนี้เป็นไม่ผ่าน
+        // หากครบ 6 วินาทีแล้วไม่มีสัญญาณเสียงตัวหนังสือถูกส่งกลับมาเลย แสดงสัญลักษณ์ไม่ชัดเจน
         if (document.getElementById('recognized-transcript').innerHTML === '&nbsp;') {
-          processPronunciationResult('', 0);
+          handleUnclearPronunciation();
         }
       }, 1500);
-    }
-
-    function toggleSpeechRecognition() {
-      if (!recognition) {
-        Swal.fire('ขออภัย', 'เบราว์เซอร์ของคุณไม่ได้สิทธิ์เข้าใช้ระบบประเมินเสียงพูด', 'warning');
-        return;
-      }
-      if (isListening) {
-        recognition.stop();
-      } else {
-        try {
-          recognition.start();
-        } catch(e) {
-          console.error(e);
-        }
-      }
-    }
-
-    function setMicUIAwake(awake) {
-      const micBtn = document.getElementById('mic-btn');
-      const micIcon = document.getElementById('mic-icon');
-      const statusText = document.getElementById('mic-status-text');
-      
-      if (awake) {
-        micBtn.className = "w-16 h-16 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-rose-200 animate-pulse focus:outline-none";
-        micIcon.className = "fa-solid fa-microphone-lines";
-      } else {
-        micBtn.className = "w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-indigo-100 focus:outline-none";
-        micIcon.className = "fa-solid fa-microphone";
-      }
-    }
-
-    function stopListeningState() {
-      if (recognition) recognition.stop();
-      isListening = false;
-      setMicUIAwake(false);
-    }
-
-    function handleFallbackRecognition() {
-      const text = document.getElementById('manual-speech-input').value.trim();
-      if (!text) return;
-      processPronunciationResult(text, 0.99);
-      document.getElementById('manual-speech-input').value = '';
     }
 
     // ฟังก์ชันทำความสะอาดพยางค์สัทลักษณ์เสถียร (ตามรูปแบบ June 06)
@@ -1255,9 +1219,10 @@
       return (longest - distance) / longest;
     }
 
+    // ระบบประเมินคลื่นเสียง
     function processPronunciationResult(speechText, confidence) {
-      if (countdownTimer) clearInterval(countdownTimer); // หยุดเวลานับถอยหลังอัตโนมัติรายข้อ
-      stopListeningState(); // ปิดสิทธิ์การบันทึกคลื่นเสียงทันทีเมื่อแปลงคำเสร็จสิ้น เพื่อคืนทรัพยากรให้เครื่อง
+      if (countdownTimer) clearInterval(countdownTimer);
+      stopListeningState();
       
       const currentWordObj = testWords[currentWordIndex];
       const cleanTarget = currentWordObj.word.trim();
@@ -1266,7 +1231,7 @@
       document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
       
       const similarity = getPhoneticSimilarity(cleanTarget, cleanSpeech);
-      const isMatch = (similarity >= 0.70); // เกณฑ์ผ่านลดเหลือ 70% เพื่อความสอดคล้องกับพัฒนาการของเด็กเล็ก
+      const isMatch = (similarity >= 0.70); // กำหนดเกณฑ์ผ่านไม่ต่ำกว่า 70%
 
       if (isMatch) {
         setCorrectUI();
@@ -1275,20 +1240,40 @@
         setTimeout(() => { proceedToNextWord(); }, 1500);
       } else {
         setWrongUI();
-        if (attemptsCount < 2) {
-          attemptsCount++;
-          Swal.fire({
-            icon: 'warning',
-            title: 'ลองใหม่อีกครั้ง',
-            text: `การประเมินออกเสียงยังคลาดเคลื่อน เหลือโอกาสแก้ตัวอีก 1 ครั้ง`,
-            timer: 2000,
-            showConfirmButton: false
-          }).then(() => { renderWordStage(); }); // ย้อนกลับสู่ลูปเตรียมตัวรอบที่ 2
-        } else {
-          recordWordAttemptResult('ไม่ผ่าน', confidence);
-          setTimeout(() => { proceedToNextWord(); }, 1500);
-        }
+        recordWordAttemptResult('ไม่ผ่าน', confidence); // ตัดการอ่านซ้ำออกทันทีหากออกเสียงไม่ถึง 70%
+        setTimeout(() => { proceedToNextWord(); }, 1500);
       }
+    }
+
+    // จัดการกรณีสัญญาณเสียงแผ่ว/ไม่ส่งอักษรกลับมา
+    function handleUnclearPronunciation() {
+      unclearCount++;
+      document.getElementById('test-unclear-meta').textContent = `สัญญาณเสียงเบา (${unclearCount}/3)`;
+      document.getElementById('recognized-transcript').innerHTML = `<span class="text-rose-600 font-extrabold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> สัญญาณเสียงไม่ชัดเจน</span>`;
+      
+      if (unclearCount > 3) {
+        stopAllWebcams();
+        stopListeningState();
+        Swal.fire({
+          icon: 'error',
+          title: 'การคัดกรองถูกระงับชั่วคราว',
+          text: 'เนื่องจากสแกนจับสัญญาณคลื่นเสียงไม่ชัดเจนสะสมเกิน 3 ครั้ง กรุณาตรวจสอบตำแหน่งไมโครโฟนของเครื่องแล้วทำรายการใหม่อีกครั้ง',
+          confirmButtonColor: '#4f46e5'
+        }).then(() => {
+          showView('home');
+        });
+        return;
+      }
+
+      // ดึงสุ่มคำใหม่จากคลังระดับชั้นเดียวกันเข้ามาต่อท้ายเพื่อแทนที่ข้อสัญญาณเสียงเสีย
+      if (masterGradeWords && nextPoolIndex < masterGradeWords.length) {
+        testWords.push(masterGradeWords[nextPoolIndex]);
+        nextPoolIndex++;
+      }
+
+      setTimeout(() => {
+        proceedToNextWord();
+      }, 1500);
     }
 
     function skipCurrentWord() {
@@ -1314,36 +1299,40 @@
       try {
         await apiRequest('saveWordResult', 'POST', { record });
       } catch (err) {
-        console.warn("ไม่สามารถบันทึกประวัติการอ่านรายคำได้: ", err);
+        console.warn("ไม่สามารถบันทึกประวัติลงฐานชีตได้: ", err);
       }
     }
 
     function proceedToNextWord() {
-      // ดำเนินการจุดพักระบบการรับเสียงชั่วคราวหลังทำข้อที่ 5 เสร็จสิ้น (index = 4)
-      if (currentWordIndex === 4) {
+      // ดึงสถิติจุดพักครึ่งเวลา (เมื่อบันทึกผ่าน/ไม่ผ่านสำเร็จไปแล้ว 5 ข้อ)
+      if (currentWordResults.length === 5 && currentWordIndex < 5) {
         if (countdownTimer) clearInterval(countdownTimer);
         stopListeningState();
         
-        // ถ่ายภาพพยานตัวตนเพื่อส่งแนบพร้อมผลสรุปในเบื้องหลัง
-        takeSilentSnapshot();
-
-        Swal.fire({
-          title: 'พักครึ่งการทดสอบ',
-          icon: 'info',
-          confirmButtonText: 'ทำแบบทดสอบข้อ 6 ต่อไป',
-          confirmButtonColor: '#4f46e5',
-          allowOutsideClick: false
-        }).then(() => {
-          currentWordIndex++;
-          attemptsCount = 1;
-          renderWordStage();
+        // เปิดกล้องชั่วคราวเป็นเวลา 1.5 วินาทีเพื่อเก็บพยานภาพประวัติ และปิดกล้องลงทันทีหลังบันทึก
+        initTestWebcamStream().then(() => {
+          setTimeout(() => {
+            takeSilentSnapshot();
+            stopAllWebcams(); // สั่งปิดระบบวิดีโอทันทีหลังถ่ายภาพสำเร็จ
+            
+            Swal.fire({
+              title: 'พักครึ่งการทดสอบ',
+              icon: 'info',
+              confirmButtonText: 'ทำแบบทดสอบข้อ 6 ต่อไป',
+              confirmButtonColor: '#4f46e5',
+              allowOutsideClick: false
+            }).then(() => {
+              currentWordIndex++;
+              renderWordStage();
+            });
+          }, 1500);
         });
         return;
       }
 
-      if (currentWordIndex < 9) {
+      // ดำเนินการขึ้นคำถัดไปตามคิวคำศัพท์ในชุดสะพานคำถาม (ซึ่งอาจมีขนาดยืดหยุ่นขึ้นตามจำนวนข้อที่เสียไป)
+      if (currentWordIndex < testWords.length - 1 && currentWordResults.length < 10) {
         currentWordIndex++;
-        attemptsCount = 1;
         renderWordStage();
       } else {
         finishAndEvaluateTest();
