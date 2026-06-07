@@ -183,7 +183,7 @@
           </div>
         </div>
 
-        <!-- ขวา: ตารางสถิติและประวัติการสอบครั้งก่อน -->
+        <!-- ขวา: ตารางสถิติและประวัติการสอบครั้งก่อนรายบุคคล -->
         <div class="md:col-span-7 space-y-4 w-full font-sans">
           <h3 class="font-bold text-xs text-slate-500 uppercase tracking-wide flex items-center"><i class="fa-solid fa-clock-rotate-left mr-1.5 text-indigo-600"></i>ประวัติการคัดกรองครั้งก่อนหน้า</h3>
           
@@ -256,7 +256,7 @@
             </div>
           </div>
 
-          <!-- แสดงคำเป้าหมายเด่นใหญ่ (ปรับมาให้เป็นจุดแสดงเอฟเฟ็กต์กรอบสีแบบ Realtime) -->
+          <!-- แสดงคำเป้าหมายเด่นใหญ่ (แผงการ์ดคำศัพท์สำหรับปรับเปลี่ยนสีตามสถานะ) -->
           <div id="word-card-container" class="text-center py-12 bg-slate-50/50 rounded-2xl border border-slate-150 transition-all duration-300">
             <h1 id="target-word-display" class="text-6xl sm:text-7xl md:text-8xl font-black text-indigo-950 tracking-wider">กำลังสุ่มคำ...</h1>
             <p id="target-word-category" class="text-xs text-slate-400 mt-4">หมวดหมู่: - | ระดับความยาก: -</p>
@@ -282,7 +282,7 @@
             </div>
           </div>
 
-          <!-- ซ่อนวีดีโอเว็บแคมเพื่อแอบทำงานชั่วคราวเบื้องหลังตอนรอยต่อพักครึ่ง -->
+          <!-- กล้องสแตนด์บายถ่ายช่วงพักครึ่ง -->
           <video id="test-video" class="hidden" autoplay playsinline muted></video>
           <div id="camera-offline-msg" class="hidden"></div>
 
@@ -1236,18 +1236,71 @@
       document.getElementById('manual-speech-input').value = '';
     }
 
-    function cleanThaiWord(word) {
+    // อัลกอริทึมสะกดจับฐานเสียงตามหลักสัทศาสตร์ไทยประยุกต์
+    function normalizeThaiPhonetic(word) {
       if (!word) return "";
-      return word.trim()
-        .replace(/[่้๊๋]/g, "") 
-        .replace(/[์]/g, "")    
-        .replace(/[\s\-\_\.\,\?]/g, "") 
-        .toLowerCase();
+      
+      let clean = word.trim()
+        .replace(/[\s\-\_\.\,\?]/g, "") // ตัดสัญลักษณ์พิเศษ
+        .replace(/.[์]/g, "");          // ลบพยัญชนะสะกดที่ติดตัวการันต์ทิ้งทั้งหมด (สิทธิ์ -> สิท)
+
+      // สลายสิทธิ์วรรณยุกต์ทั้งหมด และการันต์ตกค้าง
+      clean = clean.replace(/[่้๊๋์]/g, "");
+
+      if (clean.length === 0) return "";
+
+      let arr = clean.split("");
+
+      // 1. ตารางแทนเสียงพยัญชนะต้นคู่แฝด (Initial Consonant Mapping)
+      let initialIdx = 0;
+      if (["แ", "เ", "โ", "ใ", "ไ", "แ"].includes(arr[0]) && arr.length > 1) {
+        initialIdx = 1; // ขยับตัวสแกนพยัญชนะต้นหากเจอสระนำหน้า
+      }
+      
+      const initialsMap = {
+        'ข': 'ค', 'ฆ': 'ค',
+        'ฉ': 'ช', 'ฌ': 'ช',
+        'ซ': 'ส', 'ศ': 'ส', 'ษ': 'ส',
+        'ฐ': 'ท', 'ฑ': 'ท', 'ฒ': 'ท', 'ถ': 'ท', 'ธ': 'ท',
+        'ฎ': 'ด', 'ฏ': 'ด', 'ต': 'ด',
+        'ผ': 'พ', 'ภ': 'พ', 'ฝ': 'พ', 'ฟ': 'พ',
+        'ญ': 'ย',
+        'ร': 'ล', 'ฬ': 'ล',
+        'ฮ': 'ห'
+      };
+      
+      if (arr[initialIdx] && initialsMap[arr[initialIdx]]) {
+        arr[initialIdx] = initialsMap[arr[initialIdx]];
+      }
+
+      // 2. ตารางแทนเสียงมาตราตัวสะกดท้ายพยางค์ 8 แม่มาตรฐาน (Final Consonant Mapping)
+      let lastIdx = arr.length - 1;
+      while (lastIdx >= 0 && ["ะ", "า", "ิ", "ี", "ึ", "ื", "ุ", "ู", "โ", "เ", "แ", "อ", "ั", "ำ", "ใ", "ไ", "ฤ", "ฦ"].includes(arr[lastIdx])) {
+        lastIdx--;
+      }
+      
+      if (lastIdx >= 0) {
+        const lastChar = arr[lastIdx];
+        
+        // แม่กก
+        if (['ข', 'ค', 'ฆ'].includes(lastChar)) arr[lastIdx] = 'ก';
+        // แม่กด
+        else if (['จ', 'ช', 'ซ', 'ฎ', 'ฏ', 'ฐ', 'ฑ', 'ฒ', 'ต', 'ถ', 'ท', 'ธ', 'ศ', 'ษ', 'ส'].includes(lastChar)) arr[lastIdx] = 'ด';
+        // แม่กน
+        else if (['ญ', 'ณ', 'ร', 'ล', 'ฬ'].includes(lastChar)) arr[lastIdx] = 'น';
+        // แม่กบ
+        else if (['ป', 'พ', 'ฟ', 'ภ'].includes(lastChar)) arr[lastIdx] = 'บ';
+      }
+
+      // 3. ปรับสระ ใ และ ไ ให้จับคู่สัทลักษณ์เหมือนกัน
+      let result = arr.join("").replace(/ใ/g, "ไ");
+      
+      return result;
     }
 
     function getPhoneticSimilarity(s1, s2) {
-      const target = cleanThaiWord(s1);
-      const output = cleanThaiWord(s2);
+      const target = normalizeThaiPhonetic(s1);
+      const output = normalizeThaiPhonetic(s2);
       
       if (target === output) return 1.0;
       if (target.includes(output) || output.includes(target)) return 0.85;
@@ -1281,7 +1334,7 @@
       document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
       
       const similarity = getPhoneticSimilarity(cleanTarget, cleanSpeech);
-      const isMatch = (similarity >= 0.70); // เกณฑ์ผ่านที่ 70% ขึ้นไป
+      const isMatch = (similarity >= 0.70); // เกณฑ์ผ่าน 70%
 
       if (isMatch) {
         setCorrectUI();
@@ -1290,7 +1343,7 @@
         setTimeout(() => { proceedToNextWord(); }, 1500);
       } else {
         setWrongUI();
-        recordWordAttemptResult('ไม่ผ่าน', confidence); // ตัดการสั่นสะเทือนอ่านแก้ตัวใหม่ออกทันที
+        recordWordAttemptResult('ไม่ผ่าน', confidence); 
         setTimeout(() => { proceedToNextWord(); }, 1500);
       }
     }
@@ -1352,7 +1405,6 @@
     }
 
     function proceedToNextWord() {
-      // พักครึ่งเวลาถ่ายพยานประวัติและตัดกล้องลงทันทีเมื่อถ่ายเสร็จ
       if (currentWordResults.length === 5 && currentWordIndex < 5) {
         if (countdownTimer) clearInterval(countdownTimer);
         stopListeningState();
