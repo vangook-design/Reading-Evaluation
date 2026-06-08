@@ -105,7 +105,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code หรือระบุรหัสประจำตัว -->
+    <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code (ล็อกอินด้วย QR-Code เท่านั้น) -->
     <section id="view-scan" class="view-section hidden py-6 animate-fadeIn">
       <div class="max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-6 space-y-6">
         <div class="flex items-center space-x-3 border-b pb-4">
@@ -125,9 +125,9 @@
       </div>
     </section>
 
-    <!-- VIEW 3: หน้าประวัติโปรไฟล์ผู้เรียนที่ได้รับเลือก -->
+    <!-- VIEW 3: หน้าโปรไฟล์ผู้เรียนที่ได้รับเลือก -->
     <section id="view-student-profile" class="view-section hidden py-6 animate-fadeIn">
-      <div class="max-w-5xl mx-auto bg-white rounded-3xl custom-shadow p-8 border border-slate-150 grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+      <div class="max-w-5xl mx-auto bg-white rounded-3xl custom-shadow p-8 border border-slate-150 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         <!-- ซ้าย: ข้อมูลสิทธิ์ -->
         <div class="lg:col-span-4 text-center space-y-5 flex flex-col items-center border-r border-slate-100 lg:pr-8">
@@ -548,7 +548,7 @@
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4 font-sans">
       <div class="flex justify-between items-center border-b pb-3">
         <h3 class="font-bold text-slate-800"><i class="fa-solid fa-lock text-indigo-600 mr-2"></i>เข้าใช้ระบบแอดมินครู</h3>
-        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-rose-500 text-3xl transition z-10"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="space-y-3">
         <div>
@@ -625,7 +625,7 @@
     <div class="bg-white w-full max-w-2xl rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto font-sans">
       <div class="flex justify-between items-center border-b pb-3">
         <h3 class="font-bold text-slate-800 text-base" id="admin-history-modal-title">รายงานการเข้าประเมินและภาพพยานตัวตน</h3>
-        <button onclick="closeAdminStudentHistoryModal()" class="text-slate-400 hover:text-indigo-600"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeAdminStudentHistoryModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="space-y-4">
         <div class="flex flex-col sm:flex-row justify-between bg-slate-50 p-4 rounded-xl gap-2 text-xs">
@@ -664,7 +664,7 @@
     <div class="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
         <h3 class="font-bold text-slate-800">ลงข้อมูลนักเรียนใหม่</h3>
-        <button onclick="closeStudentModal()" class="text-slate-400 hover:text-indigo-600"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeStudentModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <form id="student-form" onsubmit="handleStudentSubmit(event)" class="space-y-4">
         <div>
@@ -748,7 +748,7 @@
     let studentProgressChartInstance = null; // ตัวแปรคีย์ชาร์ตประวัติส่วนบุคคล
     let isListeningActive = false; // ตัวควบคุมสิทธิ์ตรวจสอบเสียงพูดระหว่างการนับถอยหลัง
 
-    // ตั้งค่าระบบประมวลเสียงสะกดคำโครงสร้างเสถียร
+    // ปรับปรุงระบบตัวดักจับเสียงและจังหวะเชื่อมต่อแบบสตรีมมิ่งต่อเนื่อง (ตามสเปกของโค้ดเกม June 08)
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRecognition();
@@ -792,12 +792,28 @@
         const cleanTranscript = transcript.trim();
         if (cleanTranscript) {
           // อัปเดตและเปรียบเทียบสัทลักษณ์ทันทีเมื่อมีสัญญาณไหลเข้า โดยไม่ต้องรอเด็กเงียบเสียง
-          document.getElementById('recognized-transcript').innerHTML = cleanTranscript;
+          document.getElementById('recognized-transcript').textContent = cleanTranscript;
           checkActivePronunciation(cleanTranscript);
         }
       };
     } else {
       document.getElementById('fallback-test-inputs').classList.remove('hidden');
+    }
+
+    // ฟังก์ชันเปรียบเทียบแบบเรียลไทม์บนสายสตรีมต่อเนื่อง
+    function checkActivePronunciation(spokenText) {
+      const currentWordObj = testWords[currentWordIndex];
+      const similarity = getPhoneticSimilarity(currentWordObj.word, spokenText);
+      
+      if (similarity >= 0.70) { // เกณฑ์ถูกต้องคงที่ไว้ที่ 70% ขึ้นไปตามฐานสัทศาสตร์ประยุกต์
+        if (countdownTimer) clearInterval(countdownTimer);
+        isListeningActive = false; // ปิดประตูรับเสียงชั่วคราวเพื่อรอเปลี่ยนข้อถัดไป
+        
+        setCorrectUI();
+        recordWordAttemptResult('ผ่าน', 0.99);
+        scoreByWordType[currentWordObj.wordType].correct++;
+        setTimeout(() => { proceedToNextWord(); }, 1500);
+      }
     }
 
     async function apiRequest(action, method = 'GET', data = {}) {
@@ -876,7 +892,6 @@
     }
 
     function switchScanMethod(method) {
-      // ยกเลิกส่วนสวิตช์อื่นๆ และควบคุมให้ทำงานเฉพาะโหมดสแกน QR-Code เท่านั้น
       startQRScannerCamera();
     }
 
@@ -961,7 +976,7 @@
           Swal.close();
           
           renderStudentHistoryTable(history);
-          renderStudentProgressChart(history); // เรนเดอร์แผนภูมิพัฒนาการส่วนบุคคล
+          renderStudentProgressChart(history); 
           
           document.getElementById('profile-student-name').textContent = `${student.prefix} ${student.firstName} ${student.lastName}`;
           document.getElementById('profile-student-id').textContent = student.studentId;
@@ -979,7 +994,6 @@
       }
     }
 
-    // ฟังก์ชันสร้างชาร์ตพัฒนาการรายบุคคลแบบละเอียด
     function renderStudentProgressChart(history) {
       const ctx = document.getElementById('studentProgressChart').getContext('2d');
       if (studentProgressChartInstance) {
@@ -1050,7 +1064,6 @@
           <td class="p-3 font-semibold text-slate-500">${row.date}</td>
           <td class="p-3 text-center">${photoCell}</td>
           <td class="p-3 text-center font-bold text-indigo-700">${row.score || 0}/10</td>
-          <td class="p-3 text-center text-teal-600 font-bold">${row.percent}%</td>
           <td class="p-3 text-right"><span class="px-2.5 py-1 text-[10px] font-black rounded-full ${row.level === 'ดี' ? 'bg-green-100 text-green-700' : row.level === 'พอใช้' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}">${row.level || 'ไม่มีข้อมูล'}</span></td>
         `;
         tbody.appendChild(tr);
@@ -1076,7 +1089,7 @@
       });
 
       try {
-        const words = await apiRequest('getWordsForGrade', { grade: currentStudent.grade });
+        const words = await apiRequest('getWordsForGrade', 'GET', { grade: currentStudent.grade });
         Swal.close();
         if (words && words.length > 0) {
           masterGradeWords = words;
@@ -1160,7 +1173,6 @@
       }
     }
 
-    // ฟังก์ชันระบุสถานะความถูกต้องแสดงผลผ่านแผงการ์ดคำศัพท์ (Word Card Container) แบบสว่างชัดเจน
     function setCameraBorderStatus(phase) {
       const card = document.getElementById('word-card-container');
       if (!card) return;
@@ -1387,25 +1399,9 @@
       return (longest - distance) / longest;
     }
 
-    // ฟังก์ชันเปรียบเทียบคลื่นเสียงสะกดจับแบบเรียลไทม์บนสายสตรีมต่อเนื่องของหน้าคัดกรองหลัก
-    function checkActivePronunciation(spokenText) {
-      const currentWordObj = testWords[currentWordIndex];
-      const similarity = getPhoneticSimilarity(currentWordObj.word, spokenText);
-      
-      if (similarity >= 0.70) { // เกณฑ์ถูกต้องคงที่ไว้ที่ 70% ขึ้นไปตามฐานสัทศาสตร์ประยุกต์
-        if (countdownTimer) clearInterval(countdownTimer);
-        isListeningActive = false; // ปิดประตูรับเสียงชั่วคราวเพื่อรอเปลี่ยนข้อถัดไป
-        
-        setCorrectUI();
-        recordWordAttemptResult('ผ่าน', 0.99);
-        scoreByWordType[currentWordObj.wordType].correct++;
-        setTimeout(() => { proceedToNextWord(); }, 1500);
-      }
-    }
-
     function processPronunciationResult(speechText, confidence) {
       if (countdownTimer) clearInterval(countdownTimer);
-      stopListeningState();
+      isListeningActive = false; // สั่งปิดประตูกันแทรกแซงเสียงก่อนเปลี่ยนข้อสอบ
       
       const currentWordObj = testWords[currentWordIndex];
       const cleanTarget = currentWordObj.word.trim();
@@ -1430,6 +1426,7 @@
 
     function skipCurrentWord() {
       if (countdownTimer) clearInterval(countdownTimer);
+      isListeningActive = false;
       recordWordAttemptResult('ไม่ผ่าน', 0);
       proceedToNextWord();
     }
@@ -1449,16 +1446,17 @@
       
       currentWordResults.push(record);
       try {
-        await apiRequest('saveWordResult', { record });
+        await apiRequest('saveWordResult', 'POST', { record });
       } catch (err) {
         console.warn("ไม่สามารถบันทึกประวัติการอ่านรายคำได้: ", err);
       }
     }
 
     function proceedToNextWord() {
+      // พักครึ่งเวลาถ่ายพยานประวัติและตัดกล้องลงทันทีเมื่อถ่ายเสร็จ
       if (currentWordResults.length === 5 && currentWordIndex < 5) {
         if (countdownTimer) clearInterval(countdownTimer);
-        stopListeningState();
+        isListeningActive = false;
         
         initTestWebcamStream().then(() => {
           setTimeout(() => {
@@ -1504,6 +1502,22 @@
         statusText.innerHTML = "<span class='text-emerald-600 font-bold'><i class='fa-solid fa-check-circle mr-1'></i> ออกเสียงถูกต้อง</span>";
       }
       playSynthesizedBeep(true);
+    }
+
+    // ฟังก์ชันเปรียบเทียบคลื่นเสียงสะกดจับแบบเรียลไทม์บนสายสตรีมต่อเนื่องของหน้าคัดกรองหลัก
+    function checkActivePronunciation(spokenText) {
+      const currentWordObj = testWords[currentWordIndex];
+      const similarity = getPhoneticSimilarity(currentWordObj.word, spokenText);
+      
+      if (similarity >= 0.70) { // เกณฑ์ถูกต้องคงที่ไว้ที่ 70% ขึ้นไปตามฐานสัทศาสตร์ประยุกต์
+        if (countdownTimer) clearInterval(countdownTimer);
+        isListeningActive = false; // ปิดประตูรับเสียงชั่วคราวเพื่อรอเปลี่ยนข้อถัดไป
+        
+        setCorrectUI();
+        recordWordAttemptResult('ผ่าน', 0.99);
+        scoreByWordType[currentWordObj.wordType].correct++;
+        setTimeout(() => { proceedToNextWord(); }, 1500);
+      }
     }
 
     function setWrongUI() {
@@ -1616,7 +1630,7 @@
       };
 
       try {
-        await apiRequest('saveSummaryResult', {
+        await apiRequest('saveSummaryResult', 'POST', {
           summary: summary,
           base64Image: capturedVerificationBase64 
         });
@@ -1905,7 +1919,7 @@
       });
 
       try {
-        const response = await apiRequest('saveWord', { wordObj });
+        const response = await apiRequest('saveWord', 'POST', { wordObj });
         Swal.close();
         if (response && response.success) {
           Swal.fire('เสร็จสิ้น', 'ปรับเปลี่ยนและเพิ่มข้อมูลคำคัดกรองสมบูรณ์', 'success');
@@ -1932,7 +1946,7 @@
       }).then(async (result) => {
         if (result.isConfirmed) {
           try {
-            const res = await apiRequest('deleteWord', { id });
+            const res = await apiRequest('deleteWord', 'POST', { id });
             if (res && res.success) {
               Swal.fire('ลบข้อมูลแล้ว', 'ลบคำศัพท์คัดแยกออกจากฐานข้อมูลถาวร', 'success');
               renderAdminWordsTab();
@@ -1999,7 +2013,7 @@
           didOpen: () => { Swal.showLoading(); }
         });
 
-        apiRequest('importWords', { list: validatedWords })
+        apiRequest('importWords', 'POST', { list: validatedWords })
           .then(res => {
             Swal.close();
             if (res && res.success) {
@@ -2081,7 +2095,7 @@
       });
 
       try {
-        const response = await apiRequest('saveStudent', { studentObj });
+        const response = await apiRequest('saveStudent', 'POST', { studentObj });
         Swal.close();
         if (response && response.success) {
           Swal.fire('สำเร็จ', 'ลงทะเบียนรายชื่อนักเรียนเรียบร้อยแล้ว', 'success');
@@ -2108,7 +2122,7 @@
       }).then(async (result) => {
         if (result.isConfirmed) {
           try {
-            const res = await apiRequest('deleteStudent', { studentId });
+            const res = await apiRequest('deleteStudent', 'POST', { studentId });
             if (res && res.success) {
               Swal.fire('ลบชื่อสำเร็จ', 'ลบรายชื่อออกจากสารบบสอบเรียบร้อย', 'success');
               renderAdminStudentsTab();
@@ -2282,7 +2296,7 @@
       });
 
       try {
-        const response = await apiRequest('saveSettings', { settings });
+        const response = await apiRequest('saveSettings', 'POST', { settings });
         Swal.close();
         if (response && response.success) {
           systemSettings = settings;
