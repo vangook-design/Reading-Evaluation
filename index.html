@@ -105,25 +105,16 @@
       </div>
     </section>
 
-    <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code หรือระบุรหัสประจำตัว -->
+    <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code (จำกัดเฉพาะการล็อกอินผ่าน QR-Code เท่านั้น) -->
     <section id="view-scan" class="view-section hidden py-6 animate-fadeIn">
       <div class="max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-6 space-y-6">
         <div class="flex items-center space-x-3 border-b pb-4">
           <button onclick="showView('home')" class="text-slate-400 hover:text-indigo-600 transition"><i class="fa-solid fa-arrow-left text-lg"></i></button>
-          <h2 class="text-lg font-bold text-slate-800">ลงชื่อเข้ารับการประเมิน</h2>
-        </div>
-
-        <div class="flex border-b text-sm">
-          <button id="tab-qr" onclick="switchScanMethod('qr')" class="flex-1 pb-3 text-center border-b-2 border-indigo-600 font-semibold text-indigo-600">
-            <i class="fa-solid fa-qrcode mr-1"></i>สแกนบัตรคิวอาร์โค้ด
-          </button>
-          <button id="tab-manual" onclick="switchScanMethod('manual')" class="flex-1 pb-3 text-center border-b-2 border-transparent text-slate-400 font-medium hover:text-indigo-600">
-            <i class="fa-solid fa-keyboard mr-1"></i>พิมพ์ระบุด้วยตนเอง
-          </button>
+          <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-qrcode text-indigo-600 mr-1.5"></i>สแกนบัตรคิวอาร์โค้ดผู้เข้าสอบ</h2>
         </div>
 
         <div id="scan-qr-section" class="space-y-4">
-          <p class="text-xs text-slate-400 text-center">หันภาพ QR-code ประจำตัวที่ครูจัดพิมพ์ให้สแกนผ่านระบบกล้องด้านล่าง</p>
+          <p class="text-xs text-slate-400 text-center">กรุณาหันบัตรสอบคิวอาร์โค้ดประเมินสิทธิ์ที่จัดพิมพ์ให้เข้าหาหน้ากล้อง</p>
           <div class="overflow-hidden rounded-2xl bg-black aspect-square max-w-xs mx-auto mb-4 border-2 border-indigo-500 relative">
             <div id="qr-reader-element" class="w-full h-full"></div>
           </div>
@@ -131,25 +122,15 @@
             <span id="qr-status" class="text-xs bg-slate-100 text-slate-500 py-1 px-3 rounded-full font-semibold">กำลังตรวจสอบสัญญาณกล้อง...</span>
           </div>
         </div>
-
-        <div id="scan-manual-section" class="hidden space-y-4 py-4">
-          <div class="space-y-2">
-            <label class="block text-xs font-semibold text-slate-500 uppercase">รหัสประจำตัวนักเรียน</label>
-            <input type="text" id="manual-student-id" placeholder="ตัวอย่างเช่น 10001, 10002" class="w-full p-3 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-center text-lg font-bold">
-          </div>
-          <button onclick="handleManualSubmit()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition">
-            ตรวจสอบข้อมูลสิทธิ์
-          </button>
-        </div>
       </div>
     </section>
 
     <!-- VIEW 3: หน้าประวัติโปรไฟล์ผู้เรียนที่ได้รับเลือก -->
     <section id="view-student-profile" class="view-section hidden py-6 animate-fadeIn">
-      <div class="max-w-2xl mx-auto bg-white rounded-3xl custom-shadow p-8 border border-slate-150 grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+      <div class="max-w-5xl mx-auto bg-white rounded-3xl custom-shadow p-8 border border-slate-150 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         <!-- ซ้าย: ข้อมูลสิทธิ์ -->
-        <div class="md:col-span-5 text-center space-y-5 flex flex-col items-center">
+        <div class="lg:col-span-4 text-center space-y-5 flex flex-col items-center border-r border-slate-100 lg:pr-8">
           <div class="relative w-24 h-24 mb-1 flex items-center justify-center">
             <div id="profile-pic-container" class="w-24 h-24 rounded-full overflow-hidden border-4 border-indigo-150 flex items-center justify-center bg-indigo-50 shadow-inner">
               <i id="profile-default-icon" class="fa-solid fa-user-graduate text-4xl text-indigo-400"></i>
@@ -183,31 +164,41 @@
           </div>
         </div>
 
-        <!-- ขวา: ตารางสถิติและประวัติการสอบครั้งก่อนรายบุคคล -->
-        <div class="md:col-span-7 space-y-4 w-full font-sans">
-          <h3 class="font-bold text-xs text-slate-500 uppercase tracking-wide flex items-center"><i class="fa-solid fa-clock-rotate-left mr-1.5 text-indigo-600"></i>ประวัติการคัดกรองครั้งก่อนหน้า</h3>
+        <!-- ขวา: ตารางสถิติและกราฟแสดงพัฒนาการการอ่านออกเสียงรายบุคคล -->
+        <div class="lg:col-span-8 space-y-6 w-full font-sans">
           
-          <div class="overflow-hidden border border-slate-100 rounded-xl max-h-64 overflow-y-auto">
-            <table class="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr class="bg-slate-50 text-slate-500 font-bold border-b">
-                  <th class="p-3">วันที่สอบ</th>
-                  <th class="p-3 text-center">ภาพยืนยัน</th>
-                  <th class="p-3 text-center">คะแนน</th>
-                  <th class="p-3 text-right">เกณฑ์คุณภาพ</th>
-                </tr>
-              </thead>
-              <tbody id="profile-student-history-body">
-                <!-- JS ประวัติแสดงผลตรงนี้ -->
-              </tbody>
-            </table>
+          <!-- กราฟพัฒนาการส่วนบุคคล -->
+          <div class="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+            <h4 class="font-bold text-xs text-indigo-900 uppercase tracking-wider mb-3 flex items-center"><i class="fa-solid fa-chart-line mr-1.5"></i> เส้นกราฟสรุปพัฒนาการอ่านรายบุคคล</h4>
+            <div class="h-48 w-full relative">
+              <canvas id="studentProgressChart"></canvas>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <h3 class="font-bold text-xs text-slate-500 uppercase tracking-wide flex items-center"><i class="fa-solid fa-clock-rotate-left mr-1.5 text-indigo-600"></i>ประวัติการคัดกรองครั้งก่อนหน้า</h3>
+            <div class="overflow-hidden border border-slate-100 rounded-xl max-h-48 overflow-y-auto bg-white">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-500 font-bold border-b">
+                    <th class="p-3">วันที่สอบ</th>
+                    <th class="p-3 text-center">ภาพยืนยัน</th>
+                    <th class="p-3 text-center">คะแนน</th>
+                    <th class="p-3 text-right">เกณฑ์คุณภาพ</th>
+                  </tr>
+                </thead>
+                <tbody id="profile-student-history-body">
+                  <!-- JS ประวัติแสดงผลตรงนี้ -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
       </div>
     </section>
 
-    <!-- VIEW 4: หน้าเวทีประเมินการอ่านออกเสียงสะกดคำ (ดีไซน์ประหยัดทรัพยากรระดับสูง ไร้กล้องตลอดการทดสอบ) -->
+    <!-- VIEW 4: หน้าเวทีประเมินการอ่านออกเสียงสะกดคำ (ดีไซน์ไร้กล้องตลอดเวลาทดสอบ) -->
     <section id="view-test" class="view-section hidden py-4 animate-fadeIn">
       <div class="max-w-4xl mx-auto grid grid-cols-1 gap-6">
         
@@ -225,9 +216,9 @@
               <div id="test-progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
           </div>
-          <div class="flex md:flex-col items-end gap-1 text-[10px] text-slate-400">
+          <div class="flex md:flex-col items-end gap-1 text-[10px] text-slate-400 font-sans">
             <span>ประเภทกลุ่มคำ: <strong id="test-word-type-meta" class="text-indigo-600">-</strong></span>
-            <span>สถานะสัญญาณ: <strong id="test-unclear-meta" class="text-rose-600">ปกติ (0/3)</strong></span>
+            <span>สถานะระบบเสียง: <strong id="test-unclear-meta" class="text-emerald-600">สแตนด์บายปกติ</strong></span>
           </div>
         </div>
 
@@ -282,7 +273,7 @@
             </div>
           </div>
 
-          <!-- กล้องสแตนด์บายถ่ายช่วงพักครึ่ง -->
+          <!-- ส่วนกล้องสำหรับพักสถิตช่วงครึ่งเวลา -->
           <video id="test-video" class="hidden" autoplay playsinline muted></video>
           <div id="camera-offline-msg" class="hidden"></div>
 
@@ -721,9 +712,9 @@
   <!-- SCRIPT LOGIC -->
   <script>
     // การจัดการสถานะ
-    let masterGradeWords = []; // คลังคำศัพท์ทั้งหมดของระดับชั้น
-    let nextPoolIndex = 10;     // ชี้ตำแหน่งคำศัพท์สำรองถัดไป
-    let unclearCount = 0;      // นับจำนวนสัญญาณเสียงไม่ชัดเจน
+    let masterGradeWords = []; 
+    let nextPoolIndex = 10;     
+    let unclearCount = 0;      
     
     let currentStudent = null;
     let testWords = [];
@@ -754,6 +745,7 @@
     let capturedVerificationBase64 = null;
     let countdownTimer = null;
     let timeRemainingForWord = 15;
+    let studentProgressChartInstance = null; // ตัวแปรคีย์ชาร์ตประวัติส่วนบุคคล
 
     // ตั้งค่าระบบประมวลเสียงสะกดคำโครงสร้างเสถียร
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -864,24 +856,13 @@
     }
 
     function switchScanMethod(method) {
-      if (method === 'qr') {
-        document.getElementById('tab-qr').className = "flex-1 pb-3 text-center border-b-2 border-indigo-600 font-semibold text-indigo-600";
-        document.getElementById('tab-manual').className = "flex-1 pb-3 text-center border-b-2 border-transparent text-slate-400 font-medium hover:text-indigo-600";
-        document.getElementById('scan-qr-section').classList.remove('hidden');
-        document.getElementById('scan-manual-section').classList.add('hidden');
-        startQRScannerCamera();
-      } else {
-        document.getElementById('tab-qr').className = "flex-1 pb-3 text-center border-b-2 border-transparent text-slate-400 font-medium hover:text-indigo-600";
-        document.getElementById('tab-manual').className = "flex-1 pb-3 text-center border-b-2 border-indigo-600 font-semibold text-indigo-600";
-        document.getElementById('scan-qr-section').classList.add('hidden');
-        document.getElementById('scan-manual-section').classList.remove('hidden');
-        stopQRScanner();
-      }
+      // ยกเลิกส่วนสวิตช์อื่นๆ และควบคุมให้ทำงานเฉพาะโหมดสแกน QR-Code เท่านั้น
+      startQRScannerCamera();
     }
 
     function startStudentScreen() {
       showView('scan');
-      switchScanMethod('qr');
+      startQRScannerCamera();
     }
 
     async function startQRScannerCamera() {
@@ -931,15 +912,6 @@
       }
     }
 
-    function handleManualSubmit() {
-      const sId = document.getElementById('manual-student-id').value.trim();
-      if (!sId) {
-        Swal.fire('คำเตือน', 'กรุณาระบุรหัสประจำตัวของนักเรียน', 'warning');
-        return;
-      }
-      fetchStudentProfile(sId);
-    }
-
     async function fetchStudentProfile(studentId) {
       Swal.fire({
         title: 'กำลังเชื่อมต่อตรวจค้นข้อมูล...',
@@ -969,6 +941,7 @@
           Swal.close();
           
           renderStudentHistoryTable(history);
+          renderStudentProgressChart(history); // เรนเดอร์แผนภูมิพัฒนาการส่วนบุคคล
           
           document.getElementById('profile-student-name').textContent = `${student.prefix} ${student.firstName} ${student.lastName}`;
           document.getElementById('profile-student-id').textContent = student.studentId;
@@ -978,14 +951,64 @@
         } else {
           Swal.close();
           Swal.fire('ไม่พบคิวอาร์สิทธิ์', 'ไม่พบรหัสนักเรียนที่คุณเรียกในทะเบียนประวัติ', 'error');
-          if (!document.getElementById('scan-qr-section').classList.contains('hidden')) {
-            startQRScannerCamera();
-          }
+          startQRScannerCamera();
         }
       } catch (err) {
         Swal.close();
         Swal.fire('การเชื่อมต่อล้มเหลว', 'เกิดข้อผิดพลาดในการดึงข้อมูลฐาน API: ' + err.message, 'error');
       }
+    }
+
+    // ฟังก์ชันสร้างชาร์ตพัฒนาการรายบุคคลแบบละเอียด
+    function renderStudentProgressChart(history) {
+      const ctx = document.getElementById('studentProgressChart').getContext('2d');
+      if (studentProgressChartInstance) {
+        studentProgressChartInstance.destroy();
+      }
+      
+      const chartLabels = [];
+      const chartData = [];
+      
+      // ดึงประวัติเรียงจากรอบอดีตไปล่าสุด (ย้อนกลับลำดับ)
+      const reversedHistory = [...history].reverse();
+      reversedHistory.forEach((row, idx) => {
+        chartLabels.push(`รอบที่ ${idx + 1} (${row.date.split(" ")[0]})`);
+        chartData.push(row.score !== undefined ? Number(row.score) : 0);
+      });
+      
+      if (chartLabels.length === 0) {
+        chartLabels.push("ยังไม่มีข้อมูลการประเมิน");
+        chartData.push(0);
+      }
+
+      studentProgressChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartLabels,
+          datasets: [{
+            label: 'พัฒนาการคะแนนที่ได้',
+            data: chartData,
+            borderColor: 'rgb(79, 70, 229)',
+            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+            borderWidth: 3,
+            tension: 0.3,
+            fill: true,
+            pointBackgroundColor: 'rgb(79, 70, 229)',
+            pointRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              min: 0,
+              max: 10,
+              ticks: { stepSize: 1 }
+            }
+          }
+        }
+      });
     }
 
     function renderStudentHistoryTable(history) {
@@ -1007,8 +1030,8 @@
         tr.innerHTML = `
           <td class="p-3 font-semibold text-slate-500">${row.date}</td>
           <td class="p-3 text-center">${photoCell}</td>
-          <td class="p-3 text-center font-bold text-indigo-700">${row.score}/10</td>
-          <td class="p-3 text-right"><span class="px-2.5 py-1 text-[10px] font-black rounded-full ${row.level === 'ดี' ? 'bg-green-100 text-green-700' : row.level === 'พอใช้' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}">${row.level}</span></td>
+          <td class="p-3 text-center font-bold text-indigo-700">${row.score || 0}/10</td>
+          <td class="p-3 text-right"><span class="px-2.5 py-1 text-[10px] font-black rounded-full ${row.level === 'ดี' ? 'bg-green-100 text-green-700' : row.level === 'พอใช้' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}">${row.level || 'ไม่มีข้อมูล'}</span></td>
         `;
         tbody.appendChild(tr);
       });
@@ -1125,7 +1148,7 @@
       document.getElementById('test-progress-text').textContent = `คำที่ ${currentWordResults.length + 1} จาก 10`;
       document.getElementById('test-progress-bar').style.width = `${((currentWordResults.length) / 10) * 100}%`;
       document.getElementById('test-word-type-meta').textContent = currentWordObj.wordType;
-      document.getElementById('test-unclear-meta').textContent = `สัญญาณเสียงเบา (${unclearCount}/3)`;
+      document.getElementById('test-unclear-meta').textContent = `สัญญาณเสียงสแตนด์บายปกติ`;
       
       document.getElementById('target-word-display').textContent = currentWordObj.word;
       document.getElementById('target-word-category').textContent = `หมวดหมู่: ${currentWordObj.category} | ความยากง่าย: ${currentWordObj.difficulty}`;
@@ -1187,8 +1210,9 @@
       document.getElementById('mic-status-text').innerHTML = `<span class="text-slate-500 font-bold"><i class="fa-solid fa-spinner animate-spin mr-1"></i> กำลังประมวลผลคำตอบ...</span>`;
       
       setTimeout(() => {
+        // หากไม่มีคลื่นเสียงหรือแปลงสัญญาณอักขระไม่ได้ ให้ตัดสินเป็น "ไม่ผ่าน" ทันทีและข้ามไปคำต่อไป
         if (document.getElementById('recognized-transcript').innerHTML === '&nbsp;') {
-          handleUnclearPronunciation();
+          processPronunciationResult('', 0);
         }
       }, 1500);
     }
@@ -1236,71 +1260,18 @@
       document.getElementById('manual-speech-input').value = '';
     }
 
-    // อัลกอริทึมสะกดจับฐานเสียงตามหลักสัทศาสตร์ไทยประยุกต์
-    function normalizeThaiPhonetic(word) {
+    function cleanThaiWord(word) {
       if (!word) return "";
-      
-      let clean = word.trim()
-        .replace(/[\s\-\_\.\,\?]/g, "") // ตัดสัญลักษณ์พิเศษ
-        .replace(/.[์]/g, "");          // ลบพยัญชนะสะกดที่ติดตัวการันต์ทิ้งทั้งหมด (สิทธิ์ -> สิท)
-
-      // สลายสิทธิ์วรรณยุกต์ทั้งหมด และการันต์ตกค้าง
-      clean = clean.replace(/[่้๊๋์]/g, "");
-
-      if (clean.length === 0) return "";
-
-      let arr = clean.split("");
-
-      // 1. ตารางแทนเสียงพยัญชนะต้นคู่แฝด (Initial Consonant Mapping)
-      let initialIdx = 0;
-      if (["แ", "เ", "โ", "ใ", "ไ", "แ"].includes(arr[0]) && arr.length > 1) {
-        initialIdx = 1; // ขยับตัวสแกนพยัญชนะต้นหากเจอสระนำหน้า
-      }
-      
-      const initialsMap = {
-        'ข': 'ค', 'ฆ': 'ค',
-        'ฉ': 'ช', 'ฌ': 'ช',
-        'ซ': 'ส', 'ศ': 'ส', 'ษ': 'ส',
-        'ฐ': 'ท', 'ฑ': 'ท', 'ฒ': 'ท', 'ถ': 'ท', 'ธ': 'ท',
-        'ฎ': 'ด', 'ฏ': 'ด', 'ต': 'ด',
-        'ผ': 'พ', 'ภ': 'พ', 'ฝ': 'พ', 'ฟ': 'พ',
-        'ญ': 'ย',
-        'ร': 'ล', 'ฬ': 'ล',
-        'ฮ': 'ห'
-      };
-      
-      if (arr[initialIdx] && initialsMap[arr[initialIdx]]) {
-        arr[initialIdx] = initialsMap[arr[initialIdx]];
-      }
-
-      // 2. ตารางแทนเสียงมาตราตัวสะกดท้ายพยางค์ 8 แม่มาตรฐาน (Final Consonant Mapping)
-      let lastIdx = arr.length - 1;
-      while (lastIdx >= 0 && ["ะ", "า", "ิ", "ี", "ึ", "ื", "ุ", "ู", "โ", "เ", "แ", "อ", "ั", "ำ", "ใ", "ไ", "ฤ", "ฦ"].includes(arr[lastIdx])) {
-        lastIdx--;
-      }
-      
-      if (lastIdx >= 0) {
-        const lastChar = arr[lastIdx];
-        
-        // แม่กก
-        if (['ข', 'ค', 'ฆ'].includes(lastChar)) arr[lastIdx] = 'ก';
-        // แม่กด
-        else if (['จ', 'ช', 'ซ', 'ฎ', 'ฏ', 'ฐ', 'ฑ', 'ฒ', 'ต', 'ถ', 'ท', 'ธ', 'ศ', 'ษ', 'ส'].includes(lastChar)) arr[lastIdx] = 'ด';
-        // แม่กน
-        else if (['ญ', 'ณ', 'ร', 'ล', 'ฬ'].includes(lastChar)) arr[lastIdx] = 'น';
-        // แม่กบ
-        else if (['ป', 'พ', 'ฟ', 'ภ'].includes(lastChar)) arr[lastIdx] = 'บ';
-      }
-
-      // 3. ปรับสระ ใ และ ไ ให้จับคู่สัทลักษณ์เหมือนกัน
-      let result = arr.join("").replace(/ใ/g, "ไ");
-      
-      return result;
+      return word.trim()
+        .replace(/[่้๊๋]/g, "") 
+        .replace(/[์]/g, "")    
+        .replace(/[\s\-\_\.\,\?]/g, "") 
+        .toLowerCase();
     }
 
     function getPhoneticSimilarity(s1, s2) {
-      const target = normalizeThaiPhonetic(s1);
-      const output = normalizeThaiPhonetic(s2);
+      const target = cleanThaiWord(s1);
+      const output = cleanThaiWord(s2);
       
       if (target === output) return 1.0;
       if (target.includes(output) || output.includes(target)) return 0.85;
@@ -1346,35 +1317,6 @@
         recordWordAttemptResult('ไม่ผ่าน', confidence); 
         setTimeout(() => { proceedToNextWord(); }, 1500);
       }
-    }
-
-    function handleUnclearPronunciation() {
-      unclearCount++;
-      document.getElementById('test-unclear-meta').textContent = `สัญญาณเสียงเบา (${unclearCount}/3)`;
-      document.getElementById('recognized-transcript').innerHTML = `<span class="text-rose-600 font-extrabold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> สัญญาณเสียงไม่ชัดเจน</span>`;
-      
-      if (unclearCount > 3) {
-        stopAllWebcams();
-        stopListeningState();
-        Swal.fire({
-          icon: 'error',
-          title: 'การคัดกรองถูกระงับชั่วคราว',
-          text: 'เนื่องจากสแกนจับสัญญาณคลื่นเสียงไม่ชัดเจนสะสมเกิน 3 ครั้ง กรุณาตรวจสอบตำแหน่งไมโครโฟนของเครื่องแล้วทำรายการใหม่อีกครั้ง',
-          confirmButtonColor: '#4f46e5'
-        }).then(() => {
-          showView('home');
-        });
-        return;
-      }
-
-      if (masterGradeWords && nextPoolIndex < masterGradeWords.length) {
-        testWords.push(masterGradeWords[nextPoolIndex]);
-        nextPoolIndex++;
-      }
-
-      setTimeout(() => {
-        proceedToNextWord();
-      }, 1500);
     }
 
     function skipCurrentWord() {
@@ -2092,9 +2034,9 @@
           tr.innerHTML = `
             <td class="p-3 font-semibold text-slate-500">${row.date}</td>
             <td class="p-3 text-center">${photoCell}</td>
-            <td class="p-3 text-center font-bold text-indigo-700">${row.score}/10</td>
+            <td class="p-3 text-center font-bold text-indigo-700">${row.score || 0}/10</td>
             <td class="p-3 text-center text-teal-600 font-bold">${row.percent}%</td>
-            <td class="p-3 text-right"><span class="px-2 py-0.5 text-[10px] font-black rounded-full ${row.level === 'ดี' ? 'bg-green-100 text-green-700' : row.level === 'พอใช้' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}">${row.level}</span></td>
+            <td class="p-3 text-right"><span class="px-2 py-0.5 text-[10px] font-black rounded-full ${row.level === 'ดี' ? 'bg-green-100 text-green-700' : row.level === 'พอใช้' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}">${row.level || 'ไม่มีข้อมูล'}</span></td>
           `;
           tbody.appendChild(tr);
         });
