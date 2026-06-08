@@ -105,7 +105,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code (จำกัดเฉพาะการล็อกอินผ่าน QR-Code เท่านั้น) -->
+    <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code (ล็อกอินด้วย QR-Code 100%) -->
     <section id="view-scan" class="view-section hidden py-6 animate-fadeIn">
       <div class="max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-6 space-y-6">
         <div class="flex items-center space-x-3 border-b pb-4">
@@ -969,7 +969,6 @@
       const chartLabels = [];
       const chartData = [];
       
-      // ดึงประวัติเรียงจากรอบอดีตไปล่าสุด (ย้อนกลับลำดับ)
       const reversedHistory = [...history].reverse();
       reversedHistory.forEach((row, idx) => {
         chartLabels.push(`รอบที่ ${idx + 1} (${row.date.split(" ")[0]})`);
@@ -1024,7 +1023,7 @@
         
         let photoCell = '<span class="text-slate-400 text-[10px]">ไม่มีข้อมูล</span>';
         if (row.photoUrl) {
-          photoCell = `<img src="${row.photoUrl}" onclick="viewImageFullSize('${row.photoUrl}')" class="w-8 h-8 rounded-md object-cover border border-slate-200 mx-auto cursor-pointer hover:opacity-80 transition" title="รูปถ่ายผู้เข้าสอบ">`;
+          photoCell = `<img src="${row.photoUrl}" onclick="viewImageFullSize('${row.photoUrl}')" class="w-10 h-10 rounded-md object-cover border border-slate-200 mx-auto cursor-pointer hover:scale-105 transition" title="รูปถ่ายผู้เข้าสอบ">`;
         }
 
         tr.innerHTML = `
@@ -1187,7 +1186,7 @@
       }
 
       timeRemainingForWord = 6;
-      document.getElementById('word-timer-text').textContent = `${timeRemainingForWord} วินาที`;
+      document.getElementById('word-timer-text').textContent = `${timeRemainingForWord} ฟินาที`;
       document.getElementById('word-timer-bar').style.width = '100%';
       document.getElementById('word-timer-bar').style.backgroundColor = '#10B981';
 
@@ -1210,7 +1209,7 @@
       document.getElementById('mic-status-text').innerHTML = `<span class="text-slate-500 font-bold"><i class="fa-solid fa-spinner animate-spin mr-1"></i> กำลังประมวลผลคำตอบ...</span>`;
       
       setTimeout(() => {
-        // หากไม่มีคลื่นเสียงหรือแปลงสัญญาณอักขระไม่ได้ ให้ตัดสินเป็น "ไม่ผ่าน" ทันทีและข้ามไปคำต่อไป
+        // ดักจับกรณีผู้สอบนิ่งเงียบ (อ่านไม่ออกไม่อ่าน) หรือพูดแล้วไมโครโฟนไม่ส่งคลื่นตัวอักษรกลับมา ให้ปรับเป็น "ไม่ผ่าน" ทันที
         if (document.getElementById('recognized-transcript').innerHTML === '&nbsp;') {
           processPronunciationResult('', 0);
         }
@@ -1260,21 +1259,82 @@
       document.getElementById('manual-speech-input').value = '';
     }
 
-    function cleanThaiWord(word) {
+    // อัลกอริทึมสะกดจับฐานเสียงตามหลักสัทศาสตร์ไทยประยุกต์
+    function normalizeThaiPhonetic(word) {
       if (!word) return "";
-      return word.trim()
-        .replace(/[่้๊๋]/g, "") 
-        .replace(/[์]/g, "")    
-        .replace(/[\s\-\_\.\,\?]/g, "") 
-        .toLowerCase();
+      
+      let clean = word.trim()
+        .replace(/[\s\-\_\.\,\?]/g, "") // ตัดสัญลักษณ์พิเศษ
+        .replace(/.[์]/g, "");          // ลบพยัญชนะสะกดที่ติดตัวการันต์ทิ้งทั้งหมด (สิทธิ์ -> สิท)
+
+      // สลายสิทธิ์วรรณยุกต์ทั้งหมด และการันต์ตกค้าง
+      clean = clean.replace(/[่้๊๋์]/g, "");
+
+      if (clean.length === 0) return "";
+
+      let arr = clean.split("");
+
+      // 1. ตารางแทนเสียงพยัญชนะต้นคู่แฝด (Initial Consonant Mapping)
+      let initialIdx = 0;
+      if (["แ", "เ", "โ", "ใ", "ไ", "แ"].includes(arr[0]) && arr.length > 1) {
+        initialIdx = 1; // ขยับตัวสแกนพยัญชนะต้นหากเจอสระนำหน้า
+      }
+      
+      const initialsMap = {
+        'ข': 'ค', 'ฆ': 'ค',
+        'ฉ': 'ช', 'ฌ': 'ช',
+        'ซ': 'ส', 'ศ': 'ส', 'ษ': 'ส',
+        'ฐ': 'ท', 'ฑ': 'ท', 'ฒ': 'ท', 'ถ': 'ท', 'ธ': 'ท',
+        'ฎ': 'ด', 'ฏ': 'ด', 'ต': 'ด',
+        'ผ': 'พ', 'ภ': 'พ', 'ฝ': 'พ', 'ฟ': 'พ',
+        'ญ': 'ย',
+        'ร': 'ล', 'ฬ': 'ล',
+        'ฮ': 'ห'
+      };
+      
+      if (arr[initialIdx] && initialsMap[arr[initialIdx]]) {
+        arr[initialIdx] = initialsMap[arr[initialIdx]];
+      }
+
+      // 2. ตารางแทนเสียงมาตราตัวสะกดท้ายพยางค์ 8 แม่มาตรฐาน (Final Consonant Mapping)
+      let lastIdx = arr.length - 1;
+      while (lastIdx >= 0 && ["ะ", "า", "ิ", "ี", "ึ", "ื", "ุ", "ู", "โ", "เ", "แ", "อ", "ั", "ำ", "ใ", "ไ", "ฤ", "ฦ"].includes(arr[lastIdx])) {
+        lastIdx--;
+      }
+      
+      if (lastIdx >= 0) {
+        const lastChar = arr[lastIdx];
+        
+        // แม่กก
+        if (['ข', 'ค', 'ฆ'].includes(lastChar)) arr[lastIdx] = 'ก';
+        // แม่กด
+        else if (['จ', 'ช', 'ซ', 'ฎ', 'ฏ', 'ฐ', 'ฑ', 'ฒ', 'ต', 'ถ', 'ท', 'ธ', 'ศ', 'ษ', 'ส'].includes(lastChar)) arr[lastIdx] = 'ด';
+        // แม่กน
+        else if (['ญ', 'ณ', 'ร', 'ล', 'ฬ'].includes(lastChar)) arr[lastIdx] = 'น';
+        // แม่กบ
+        else if (['ป', 'พ', 'ฟ', 'ภ'].includes(lastChar)) arr[lastIdx] = 'บ';
+      }
+
+      // 3. ปรับสระ ใ และ ไ ให้เป็นมาตรฐานเดียวกัน
+      let result = arr.join("").replace(/ใ/g, "ไ");
+      
+      return result;
     }
 
     function getPhoneticSimilarity(s1, s2) {
-      const target = cleanThaiWord(s1);
-      const output = cleanThaiWord(s2);
+      const target = normalizeThaiPhonetic(s1);
+      const output = normalizeThaiPhonetic(s2);
+      
+      // ป้องกันอาการไม่ส่งตัวหนังสือ/เงียบเสียงอ่าน หากค่าสตริงหนึ่งว่างเปล่า ให้ปรับคะแนนความคล้ายเป็น 0% ทันที
+      if (!target || !output) return 0.0;
       
       if (target === output) return 1.0;
-      if (target.includes(output) || output.includes(target)) return 0.85;
+      
+      if (target.includes(output) || output.includes(target)) {
+        if (output.length >= 2 && target.length >= 2) {
+          return 0.85;
+        }
+      }
 
       const track = Array(output.length + 1).fill(null).map(() => Array(target.length + 1).fill(null));
       for (let i = 0; i <= target.length; i++) track[0][i] = i;
@@ -2028,7 +2088,7 @@
           
           let photoCell = '<span class="text-slate-400 text-[10px]">ไม่มีข้อมูล</span>';
           if (row.photoUrl) {
-            photoCell = `<img src="${row.photoUrl}" onclick="viewImageFullSize('${row.photoUrl}')" class="w-10 h-10 rounded-md object-cover border border-slate-200 mx-auto cursor-pointer hover:scale-105 transition">`;
+            photoCell = `<img src="${row.photoUrl}" onclick="viewImageFullSize('${row.photoUrl}')" class="w-10 h-10 rounded-md object-cover border border-slate-200 mx-auto cursor-pointer hover:scale-105 transition" title="รูปถ่ายผู้เข้าสอบ">`;
           }
 
           tr.innerHTML = `
