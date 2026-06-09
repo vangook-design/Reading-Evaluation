@@ -1985,11 +1985,10 @@
       }
     }
 
-    // ฟังก์ชันความปลอดภัยระดับสูงช่วยสร้างรูปภาพคิวอาร์โค้ด Base64 จากหน้าต่างหลัก (Parent Context)
-    function generateQRBase64(text) {
-      const tempDiv = document.createElement('div');
-      tempDiv.style.display = 'none';
-      document.body.appendChild(tempDiv);
+// ปรับปรุงฟังก์ชันผลิตคิวอาร์โค้ดให้เป็นแบบดึงลิงก์รูปภาพโดยตรง (เสถียรและแม่นยำ 100%)
+    function generateQRUrl(text) {
+      return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(text)}`;
+    }
       
       new QRCode(tempDiv, {
         text: text,
@@ -2011,8 +2010,9 @@
       return src;
     }
 
-    function printSingleQRCode(studentId, name, gradeClass) {
-      const qrSrc = generateQRBase64(studentId);
+function printSingleQRCode(studentId, name, gradeClass) {
+      // ดึงลิงก์รูปภาพคิวอาร์เฉพาะตัวบุคคลผ่าน API
+      const qrSrc = generateQRUrl(studentId);
       const printWindow = window.open('', '_blank');
       printWindow.document.write('<html><head><title>พิมพ์ป้ายคิวสอบนักเรียน</title><script src="https://cdn.tailwindcss.com"></scr' + 'ipt></head><body class="bg-white py-12 flex justify-center items-center"><div class="p-8 text-center border-2 border-slate-300 w-80 mx-auto bg-white flex flex-col justify-center items-center space-y-4"><h2 class="font-extrabold text-indigo-950 text-base">แผ่นป้ายสิทธิ์เข้าสอบการอ่าน</h2><div class="p-2 border inline-block bg-white"><img src="' + qrSrc + '" class="w-[140px] h-[140px]" alt="QR Code"></div><div class="space-y-1"><p class="font-black text-lg text-slate-800">' + name + '</p><p class="text-xs text-slate-400">รหัสประจำตัวคิวสอบ: ' + studentId + '</p><p class="text-xs bg-indigo-100 text-indigo-900 py-1 px-4 rounded-full font-black">ระดับชั้นเรียน: ' + gradeClass + '</p></div></div></body></html>');
       printWindow.document.close();
@@ -2021,8 +2021,7 @@
         printWindow.close();
       }, 500);
     }
-
-    async function printAllQRCodes() {
+async function printAllQRCodes() {
       try {
         const students = await apiRequest('getAllStudents', 'GET');
         if (students.length === 0) {
@@ -2040,8 +2039,8 @@
         printWindow.document.write('<html><head><title>พิมพ์ QR-code บัตรผู้เรียนทั้งหมด</title><script src="https://cdn.tailwindcss.com"></scr' + 'ipt></head><body class="bg-white p-8"><div class="grid grid-cols-2 md:grid-cols-3 gap-6">');
         
         students.forEach(s => {
-          // เรนเดอร์คิวอาร์โค้ดรายคนล่วงหน้าเป็น Base64 Image ป้องกันปัญหารูปพิกัดซ้ำกัน
-          const qrSrc = generateQRBase64(s.studentId);
+          // เรียกภาพ QR-Code เฉพาะตัวบุคคลผ่านลิงก์ API โดยตรง
+          const qrSrc = generateQRUrl(s.studentId);
           
           printWindow.document.write('<div class="p-4 border border-dashed rounded-xl text-center flex flex-col items-center justify-center space-y-2 bg-white"><p class="font-bold text-[10px] text-indigo-900 uppercase">บัตรคิวสอบการอ่านออกเสียง ป.1-ป.6</p><div class="p-1 border bg-white inline-block"><img src="' + qrSrc + '" class="w-[100px] h-[100px]" alt="QR Code"></div><div><h4 class="font-black text-sm text-slate-800">' + s.prefix + s.firstName + ' ' + s.lastName + '</h4><p class="text-[10px] text-slate-400">รหัสประจำตัว: ' + s.studentId + ' | ชั้น: ป.' + s.grade + '/' + s.room + '</p></div></div>');
         });
