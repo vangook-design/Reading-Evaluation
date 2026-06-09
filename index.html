@@ -38,7 +38,7 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
 
   <script>
-    // *** สำคัญมาก: นำ Web App URL ที่ได้จากการ Deploy Google Apps Script มาใส่ลงตรงนี้ ***
+    // *** นำ Web App URL ที่ได้จากการ Deploy Google Apps Script มาใส่ลงตรงนี้ ***
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyrG7Y8zKluqJcCFb1_KyzFrI85oRZFCuThijhmyumQ535BIaBmPWR76oSjkAeysv5x/exec";
   </script>
 
@@ -127,7 +127,7 @@
 
     <!-- VIEW 3: หน้าประวัติโปรไฟล์ผู้เรียนที่ได้รับเลือก -->
     <section id="view-student-profile" class="view-section hidden py-6 animate-fadeIn">
-      <div class="max-w-5xl mx-auto bg-white rounded-3xl custom-shadow p-8 border border-slate-150 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div class="max-w-5xl mx-auto bg-white rounded-3xl custom-shadow p-8 border border-slate-150 grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         
         <!-- ซ้าย: ข้อมูลสิทธิ์ -->
         <div class="lg:col-span-4 text-center space-y-5 flex flex-col items-center border-r border-slate-100 lg:pr-8">
@@ -338,7 +338,7 @@
                   -
                 </div>
               </div>
-              <p class="text-[10px] text-slate-400 italic">* รายงานวิเคราะห์นี้บันทึกลงสู่ระบบสถิติกลาง ครูผู้สอนสามารถพิมพ์แผนส่งเสริมการเรียนรู้รายกลุ่มได้ในแดชบอร์ด</p>
+              <p class="text-[10px] text-slate-400 italic">* ...</p>
             </div>
           </div>
         </div>
@@ -1163,6 +1163,7 @@
       }
     }
 
+    // ฟังก์ชันระบุสถานะความถูกต้องแสดงผลผ่านแผงการ์ดคำศัพท์ (Word Card Container) แบบสว่างชัดเจน
     function setCameraBorderStatus(phase) {
       const card = document.getElementById('word-card-container');
       if (!card) return;
@@ -1984,197 +1985,112 @@
       }
     }
 
-    function openStudentModal() {
-      document.getElementById('student-form').reset();
-      document.getElementById('student-crud-modal').classList.remove('hidden');
-    }
-
-    function closeStudentModal() {
-      document.getElementById('student-crud-modal').classList.add('hidden');
-    }
-
-    async function handleStudentSubmit(event) {
-      event.preventDefault();
-      const studentObj = {
-        studentId: document.getElementById('form-student-id').value.trim(),
-        prefix: document.getElementById('form-student-prefix').value,
-        firstName: document.getElementById('form-student-firstname').value.trim(),
-        lastName: document.getElementById('form-student-lastname').value.trim(),
-        grade: document.getElementById('form-student-grade').value,
-        room: document.getElementById('form-student-room').value.trim()
-      };
-
-      Swal.fire({
-        title: 'กำลังบันทึกประวัตินักเรียน...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-      });
-
-      try {
-        const response = await apiRequest('saveStudent', 'POST', { studentObj });
-        Swal.close();
-        if (response && response.success) {
-          Swal.fire('สำเร็จ', 'ลงทะเบียนรายชื่อนักเรียนเรียบร้อยแล้ว', 'success');
-          closeStudentModal();
-          renderAdminStudentsTab();
-        } else {
-          Swal.fire('เกิดข้อขัดข้อง', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
-        }
-      } catch (err) {
-        Swal.close();
-        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถติดต่อฐานระบบปลายทาง', 'error');
-      }
-    }
-
-    function confirmDeleteStudent(studentId) {
-      Swal.fire({
-        title: 'มั่นใจหรือไม่ที่จะลบรายชื่อ?',
-        text: "การลบนี้จะถูกซ่อนออกจากสารบบการเข้าสอบและค้นหา แต่ข้อมูลภาพถ่ายและผลคะแนนในอดีตของนักเรียนจะยังคงอยู่ในระเบียนประวัติชีต (ไม่สูญหาย)",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#EF4444',
-        confirmButtonText: 'ลบชื่อออกจากระบบสแกน',
-        cancelButtonText: 'ยกเลิก'
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          try {
-            const res = await apiRequest('deleteStudent', 'POST', { studentId });
-            if (res && res.success) {
-              Swal.fire('ลบชื่อสำเร็จ', 'ลบรายชื่อออกจากสารบบสอบเรียบร้อย', 'success');
-              renderAdminStudentsTab();
-            }
-          } catch (e) {
-            Swal.fire('ข้อผิดพลาด', 'ระบบเชื่อมบันทึกล้มเหลว', 'error');
-          }
-        }
-      });
-    }
-
-    async function viewStudentIndividualHistory(studentId, fullName) {
-      document.getElementById('admin-history-student-name').textContent = fullName;
-      document.getElementById('admin-history-student-id').textContent = studentId;
+    // ฟังก์ชันความปลอดภัยระดับสูงช่วยสร้างรูปภาพคิวอาร์โค้ด Base64 จากหน้าต่างหลัก (Parent Context)
+    function generateQRBase64(text) {
+      const tempDiv = document.createElement('div');
+      tempDiv.style.display = 'none';
+      document.body.appendChild(tempDiv);
       
-      const tbody = document.getElementById('admin-history-table-body');
-      tbody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-slate-400">กำลังดึงรายงานเชิงประวัติจากฐานข้อมูลกลาง...</td></tr>';
+      new QRCode(tempDiv, {
+        text: text,
+        width: 120,
+        height: 120,
+        correctLevel: QRCode.CorrectLevel.H
+      });
       
-      document.getElementById('admin-student-history-modal').classList.remove('hidden');
-
-      try {
-        const history = await apiRequest('getStudentHistory', 'GET', { studentId });
-        tbody.innerHTML = '';
-        if (!history || history.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">ไม่พบบันทึกการคัดกรองในสารบบ (ผู้สอบใหม่)</td></tr>';
-          return;
-        }
-
-        history.forEach(row => {
-          const tr = document.createElement('tr');
-          tr.className = "border-b hover:bg-slate-50";
-          
-          let photoCell = '<span class="text-slate-400 text-[10px]">ไม่มีข้อมูล</span>';
-          if (row.photoUrl) {
-            photoCell = `<img src="${row.photoUrl}" onclick="viewImageFullSize('${row.photoUrl}')" class="w-10 h-10 rounded-md object-cover border border-slate-200 mx-auto cursor-pointer hover:scale-105 transition" title="รูปถ่ายผู้เข้าสอบ">`;
-          }
-
-          tr.innerHTML = `
-            <td class="p-3 font-semibold text-slate-500">${row.date}</td>
-            <td class="p-3 text-center">${photoCell}</td>
-            <td class="p-3 text-center font-bold text-indigo-700">${row.score || 0}/10</td>
-            <td class="p-3 text-center text-teal-600 font-bold">${row.percent}%</td>
-            <td class="p-3 text-right"><span class="px-2 py-0.5 text-[10px] font-black rounded-full ${row.level === 'ดี' ? 'bg-green-100 text-green-700' : row.level === 'พอใช้' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}">${row.level || 'ไม่มีข้อมูล'}</span></td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch (err) {
-        tbody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-rose-500">ติดต่อระบบประมวลข้อมูลล้มเหลว</td></tr>';
+      const img = tempDiv.querySelector('img');
+      const canvas = tempDiv.querySelector('canvas');
+      let src = "";
+      if (img && img.src) {
+        src = img.src;
+      } else if (canvas) {
+        src = canvas.toDataURL("image/png");
       }
-    }
-
-    function closeAdminStudentHistoryModal() {
-      document.getElementById('admin-student-history-modal').classList.add('hidden');
+      
+      document.body.removeChild(tempDiv);
+      return src;
     }
 
     function printSingleQRCode(studentId, name, gradeClass) {
-      const printArea = document.getElementById('print-qrcode-area');
-      printArea.innerHTML = '';
-      
-      const card = document.createElement('div');
-      card.className = "p-8 text-center border-2 border-slate-300 w-80 mx-auto bg-white flex flex-col justify-center items-center space-y-4";
-      card.innerHTML = `
-        <h2 class="font-extrabold text-indigo-950 text-base">แผ่นป้ายสิทธิ์เข้าสอบการอ่าน</h2>
-        <div id="qrcode-temp-canvas" class="p-2 border inline-block bg-white"></div>
-        <div class="space-y-1">
-          <p class="font-black text-lg text-slate-800">${name}</p>
-          <p class="text-xs text-slate-400">รหัสประจำตัวคิวสอบ: ${studentId}</p>
-          <p class="text-xs bg-indigo-100 text-indigo-900 py-1 px-4 rounded-full font-black">ระดับชั้นเรียน: ${gradeClass}</p>
-        </div>
-      `;
-      printArea.appendChild(card);
-      
+      const qrSrc = generateQRBase64(studentId);
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>พิมพ์ป้ายคิวสอบนักเรียน</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+          </head>
+          <body class="bg-white py-12 flex justify-center items-center">
+            <div class="p-8 text-center border-2 border-slate-300 w-80 mx-auto bg-white flex flex-col justify-center items-center space-y-4">
+              <h2 class="font-extrabold text-indigo-950 text-base">แผ่นป้ายสิทธิ์เข้าสอบการอ่าน</h2>
+              <div class="p-2 border inline-block bg-white">
+                <img src="${qrSrc}" class="w-[140px] h-[140px]" alt="QR Code">
+              </div>
+              <div class="space-y-1">
+                <p class="font-black text-lg text-slate-800">${name}</p>
+                <p class="text-xs text-slate-400">รหัสประจำตัวคิวสอบ: ${studentId}</p>
+                <p class="text-xs bg-indigo-100 text-indigo-900 py-1 px-4 rounded-full font-black">ระดับชั้นเรียน: ${gradeClass}</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
       setTimeout(() => {
-        new QRCode(document.getElementById("qrcode-temp-canvas"), {
-          text: studentId,
-          width: 140,
-          height: 140,
-          correctLevel: QRCode.CorrectLevel.H
-        });
-        
-        setTimeout(() => {
-          const printWindow = window.open('', '_blank');
-          printWindow.document.write('<html><head><title>พิมพ์ป้ายคิวสอบนักเรียน</title><script src="https://cdn.tailwindcss.com"><\/script></head><body class="bg-white py-12 flex justify-center items-center">');
-          printWindow.document.write(printArea.innerHTML);
-          printWindow.document.write('<\/body><script>window.onload = function() { window.print(); window.close(); }<\/script></html>');
-          printWindow.document.close();
-        }, 300);
-      }, 100);
+        printWindow.print();
+        printWindow.close();
+      }, 500);
     }
 
     async function printAllQRCodes() {
       try {
         const students = await apiRequest('getAllStudents', 'GET');
-        if (students.length === 0) return;
+        if (students.length === 0) {
+          Swal.fire('ไม่พบข้อมูล', 'ไม่มีรายชื่อนักเรียนในระเบียนระบบ', 'info');
+          return;
+        }
         
+        Swal.fire({
+          title: 'กำลังจัดทำแผ่นป้ายสิทธิ์เข้าสอบจำนวนมาก...',
+          allowOutsideClick: false,
+          didOpen: () => { Swal.showLoading(); }
+        });
+
         const printWindow = window.open('', '_blank');
         printWindow.document.write('<html><head><title>พิมพ์ QR-code บัตรผู้เรียนทั้งหมด</title><script src="https://cdn.tailwindcss.com"><\/script></head><body class="bg-white p-8">');
         printWindow.document.write('<div class="grid grid-cols-2 md:grid-cols-3 gap-6">');
         
-        let counter = 0;
         students.forEach(s => {
-          const tempId = `qrcode-batch-${counter}`;
+          // เรนเดอร์คิวอาร์โค้ดรายคนล่วงหน้าเป็น Base64 Image ป้องกันปัญหารูปพิกัดซ้ำกัน
+          const qrSrc = generateQRBase64(s.studentId);
+          
           printWindow.document.write(`
             <div class="p-4 border border-dashed rounded-xl text-center flex flex-col items-center justify-center space-y-2 bg-white">
               <p class="font-bold text-[10px] text-indigo-900 uppercase">บัตรคิวสอบการอ่านออกเสียง ป.1-ป.6</p>
-              <div id="${tempId}" class="p-1 border bg-white inline-block"></div>
+              <div class="p-1 border bg-white inline-block">
+                <img src="${qrSrc}" class="w-[100px] h-[100px]" alt="QR Code">
+              </div>
               <div>
                 <h4 class="font-black text-sm text-slate-800">${s.prefix}${s.firstName} ${s.lastName}</h4>
                 <p class="text-[10px] text-slate-400">รหัสประจำตัว: ${s.studentId} | ชั้น: ป.${s.grade}/${s.room}</p>
               </div>
             </div>
           `);
-          counter++;
         });
         
-        printWindow.document.write('</div></body>');
+        printWindow.document.write('</div></body></html>');
+        printWindow.document.close();
+        
+        Swal.close();
         
         setTimeout(() => {
-          for(let i = 0; i < students.length; i++) {
-            new QRCode(printWindow.document.getElementById(`qrcode-batch-${i}`), {
-              text: students[i].studentId,
-              width: 100,
-              height: 100,
-              correctLevel: QRCode.CorrectLevel.H
-            });
-          }
-          
-          setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-          }, 800);
-        }, 300);
+          printWindow.print();
+          printWindow.close();
+        }, 500);
         
-        printWindow.document.close();
       } catch (err) {
-        Swal.fire('พิมพ์ไม่สำเร็จ', 'ไม่สามารถเชื่อมฐานนักเรียนมาผลิตคิวอาร์โค้ดสิทธิ์สอบจำนวนมากได้', 'error');
+        Swal.close();
+        Swal.fire('พิมพ์ไม่สำเร็จ', 'ไม่สามารถสร้างคิวอาร์โค้ดสิทธิ์สอบจำนวนมากได้', 'error');
       }
     }
 
