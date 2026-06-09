@@ -621,8 +621,8 @@
   </div>
 
   <!-- MODAL 3: แสดงประวัติเชิงลึกและการตรวจสอบภาพถ่ายพยานรายคน -->
-  <div id="admin-student-history-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white w-full max-w-2xl rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto font-sans">
+  <div id="admin-student-history-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 font-sans">
+    <div class="bg-white w-full max-w-2xl rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-3">
         <h3 class="font-bold text-slate-800 text-base" id="admin-history-modal-title">รายงานการเข้าประเมินและภาพพยานตัวตน</h3>
         <button onclick="closeAdminStudentHistoryModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
@@ -1763,7 +1763,7 @@
 
     async function renderAdminWordsTab() {
       const tbody = document.getElementById('words-table-body');
-      tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-slate-400">กำลังสืบค้นข้อมูลคลังข้อสอบสะกดคำ...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-slate-400">กำลังดึงข้อมูลทะเบียนคำศัพท์...</td></tr>';
       
       try {
         const words = await apiRequest('getAllWords', 'GET');
@@ -2014,27 +2014,7 @@
     function printSingleQRCode(studentId, name, gradeClass) {
       const qrSrc = generateQRBase64(studentId);
       const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>พิมพ์ป้ายคิวสอบนักเรียน</title>
-            <script src="https://cdn.tailwindcss.com"></script>
-          </head>
-          <body class="bg-white py-12 flex justify-center items-center">
-            <div class="p-8 text-center border-2 border-slate-300 w-80 mx-auto bg-white flex flex-col justify-center items-center space-y-4">
-              <h2 class="font-extrabold text-indigo-950 text-base">แผ่นป้ายสิทธิ์เข้าสอบการอ่าน</h2>
-              <div class="p-2 border inline-block bg-white">
-                <img src="${qrSrc}" class="w-[140px] h-[140px]" alt="QR Code">
-              </div>
-              <div class="space-y-1">
-                <p class="font-black text-lg text-slate-800">${name}</p>
-                <p class="text-xs text-slate-400">รหัสประจำตัวคิวสอบ: ${studentId}</p>
-                <p class="text-xs bg-indigo-100 text-indigo-900 py-1 px-4 rounded-full font-black">ระดับชั้นเรียน: ${gradeClass}</p>
-              </div>
-            </div>
-          </body>
-        </html>
-      `);
+      printWindow.document.write('<html><head><title>พิมพ์ป้ายคิวสอบนักเรียน</title><script src="https://cdn.tailwindcss.com"></scr' + 'ipt></head><body class="bg-white py-12 flex justify-center items-center"><div class="p-8 text-center border-2 border-slate-300 w-80 mx-auto bg-white flex flex-col justify-center items-center space-y-4"><h2 class="font-extrabold text-indigo-950 text-base">แผ่นป้ายสิทธิ์เข้าสอบการอ่าน</h2><div class="p-2 border inline-block bg-white"><img src="' + qrSrc + '" class="w-[140px] h-[140px]" alt="QR Code"></div><div class="space-y-1"><p class="font-black text-lg text-slate-800">' + name + '</p><p class="text-xs text-slate-400">รหัสประจำตัวคิวสอบ: ' + studentId + '</p><p class="text-xs bg-indigo-100 text-indigo-900 py-1 px-4 rounded-full font-black">ระดับชั้นเรียน: ' + gradeClass + '</p></div></div></body></html>');
       printWindow.document.close();
       setTimeout(() => {
         printWindow.print();
@@ -2057,25 +2037,13 @@
         });
 
         const printWindow = window.open('', '_blank');
-        printWindow.document.write('<html><head><title>พิมพ์ QR-code บัตรผู้เรียนทั้งหมด</title><script src="https://cdn.tailwindcss.com"><\/script></head><body class="bg-white p-8">');
-        printWindow.document.write('<div class="grid grid-cols-2 md:grid-cols-3 gap-6">');
+        printWindow.document.write('<html><head><title>พิมพ์ QR-code บัตรผู้เรียนทั้งหมด</title><script src="https://cdn.tailwindcss.com"></scr' + 'ipt></head><body class="bg-white p-8"><div class="grid grid-cols-2 md:grid-cols-3 gap-6">');
         
         students.forEach(s => {
           // เรนเดอร์คิวอาร์โค้ดรายคนล่วงหน้าเป็น Base64 Image ป้องกันปัญหารูปพิกัดซ้ำกัน
           const qrSrc = generateQRBase64(s.studentId);
           
-          printWindow.document.write(`
-            <div class="p-4 border border-dashed rounded-xl text-center flex flex-col items-center justify-center space-y-2 bg-white">
-              <p class="font-bold text-[10px] text-indigo-900 uppercase">บัตรคิวสอบการอ่านออกเสียง ป.1-ป.6</p>
-              <div class="p-1 border bg-white inline-block">
-                <img src="${qrSrc}" class="w-[100px] h-[100px]" alt="QR Code">
-              </div>
-              <div>
-                <h4 class="font-black text-sm text-slate-800">${s.prefix}${s.firstName} ${s.lastName}</h4>
-                <p class="text-[10px] text-slate-400">รหัสประจำตัว: ${s.studentId} | ชั้น: ป.${s.grade}/${s.room}</p>
-              </div>
-            </div>
-          `);
+          printWindow.document.write('<div class="p-4 border border-dashed rounded-xl text-center flex flex-col items-center justify-center space-y-2 bg-white"><p class="font-bold text-[10px] text-indigo-900 uppercase">บัตรคิวสอบการอ่านออกเสียง ป.1-ป.6</p><div class="p-1 border bg-white inline-block"><img src="' + qrSrc + '" class="w-[100px] h-[100px]" alt="QR Code"></div><div><h4 class="font-black text-sm text-slate-800">' + s.prefix + s.firstName + ' ' + s.lastName + '</h4><p class="text-[10px] text-slate-400">รหัสประจำตัว: ' + s.studentId + ' | ชั้น: ป.' + s.grade + '/' + s.room + '</p></div></div>');
         });
         
         printWindow.document.write('</div></body></html>');
