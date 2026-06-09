@@ -1989,27 +1989,7 @@
     function generateQRUrl(text) {
       return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(text)}`;
     }
-      
-      new QRCode(tempDiv, {
-        text: text,
-        width: 120,
-        height: 120,
-        correctLevel: QRCode.CorrectLevel.H
-      });
-      
-      const img = tempDiv.querySelector('img');
-      const canvas = tempDiv.querySelector('canvas');
-      let src = "";
-      if (img && img.src) {
-        src = img.src;
-      } else if (canvas) {
-        src = canvas.toDataURL("image/png");
-      }
-      
-      document.body.removeChild(tempDiv);
-      return src;
-    }
-
+    
 function printSingleQRCode(studentId, name, gradeClass) {
       // ดึงลิงก์รูปภาพคิวอาร์เฉพาะตัวบุคคลผ่าน API
       const qrSrc = generateQRUrl(studentId);
