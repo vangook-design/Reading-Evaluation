@@ -38,7 +38,7 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
 
   <script>
-    // *** นำ Web App URL ที่ได้จากการ Deploy Google Apps Script มาใส่ลงตรงนี้ ***
+    // *** สำคัญมาก: นำ Web App URL ที่ได้จากการ Deploy Google Apps Script มาใส่ลงตรงนี้ ***
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyrG7Y8zKluqJcCFb1_KyzFrI85oRZFCuThijhmyumQ535BIaBmPWR76oSjkAeysv5x/exec";
   </script>
 
@@ -105,7 +105,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code (ล็อกอินด้วย QR-Code เท่านั้น) -->
+    <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code (ล็อกอินด้วย QR-Code 100%) -->
     <section id="view-scan" class="view-section hidden py-6 animate-fadeIn">
       <div class="max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-6 space-y-6">
         <div class="flex items-center space-x-3 border-b pb-4">
@@ -125,7 +125,7 @@
       </div>
     </section>
 
-    <!-- VIEW 3: หน้าโปรไฟล์ผู้เรียนที่ได้รับเลือก -->
+    <!-- VIEW 3: หน้าประวัติโปรไฟล์ผู้เรียนที่ได้รับเลือก -->
     <section id="view-student-profile" class="view-section hidden py-6 animate-fadeIn">
       <div class="max-w-5xl mx-auto bg-white rounded-3xl custom-shadow p-8 border border-slate-150 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
@@ -746,14 +746,14 @@
     let countdownTimer = null;
     let timeRemainingForWord = 15;
     let studentProgressChartInstance = null; // ตัวแปรคีย์ชาร์ตประวัติส่วนบุคคล
-    let isListeningActive = false; // ตัวควบคุมสิทธิ์ตรวจสอบเสียงพูดระหว่างการนับถอยหลัง
+    let hasMatchedCurrentWord = false;      // ตรวจจับสถานะการตอบถูกรายข้อเพื่อหยุดสัญญาณตรวจจับซ้อน
 
-    // ปรับปรุงระบบตัวดักจับเสียงและจังหวะเชื่อมต่อแบบสตรีมมิ่งต่อเนื่อง (ตามสเปกของโค้ดเกม June 08)
+    // ตั้งค่าระบบประมวลเสียงสะกดคำโครงสร้างเสถียรระดับสูง (อ้างอิงคุณสมบัติ Continuous Listening จากระบบเกมผจญภัย)
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRecognition();
-      recognition.continuous = true;      // สั่งเปิดรับฟังคลื่นเสียงอย่างต่อเนื่องไม่ตัดสายไมค์
-      recognition.interimResults = true;   // ส่งคืนค่าตัวถอดความทันทีที่พูดโดยไม่ต้องรอเงียบ (ลดการสะดุด)
+      recognition.continuous = true;      // เปิดรับคลื่นเสียงต่อเนื่องเสถียรภาพสูง
+      recognition.interimResults = true;    // เปิดแปลผลจำลองแบบเรียลไทม์เพื่อสมานจุดหน่วงสัญญาณไมค์
       recognition.lang = 'th-TH';
 
       recognition.onstart = function() {
@@ -763,57 +763,50 @@
 
       recognition.onerror = function(e) {
         if (e.error !== 'no-speech') {
-          console.error('Speech recognition error: ', e.error);
           isListening = false;
         }
       };
 
       recognition.onend = function() {
         isListening = false;
-        // หากระบบอยู่ในระหว่างขั้นตอนทดสอบ และสตรีมมิ่งเสียงสิ้นสุดลง ให้ดึงไมโครโฟนกลับมาทำงานอัตโนมัติ
-        if (document.getElementById('view-test').classList.contains('hidden') === false) {
+        // หากยังอยู่ในช่วงเวลานับถอยหลังของแบบทดสอบ ให้ทำรอบ Restart สัญญาณเพื่อไม่ให้ไมโครโฟนตัดตัวชั่วครู่
+        if (timeRemainingForWord > 0 && !document.getElementById('view-test').classList.contains('hidden') && !hasMatchedCurrentWord) {
           try {
             recognition.start();
-          } catch(e) {
-            console.warn("ไม่สามารถเรียกใช้งานไมโครโฟนรันไทม์ใหม่ได้ชั่วขณะ: ", e);
-          }
+          } catch(e) {}
         } else {
           setMicUIAwake(false);
         }
       };
 
       recognition.onresult = function(event) {
-        if (!isListeningActive) return; // หากไม่อยู่ในช่วงเริ่มอ่านสะกดคำ (ช่วงเวลา 6 วิ) ให้ละเลยคลื่นเสียงทั้งหมด
+        if (hasMatchedCurrentWord) return; // หากตอบถูกไปแล้ว ให้ข้ามการสตรีมซ้อนทันที
 
         let transcript = "";
         for (let i = event.resultIndex; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;
         }
-        const cleanTranscript = transcript.trim();
-        if (cleanTranscript) {
-          // อัปเดตและเปรียบเทียบสัทลักษณ์ทันทีเมื่อมีสัญญาณไหลเข้า โดยไม่ต้องรอเด็กเงียบเสียง
-          document.getElementById('recognized-transcript').textContent = cleanTranscript;
-          checkActivePronunciation(cleanTranscript);
+        const cleanSpeech = transcript.trim();
+        if (cleanSpeech) {
+          document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
+          
+          // สรุปเทียบเคียงความแม่นยำทางสัทศาสตร์ภาษาไทยประยุกต์ทันที (Realtime Matching)
+          const currentWordObj = testWords[currentWordIndex];
+          const similarity = getPhoneticSimilarity(currentWordObj.word, cleanSpeech);
+          
+          if (similarity >= 0.70) { // หากความถูกต้องเกิน 70% ให้ตัดสินผ่านทันทีโดยเด็กไม่ต้องรอจนหมดเวลา
+            hasMatchedCurrentWord = true;
+            if (countdownTimer) clearInterval(countdownTimer);
+            stopListeningState();
+            setCorrectUI();
+            recordWordAttemptResult('ผ่าน', 0.99);
+            scoreByWordType[currentWordObj.wordType].correct++;
+            setTimeout(() => { proceedToNextWord(); }, 1500);
+          }
         }
       };
     } else {
       document.getElementById('fallback-test-inputs').classList.remove('hidden');
-    }
-
-    // ฟังก์ชันเปรียบเทียบแบบเรียลไทม์บนสายสตรีมต่อเนื่อง
-    function checkActivePronunciation(spokenText) {
-      const currentWordObj = testWords[currentWordIndex];
-      const similarity = getPhoneticSimilarity(currentWordObj.word, spokenText);
-      
-      if (similarity >= 0.70) { // เกณฑ์ถูกต้องคงที่ไว้ที่ 70% ขึ้นไปตามฐานสัทศาสตร์ประยุกต์
-        if (countdownTimer) clearInterval(countdownTimer);
-        isListeningActive = false; // ปิดประตูรับเสียงชั่วคราวเพื่อรอเปลี่ยนข้อถัดไป
-        
-        setCorrectUI();
-        recordWordAttemptResult('ผ่าน', 0.99);
-        scoreByWordType[currentWordObj.wordType].correct++;
-        setTimeout(() => { proceedToNextWord(); }, 1500);
-      }
     }
 
     async function apiRequest(action, method = 'GET', data = {}) {
@@ -947,6 +940,15 @@
       }
     }
 
+    function handleManualSubmit() {
+      const sId = document.getElementById('manual-student-id').value.trim();
+      if (!sId) {
+        Swal.fire('คำเตือน', 'กรุณาระบุรหัสประจำตัวของนักเรียน', 'warning');
+        return;
+      }
+      fetchStudentProfile(sId);
+    }
+
     async function fetchStudentProfile(studentId) {
       Swal.fire({
         title: 'กำลังเชื่อมต่อตรวจค้นข้อมูล...',
@@ -976,7 +978,7 @@
           Swal.close();
           
           renderStudentHistoryTable(history);
-          renderStudentProgressChart(history); 
+          renderStudentProgressChart(history); // เรนเดอร์แผนภูมิพัฒนาการส่วนบุคคล
           
           document.getElementById('profile-student-name').textContent = `${student.prefix} ${student.firstName} ${student.lastName}`;
           document.getElementById('profile-student-id').textContent = student.studentId;
@@ -994,6 +996,7 @@
       }
     }
 
+    // ฟังก์ชันสร้างชาร์ตพัฒนาการรายบุคคลแบบละเอียด
     function renderStudentProgressChart(history) {
       const ctx = document.getElementById('studentProgressChart').getContext('2d');
       if (studentProgressChartInstance) {
@@ -1111,19 +1114,6 @@
           };
 
           showView('test');
-          
-          // ตรึงกล้องหน้าให้สแตนด์บายเพื่อความประหยัดทรัพยากร
-          const video = document.getElementById('test-video');
-          video.classList.add('hidden');
-          document.getElementById('camera-offline-msg').classList.remove('hidden');
-
-          // สั่งเปิดทำงานไมโครโฟนลูปต่อเนื่องเพียง "ครั้งเดียว" ตอนเริ่มต้นคัดกรอง
-          try {
-            if (recognition) recognition.start();
-          } catch(e) {
-            console.warn(e);
-          }
-
           renderWordStage();
         } else {
           Swal.fire('ฐานข้อมูลว่าง', 'คุณครูยังไม่ได้อัปโหลดคำศัพท์ของระดับชั้น ป.' + currentStudent.grade, 'warning');
@@ -1199,8 +1189,10 @@
       document.getElementById('target-word-category').textContent = `หมวดหมู่: ${currentWordObj.category} | ความยากง่าย: ${currentWordObj.difficulty}`;
       document.getElementById('recognized-transcript').innerHTML = '&nbsp;';
       
-      isListeningActive = false; // ปิดประตูรับเสียงพูดชั่วคราวในช่วงนับถอยหลัง
+      stopListeningState(); 
       if (countdownTimer) clearInterval(countdownTimer);
+
+      hasMatchedCurrentWord = false; // ปลดล็อคสัญญาณเทียบสะกดข้อใหม่
 
       // --- ขั้นตอนที่ 1: เตรียมตัว (PREPARE) 3 วินาที ---
       let prepareCountdown = 3;
@@ -1218,12 +1210,18 @@
       }, 1000);
     }
 
-    // --- ขั้นตอนที่ 2: ช่วงเปิดสิทธิ์ตรวจเช็คเสียงสะกดคำ (SPEAK) 6 วินาที ---
+    // --- ขั้นตอนที่ 2: ช่วงเปิดไมค์พูด (SPEAK) 6 วินาที ---
     function startSpeakPhase() {
       setCameraBorderStatus('speak');
       document.getElementById('mic-status-text').innerHTML = `<span class="text-emerald-500 font-bold animate-pulse"><i class="fa-solid fa-microphone mr-1"></i> เริ่มอ่านออกเสียงสะกดคำเป้าหมายได้เลย!</span>`;
       
-      isListeningActive = true; // เปิดประตูเพื่ออนุญาตให้อัลกอริทึมวิเคราะห์สัทศาสตร์ทำงาน
+      try {
+        if (recognition && !isListening) {
+          recognition.start();
+        }
+      } catch (e) {
+        console.warn("ไม่สามารถตรวจสิทธิ์หรือเปิดไมโครโฟนได้: ", e);
+      }
 
       timeRemainingForWord = 6;
       document.getElementById('word-timer-text').textContent = `${timeRemainingForWord} วินาที`;
@@ -1244,16 +1242,16 @@
 
     // --- ขั้นตอนที่ 3: ปิดรับคำตอบชั่วขณะเพื่อวิเคราะห์ความเงียบ (EVALUATE) ---
     function evaluateAndClosePhase() {
-      isListeningActive = false; // บล็อกช่องทางสัญญาณเสียงพูดชั่วคราว
+      stopListeningState();
       setCameraBorderStatus('evaluate');
       document.getElementById('mic-status-text').innerHTML = `<span class="text-slate-500 font-bold"><i class="fa-solid fa-spinner animate-spin mr-1"></i> กำลังประมวลผลคำตอบ...</span>`;
       
       setTimeout(() => {
-        // หากเด็กนิ่งเงียบจนหมดเวลา ให้ปรับเป็นไม่ผ่านทันทีและเปลี่ยนข้อสอบ
-        if (document.getElementById('recognized-transcript').innerHTML === '&nbsp;') {
+        // หากระบบนิ่งเงียบ (อ่านไม่ออกไม่อ่าน) หรือพูดแล้วแปลงสัญญาณอักขระไม่ได้เลย ให้ปรับเป็น "ไม่ผ่าน" ทันที
+        if (!hasMatchedCurrentWord) {
           processPronunciationResult('', 0);
         }
-      }, 1500);
+      }, 1000);
     }
 
     function toggleSpeechRecognition() {
@@ -1275,20 +1273,21 @@
     function setMicUIAwake(awake) {
       const micBtn = document.getElementById('mic-btn');
       const micIcon = document.getElementById('mic-icon');
+      const statusText = document.getElementById('mic-status-text');
       
-      if (micBtn && micIcon) {
-        if (awake) {
-          micBtn.className = "w-16 h-16 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-rose-200 animate-pulse focus:outline-none";
-          micIcon.className = "fa-solid fa-microphone-lines";
-        } else {
-          micBtn.className = "w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-indigo-100 focus:outline-none";
-          micIcon.className = "fa-solid fa-microphone";
-        }
+      if (awake) {
+        micBtn.className = "w-16 h-16 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-rose-200 animate-pulse focus:outline-none";
+        micIcon.className = "fa-solid fa-microphone-lines";
+      } else {
+        micBtn.className = "w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-indigo-100 focus:outline-none";
+        micIcon.className = "fa-solid fa-microphone";
       }
     }
 
     function stopListeningState() {
-      // ควบคุมให้อยู่บนสายเสียงต่อเนื่อง ไม่ทำลายคำสั่ง stop นอกโปรเจกต์ ยกเว้นเมื่อสิ้นสุดการทดสอบ
+      if (recognition) recognition.stop();
+      isListening = false;
+      setMicUIAwake(false);
     }
 
     function handleFallbackRecognition() {
@@ -1307,79 +1306,20 @@
         .toLowerCase();
     }
 
-    // ฟังก์ชันคำนวณฐานเสียงสัทลักษณ์ไทยประยุกต์
-    function normalizeThaiPhonetic(word) {
-      if (!word) return "";
-      
-      let clean = word.trim()
-        .replace(/[\s\-\_\.\,\?]/g, "") // ตัดสัญลักษณ์พิเศษ
-        .replace(/.[์]/g, "");          // ลบพยัญชนะสะกดที่ติดตัวการันต์ทิ้งทั้งหมด (สิทธิ์ -> สิท)
-
-      // สลายสิทธิ์วรรณยุกต์ทั้งหมด และการันต์ตกค้าง
-      clean = clean.replace(/[่้๊๋์]/g, "");
-
-      if (clean.length === 0) return "";
-
-      let arr = clean.split("");
-
-      // 1. ตารางแทนเสียงพยัญชนะต้นคู่แฝด (Initial Consonant Mapping)
-      let initialIdx = 0;
-      if (["แ", "เ", "โ", "ใ", "ไ", "แ"].includes(arr[0]) && arr.length > 1) {
-        initialIdx = 1; // ขยับตัวสแกนพยัญชนะต้นหากเจอสระนำหน้า
-      }
-      
-      const initialsMap = {
-        'ข': 'ค', 'ฆ': 'ค',
-        'ฉ': 'ช', 'ฌ': 'ช',
-        'ซ': 'ส', 'ศ': 'ส', 'ษ': 'ส',
-        'ฐ': 'ท', 'ฑ': 'ท', 'ฒ': 'ท', 'ถ': 'ท', 'ธ': 'ท',
-        'ฎ': 'ด', 'ฏ': 'ด', 'ต': 'ด',
-        'ผ': 'พ', 'ภ': 'พ', 'ฝ': 'พ', 'ฟ': 'พ',
-        'ญ': 'ย',
-        'ร': 'ล', 'ฬ': 'ล',
-        'ฮ': 'ห'
-      };
-      
-      if (arr[initialIdx] && initialsMap[arr[initialIdx]]) {
-        arr[initialIdx] = initialsMap[arr[initialIdx]];
-      }
-
-      // 2. ตารางแทนเสียงมาตราตัวสะกดท้ายพยางค์ 8 แม่มาตรฐาน (Final Consonant Mapping)
-      let lastIdx = arr.length - 1;
-      while (lastIdx >= 0 && ["ะ", "า", "ิ", "ี", "ึ", "ื", "ุ", "ู", "โ", "เ", "แ", "อ", "ั", "ำ", "ใ", "ไ", "ฤ", "ฦ"].includes(arr[lastIdx])) {
-        lastIdx--;
-      }
-      
-      if (lastIdx >= 0) {
-        const lastChar = arr[lastIdx];
-        
-        // แม่กก
-        if (['ข', 'ค', 'ฆ'].includes(lastChar)) arr[lastIdx] = 'ก';
-        // แม่กด
-        else if (['จ', 'ช', 'ซ', 'ฎ', 'ฏ', 'ฐ', 'ฑ', 'ฒ', 'ต', 'ถ', 'ท', 'ธ', 'ศ', 'ษ', 'ส'].includes(lastChar)) arr[lastIdx] = 'ด';
-        // แม่กน
-        else if (['ญ', 'ณ', 'ร', 'ล', 'ฬ'].includes(lastChar)) arr[lastIdx] = 'น';
-        // แม่กบ
-        else if (['ป', 'พ', 'ฟ', 'ภ'].includes(lastChar)) arr[lastIdx] = 'บ';
-      }
-
-      // 3. ปรับสระ ใ และ ไ ให้เป็นมาตรฐานเดียวกัน
-      let result = arr.join("").replace(/ใ/g, "ไ");
-      
-      return result;
-    }
-
     function getPhoneticSimilarity(s1, s2) {
-      const target = normalizeThaiPhonetic(s1);
-      const output = normalizeThaiPhonetic(s2);
+      const target = cleanThaiWord(s1);
+      const output = cleanThaiWord(s2);
       
       // ป้องกันอาการไม่ส่งตัวหนังสือ/เงียบเสียงอ่าน หากค่าสตริงหนึ่งว่างเปล่า ให้ปรับคะแนนความคล้ายเป็น 0% ทันที
       if (!target || !output) return 0.0;
       
       if (target === output) return 1.0;
       
-      // ระบบค้นหาซับเซตพยางค์คลื่นเสียงตามรูปแบบโค้ดเกม June 08 เพื่อสนับสนุนเด็กพูดคำนำหน้า
-      if (output.includes(target)) return 0.90;
+      if (target.includes(output) || output.includes(target)) {
+        if (output.length >= 2 && target.length >= 2) {
+          return 0.85;
+        }
+      }
 
       const track = Array(output.length + 1).fill(null).map(() => Array(target.length + 1).fill(null));
       for (let i = 0; i <= target.length; i++) track[0][i] = i;
@@ -1401,7 +1341,7 @@
 
     function processPronunciationResult(speechText, confidence) {
       if (countdownTimer) clearInterval(countdownTimer);
-      isListeningActive = false; // สั่งปิดประตูกันแทรกแซงเสียงก่อนเปลี่ยนข้อสอบ
+      stopListeningState();
       
       const currentWordObj = testWords[currentWordIndex];
       const cleanTarget = currentWordObj.word.trim();
@@ -1426,7 +1366,6 @@
 
     function skipCurrentWord() {
       if (countdownTimer) clearInterval(countdownTimer);
-      isListeningActive = false;
       recordWordAttemptResult('ไม่ผ่าน', 0);
       proceedToNextWord();
     }
@@ -1453,10 +1392,9 @@
     }
 
     function proceedToNextWord() {
-      // พักครึ่งเวลาถ่ายพยานประวัติและตัดกล้องลงทันทีเมื่อถ่ายเสร็จ
       if (currentWordResults.length === 5 && currentWordIndex < 5) {
         if (countdownTimer) clearInterval(countdownTimer);
-        isListeningActive = false;
+        stopListeningState();
         
         initTestWebcamStream().then(() => {
           setTimeout(() => {
@@ -1482,12 +1420,6 @@
         currentWordIndex++;
         renderWordStage();
       } else {
-        // ดับการทำงานของไมโครโฟนลูปต่อเนื่องเมื่อคัดกรองจบด่านข้อสุดท้าย
-        if (recognition) {
-          try {
-            recognition.stop();
-          } catch(e) {}
-        }
         finishAndEvaluateTest();
       }
     }
@@ -1502,22 +1434,6 @@
         statusText.innerHTML = "<span class='text-emerald-600 font-bold'><i class='fa-solid fa-check-circle mr-1'></i> ออกเสียงถูกต้อง</span>";
       }
       playSynthesizedBeep(true);
-    }
-
-    // ฟังก์ชันเปรียบเทียบคลื่นเสียงสะกดจับแบบเรียลไทม์บนสายสตรีมต่อเนื่องของหน้าคัดกรองหลัก
-    function checkActivePronunciation(spokenText) {
-      const currentWordObj = testWords[currentWordIndex];
-      const similarity = getPhoneticSimilarity(currentWordObj.word, spokenText);
-      
-      if (similarity >= 0.70) { // เกณฑ์ถูกต้องคงที่ไว้ที่ 70% ขึ้นไปตามฐานสัทศาสตร์ประยุกต์
-        if (countdownTimer) clearInterval(countdownTimer);
-        isListeningActive = false; // ปิดประตูรับเสียงชั่วคราวเพื่อรอเปลี่ยนข้อถัดไป
-        
-        setCorrectUI();
-        recordWordAttemptResult('ผ่าน', 0.99);
-        scoreByWordType[currentWordObj.wordType].correct++;
-        setTimeout(() => { proceedToNextWord(); }, 1500);
-      }
     }
 
     function setWrongUI() {
