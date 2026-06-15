@@ -662,7 +662,7 @@
 
   <!-- SCRIPT LOGIC -->
   <script>
-     // การจัดการสถานะ
+    // การจัดการสถานะ
     let masterGradeWords = []; 
     let nextPoolIndex = 10;     
     let unclearCount = 0;      
@@ -883,7 +883,6 @@
     }
 
     function switchScanMethod(method) {
-      // ดึงสิทธิ์เปิดหน้าจอแสกนกล้องโดยตรง
       startQRScannerCamera();
     }
 
@@ -1313,11 +1312,10 @@
       return word.trim()
         .replace(/[่้๊๋]/g, "") 
         .replace(/[์]/g, "")    
-       .replace(/[\s\-\_\.\,\?]/g, "") 
+        .replace(/[\s\-\_\.\,\?]/g, "") 
         .toLowerCase();
     }
 
-    // ฟังก์ชันคำนวณเปรียบเทียบตามฐานเสียงสัทวิทยา Levenshtein Distance
     function getPhoneticSimilarity(s1, s2) {
       const target = cleanThaiWord(s1);
       const output = cleanThaiWord(s2);
@@ -1706,7 +1704,7 @@
     let gradeStatsChartInstance = null;
     let ratioChartInstance = null;
 
-// ปรับปรุงฟังก์ชันควบคุมสถิติฝั่งแอดมิน ป้องกันตัวแปรโมเดลค้างนิ่ง
+    // ปรับปรุงฟังก์ชันควบคุมสถิติฝั่งแอดมิน ป้องกันตัวแปรโมเดลค้างนิ่ง
     async function renderAdminStatsTab() {
       try {
         const stats = await apiRequest('getDashboardStatistics', 'GET');
@@ -1783,37 +1781,10 @@
       }
     }
 
-    function renderQualityStudentTables(report) {
-      const fillTable = (id, list, colorClass) => {
-        const tbody = document.getElementById(id);
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        if (!list || list.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-400 font-medium">ยังไม่มีรายชื่อในกลุ่มนี้</td></tr>`;
-          return;
-        }
-        list.forEach(s => {
-          const tr = document.createElement('tr');
-          tr.className = "border-b hover:bg-slate-50/50";
-          tr.innerHTML = `
-            <td class="p-2 font-bold text-slate-700">${s.name} <span class="text-[10px] text-slate-400 font-medium">(ป.${s.grade}/${s.room})</span></td>
-            <td class="p-2 text-center font-black ${colorClass}">${s.score} คะแนน</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      };
-
-      if (report) {
-        fillTable('report-group-excellent', report.excellent || [], 'text-emerald-600');
-        fillTable('report-group-fair', report.fair || [], 'text-amber-600');
-        fillTable('report-group-improvement', report.improvement || [], 'text-rose-600');
-      }
-    }
-
-    // ฟังก์ชันย่อยสำหรับวาดสรุปรอบการคัดกรองบนแผงแอดมินคุณครู
     function renderAdminRoundTable(latestRound) {
       document.getElementById('admin-round-dates-badge').textContent = `รอบประเมินล่าสุด: ${latestRound.latestDateRange}`;
       const container = document.getElementById('admin-round-table-container');
+      if (!container) return;
       
       let html = `
         <table class="w-full text-left border-collapse text-xs">
@@ -1845,12 +1816,12 @@
       container.innerHTML = html;
     }
 
-    // ฟังก์ชันเรนเดอร์ตารางกลุ่มคุณภาพจำแนกประเภท ดี / พอใช้ / ปรับปรุง บนแผงแอดมิน
     function renderQualityStudentTables(report) {
       const fillTable = (id, list, colorClass) => {
         const tbody = document.getElementById(id);
+        if (!tbody) return;
         tbody.innerHTML = '';
-        if (list.length === 0) {
+        if (!list || list.length === 0) {
           tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-400 font-medium">ยังไม่มีรายชื่อในกลุ่มนี้</td></tr>`;
           return;
         }
@@ -1865,9 +1836,11 @@
         });
       };
 
-      fillTable('report-group-excellent', report.excellent, 'text-emerald-600');
-      fillTable('report-group-fair', report.fair, 'text-amber-600');
-      fillTable('report-group-improvement', report.improvement, 'text-rose-600');
+      if (report) {
+        fillTable('report-group-excellent', report.excellent || [], 'text-emerald-600');
+        fillTable('report-group-fair', report.fair || [], 'text-amber-600');
+        fillTable('report-group-improvement', report.improvement || [], 'text-rose-600');
+      }
     }
 
     // ฟังก์ชันสั่งจัดพิมพ์รายงานจำแนกกลุ่มคุณภาพแบบรายบุคคลส่งออกเป็นไฟล์ PDF เชิงลึก ป้องกันปัญหาแท็กสไลซ์รันไทม์
@@ -1898,9 +1871,9 @@
         return html;
       };
 
-      printWindow.document.write(renderGroupToPrint('กลุ่มประเมินระดับ "ดี"', globalDashboardData.studentReport.excellent, 'border-emerald-100', 'text-emerald-700'));
-      printWindow.document.write(renderGroupToPrint('กลุ่มประเมินระดับ "พอใช้"', globalDashboardData.studentReport.fair, 'border-amber-100', 'text-amber-750'));
-      printWindow.document.write(renderGroupToPrint('กลุ่มประเมินต้องการ "ปรับปรุง"', globalDashboardData.studentReport.improvement, 'border-rose-100', 'text-rose-600'));
+      printWindow.document.write(renderGroupToPrint('กลุ่มประเมินระดับ "ดี"', globalDashboardData.studentReport.excellent || [], 'border-emerald-100', 'text-emerald-700'));
+      printWindow.document.write(renderGroupToPrint('กลุ่มประเมินระดับ "พอใช้"', globalDashboardData.studentReport.fair || [], 'border-amber-100', 'text-amber-750'));
+      printWindow.document.write(renderGroupToPrint('กลุ่มประเมินต้องการ "ปรับปรุง"', globalDashboardData.studentReport.improvement || [], 'border-rose-100', 'text-rose-600'));
       
       printWindow.document.write('<div class="text-center text-[10px] text-slate-400 border-t pt-4">พิมพ์สรุปอัตโนมัติผ่านแพลตฟอร์มคัดกรองเสียงสะกดคำอิง Google Sheets API</div></body></html>');
       printWindow.document.close();
@@ -1909,140 +1882,6 @@
         printWindow.print();
         printWindow.close();
       }, 500);
-    }
-
-    async function renderAdminWordsTab() {
-      const tbody = document.getElementById('words-table-body');
-      tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-slate-400">กำลังดึงข้อมูลทะเบียนคำศัพท์...</td></tr>';
-      
-      try {
-        const words = await apiRequest('getAllWords', 'GET');
-        tbody.innerHTML = '';
-        if (words.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-slate-400">ไม่พบคลังคำศัพท์เป้าหมายลงทะเบียนอยู่ในชีต</td></tr>';
-          return;
-        }
-        
-        words.forEach(w => {
-          const tr = document.createElement('tr');
-          tr.className = "border-b hover:bg-slate-50";
-          tr.innerHTML = `
-            <td class="p-3 font-semibold text-slate-600">${w.id}</td>
-            <td class="p-3">ป.${w.grade}</td>
-            <td class="p-3 font-bold text-indigo-900">${w.word}</td>
-            <td class="p-3">${w.category}</td>
-            <td class="p-3"><span class="text-xs font-semibold py-1 px-2.5 rounded-full ${w.difficulty === 'ง่าย' ? 'bg-green-100 text-green-700' : w.difficulty === 'ยาก' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}">${w.difficulty}</span></td>
-            <td class="p-3"><span class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-2 py-1 rounded">${w.wordType}</span></td>
-            <td class="p-3 text-right space-x-2">
-              <button onclick="editWord(${JSON.stringify(w).replace(/"/g, '&quot;')})" class="text-indigo-600 hover:text-indigo-900 font-bold"><i class="fa-solid fa-pen"></i></button>
-              <button onclick="confirmDeleteWord(${w.id})" class="text-red-500 hover:text-red-900 font-bold"><i class="fa-solid fa-trash"></i></button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch (err) {
-        tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-rose-500">ความล้มเหลวทางเทคนิค API ตกหล่น</td></tr>';
-      }
-    }
-
-    function openWordModal() {
-      document.getElementById('word-form').reset();
-      document.getElementById('form-word-id').value = '';
-      document.getElementById('word-modal-title').textContent = "ลงทะเบียนข้อสอบคำศัพท์คำใหม่";
-      document.getElementById('word-crud-modal').classList.remove('hidden');
-    }
-
-    function editWord(w) {
-      document.getElementById('form-word-id').value = w.id;
-      document.getElementById('form-word-text').value = w.word;
-      document.getElementById('form-word-grade').value = w.grade;
-      document.getElementById('form-word-diff').value = w.difficulty;
-      document.getElementById('form-word-cat').value = w.category;
-      document.getElementById('form-word-type').value = w.wordType;
-      
-      document.getElementById('word-modal-title').textContent = "ปรับปรุงข้อมูลคำศัพท์เป้าหมาย";
-      document.getElementById('word-crud-modal').classList.remove('hidden');
-    }
-
-    function closeWordModal() {
-      document.getElementById('word-crud-modal').classList.add('hidden');
-    }
-
-    async function handleWordSubmit(event) {
-      event.preventDefault();
-      const wordObj = {
-        id: document.getElementById('form-word-id').value,
-        word: document.getElementById('form-word-text').value.trim(),
-        grade: document.getElementById('form-word-grade').value,
-        difficulty: document.getElementById('form-word-diff').value,
-        category: document.getElementById('form-word-cat').value.trim() || 'ทั่วไป',
-        wordType: document.getElementById('form-word-type').value
-      };
-
-      Swal.fire({
-        title: 'กำลังลงรายงานข้อมูล...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-      });
-
-      try {
-        const response = await apiRequest('saveWord', 'POST', { wordObj });
-        Swal.close();
-        if (response && response.success) {
-          Swal.fire('เสร็จสิ้น', 'ปรับเปลี่ยนและเพิ่มข้อมูลคำคัดกรองสมบูรณ์', 'success');
-          closeWordModal();
-          renderAdminWordsTab();
-        } else {
-          Swal.fire('ผิดพลาด', 'ระบบปลายทางเกิดความล่าช้าในการเข้าเขียนชีต', 'error');
-        }
-      } catch (err) {
-        Swal.close();
-        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมฐานข้อมูลเพื่อเขียนข้อมูลได้', 'error');
-      }
-    }
-
-    function confirmDeleteWord(id) {
-      Swal.fire({
-        title: 'มั่นใจหรือไม่?',
-        text: "คุณยืนยันที่จะลบคำศัพท์ดังกล่าวออกจากคลังระบบคัดกรองสะกดคำหรือไม่?",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#EF4444',
-        confirmButtonText: 'ยืนยันเพื่อลบ',
-        cancelButtonText: 'ยกเลิก'
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          try {
-            const res = await apiRequest('deleteWord', 'POST', { id });
-            if (res && res.success) {
-              Swal.fire('ลบข้อมูลแล้ว', 'ลบคำศัพท์คัดแยกออกจากฐานข้อมูลถาวร', 'success');
-              renderAdminWordsTab();
-            }
-          } catch (err) {
-            Swal.fire('ปฏิเสธการกระทำ', 'ความล่าช้าในการจัดการของฐานระบบล้มเหลว', 'error');
-          }
-        }
-      });
-    }
-
-    async function exportWordsToExcel() {
-      try {
-        const words = await apiRequest('getAllWords', 'GET');
-        if (words.length === 0) {
-          Swal.fire('ไม่พบข้อมูล', 'ไม่มีรายงานคำศัพท์เป้าหมายใดๆ ให้ทำการส่งออก', 'info');
-          return;
-        }
-        const worksheet = XLSX.utils.json_to_sheet(words);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "คลังข้อสอบสะกดคำ");
-        XLSX.writeFile(workbook, "reading_screening_words.xlsx");
-      } catch (err) {
-        Swal.fire('ส่งออกไม่สำเร็จ', 'ระบบจัดทำเอกสารล้มเหลว', 'error');
-      }
-    }
-
-    function triggerExcelImport() {
-      document.getElementById('excel-import-input').click();
     }
 
     // ปรับปรุงฟังก์ชันผลิตคิวอาร์โค้ดให้เป็นแบบดึงลิงก์รูปภาพโดยตรง (เสถียรและแม่นยำ 100%)
