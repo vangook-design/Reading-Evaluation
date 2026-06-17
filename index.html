@@ -235,7 +235,7 @@
       </div>
     </section>
 
-    <!-- VIEW 4: หน้าเวทีประเมินการอ่านออกเสียงสะกดคำ (แสดงผลแบบแยกพยางค์สว่างชัดเจน) -->
+    <!-- VIEW 4: หน้าเวทีประเมินการอ่านออกเสียงสะกดคำ (แสดงผลแบบแยกพยางค์อย่างเสถียร) -->
     <section id="view-test" class="view-section hidden py-4 animate-fadeIn no-print">
       <div class="max-w-4xl mx-auto grid grid-cols-1 gap-6">
         
@@ -1014,7 +1014,7 @@
       return (longest - distance) / longest;
     }
 
-    // อัลกอริทึมแกนร่วมวิเคราะห์คำสะกดแบบเรียลไทม์ และหั่นข้อความเสียงส่วนเกิน (Strict Sequential Matching Engine)
+    // อัลกอริทึมวิเคราะห์ลำดับสะกดและหั่นคำสะสมแบบเรียลไทม์ (Strict Sequential Matching Engine)
     function evaluateSyllableMatching(speechText) {
       let tempSpeech = cleanThaiWord(speechText);
       let matchCount = 0;
@@ -1025,10 +1025,10 @@
         
         if (matchResult.matched) {
           matchCount++;
-          // ทำการหั่นคำที่แมตช์ผ่านไปแล้วออกจากสตริงเสียง (String Consumption) ป้องกันการนำไปคำนวณซ้ำสำหรับพยางค์ถัดไป
+          // หั่นคำที่ตรวจผ่านแล้วออกจากประโยคทันทีเพื่อป้องกันการตรวจจับซ้ำซ้อน
           tempSpeech = tempSpeech.substring(matchResult.endIndex);
         } else {
-          // หากพยางค์ปัจจุบันยังไม่อ่านออกเสียง หรือไม่สอดคล้อง ห้ามสลับพยางค์ข้ามไปตรวจสอบพยางค์หลัง
+          // หากพยางค์ปัจจุบันยังสะกดไม่ถูกหรือสะกดเพี้ยน ห้ามข้ามพยางค์อื่นเด็ดขาด
           break;
         }
       }
@@ -1038,7 +1038,7 @@
     function findPhoneticMatchInString(source, target) {
       if (!source || !target) return { matched: false };
       
-      // ตรวจสอบตั้งแต่ต้นคำพูด (ความกว้างพยางค์ภาษาไทยส่วนใหญ่ไม่เกินความยาวจริงบวกเศษผันเสียง 2 ตัวอักษร)
+      // สแกนตรวจสอบตั้งแต่จุดเริ่มต้นของประโยคพูด
       for (let len = 1; len <= Math.min(source.length, target.length + 2); len++) {
         const sub = source.substring(0, len);
         if (matchThaiSyllablePhonetically(target, sub)) {
@@ -1046,7 +1046,7 @@
         }
       }
       
-      // ยืดหยุ่นค้นหาอักขระเยื้องไปข้างหน้าเล็กน้อย 3 ตำแหน่งเพื่อยอมรับสัญญาณรบกวนช่วงต้นเสียง
+      // เปิดการวิเคราะห์เยื้องเสียงเพื่อหลบเลี่ยงเสียงลมหรือเสียงแทรกช่วงต้นประโยค
       for (let start = 0; start <= Math.min(3, source.length - 1); start++) {
         for (let len = 1; len <= Math.min(source.length - start, target.length + 2); len++) {
           const sub = source.substring(start, start + len);
@@ -1101,30 +1101,28 @@
         if (cleanSpeech && targetSyllables.length > 0) {
           document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
           
-          // เรียกใช้งานตัวคัดแยกเสียงอักขระย่อยแบบจัดลำดับเข้มงวด
+          // ตรวจจับพยางค์สะกดแบบเรียลไทม์
           const matchedSyllablesCount = evaluateSyllableMatching(cleanSpeech);
 
-          // อัปเดตไฮไลท์สีเขียวเฉพาะกล่องพยางค์ที่อ่านสะกดถูกต้องตามลำดับเท่านั้น
+          // อัปเดตการระบายสีเขียวรายพยางค์ตามความถูกต้อง
           for (let idx = 0; idx < targetSyllables.length; idx++) {
             const badgeEl = document.getElementById(`syl-badge-${idx}`);
             if (badgeEl) {
               if (idx < matchedSyllablesCount) {
-                // ระบายสีเขียวเข้มข้นเต็มกล่องเมื่อสะกดถูกต้องเรียงตามพยางค์
                 badgeEl.className = "px-6 py-3 rounded-2xl text-xl font-bold bg-emerald-500 text-white border border-emerald-600 shadow-md transition-all duration-300 transform scale-105";
               } else {
-                // หากยังออกเสียงไม่ถึง หรือไม่อ่าน หรือออกเสียงผิด ให้ล็อกเป็นสีเทาสัญญาณเดิม
                 badgeEl.className = "px-6 py-3 rounded-2xl text-xl font-bold bg-slate-100 text-slate-500 border border-slate-200 shadow-sm transition-all duration-300";
               }
             }
           }
 
-          // ส่งสัญญาณเสียง Beep ตอบกลับเฉพาะเมื่อมีการสะกดพยางค์ผ่านเพิ่มขึ้น
+          // ส่งสัญญาน Beep เมื่อสะกดผ่านพยางค์เพิ่มขึ้น
           if (matchedSyllablesCount > currentSyllableIndex) {
             playSynthesizedBeep(true);
             currentSyllableIndex = matchedSyllablesCount;
           }
 
-          // หากสะกดผ่านพยางค์เรียงลำดับจาก 1 ไป 2 ครบถ้วนตามสัญญานแล้ว ถือว่าผ่านคำศัพท์นี้โดยสมบูรณ์
+          // ตรวจสอบครบตามเงื่อนไข (ผ่านครบทุกพยางค์) จึงจะนับว่าถูกต้อง
           if (currentSyllableIndex === targetSyllables.length) {
             hasMatchedCurrentWord = true;
             if (countdownTimer) clearInterval(countdownTimer);
@@ -1502,6 +1500,14 @@
     function initTestWebcamStream() {
       const video = document.getElementById('test-video');
       const offlineMsg = document.getElementById('camera-offline-msg');
+      
+      // ป้องกันเบราว์เซอร์ชำรุดกรณีอุปกรณ์ผู้ใช้ไม่มีกล้อง หรือไม่ได้เปิดเว็บผ่าน HTTPS ปลอดภัย
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        offlineMsg.classList.remove('hidden');
+        video.classList.add('hidden');
+        return Promise.resolve(null);
+      }
+
       return navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 320 } })
         .then(stream => {
           cameraStream = stream;
@@ -1678,21 +1684,15 @@
       }
     }
 
-    function setMicUIAwake(awake) {
-      const micBtn = document.getElementById('mic-btn');
-      const micIcon = document.getElementById('mic-icon');
-      
-      if (awake) {
-        micBtn.className = "w-16 h-16 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-rose-200 animate-pulse focus:outline-none";
-        micIcon.className = "fa-solid fa-microphone-lines";
-      } else {
-        micBtn.className = "w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-indigo-100 focus:outline-none";
-        micIcon.className = "fa-solid fa-microphone";
-      }
-    }
-
+    // ปรับปรุงฟังก์ชันป้องกันความผิดพลาดของไมโครโฟน (Exception Safety Stop Handler)
     function stopListeningState() {
-      if (recognition) recognition.stop();
+      if (recognition) {
+        try {
+          recognition.stop();
+        } catch(e) {
+          console.warn("แอปสกัดข้ามสถานะตัดสัญญาณเสียงแล้ว: ", e);
+        }
+      }
       isListening = false;
       setMicUIAwake(false);
     }
@@ -1710,14 +1710,21 @@
       proceedToNextWord();
     }
 
+    // ป้องกันกรณีตัวแปร Student ชำรุด (Null-Safe Guard บันทึกประวัติ)
     async function recordWordAttemptResult(status, conf) {
       const currentWordObj = testWords[currentWordIndex];
-      const cleanWordText = currentWordObj.word.replace(/-/g, ""); // ล้างข้อมูลเครื่องหมายคั่นพยางค์ก่อนลงบันทึกใน Google Sheets
+      const cleanWordText = currentWordObj.word.replace(/-/g, "");
+      
+      const studentId = currentStudent ? currentStudent.studentId : "GUEST";
+      const name = currentStudent ? `${currentStudent.prefix}${currentStudent.firstName} ${currentStudent.lastName}` : "ผู้เข้าร่วมทดสอบ";
+      const grade = currentStudent ? currentStudent.grade : "-";
+      const room = currentStudent ? currentStudent.room : "-";
+
       const record = {
-        studentId: currentStudent.studentId,
-        name: `${currentStudent.prefix}${currentStudent.firstName} ${currentStudent.lastName}`,
-        grade: currentStudent.grade,
-        room: currentStudent.room,
+        studentId: studentId,
+        name: name,
+        grade: grade,
+        room: room,
         word: cleanWordText,
         result: status,
         confidence: conf,
@@ -1850,8 +1857,11 @@
         suggestion = 'ผ่านเกณฑ์ความสามารถขั้นต่ำ ควรเสริมสะกดคำควบกล้ำเพิ่มเติม';
       }
 
-      document.getElementById('result-student-name').textContent = `${currentStudent.prefix} ${currentStudent.firstName} ${currentStudent.lastName}`;
-      document.getElementById('result-student-grade').textContent = `${currentStudent.grade}/${currentStudent.room}`;
+      const stdName = currentStudent ? `${currentStudent.prefix} ${currentStudent.firstName} ${currentStudent.lastName}` : "ผู้ประเมินนิรนาม";
+      const stdGrade = currentStudent ? `${currentStudent.grade}/${currentStudent.room}` : "-";
+
+      document.getElementById('result-student-name').textContent = stdName;
+      document.getElementById('result-student-grade').textContent = stdGrade;
       document.getElementById('result-datetime').textContent = new Date().toLocaleString('th-TH');
       document.getElementById('result-score-raw').textContent = rawScore;
       document.getElementById('result-score-percent').textContent = percent;
@@ -1869,10 +1879,10 @@
       }
 
       const summary = {
-        studentId: currentStudent.studentId,
-        name: `${currentStudent.prefix}${currentStudent.firstName} ${currentStudent.lastName}`,
-        grade: currentStudent.grade,
-        room: currentStudent.room,
+        studentId: currentStudent ? currentStudent.studentId : "GUEST",
+        name: stdName,
+        grade: currentStudent ? currentStudent.grade : "-",
+        room: currentStudent ? currentStudent.room : "-",
         score: rawScore,
         percent: percent,
         level: level,
