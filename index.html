@@ -107,7 +107,7 @@
         </div>
       </div>
 
-      <!-- แผงรายงานสถิติรอบการคัดกรองล่าสุด (ห่างกันไม่เกิน 3 วัน) -->
+      <!-- แผงรายงานสถิติรอบการคัดกรองล่าสุด -->
       <div class="bg-white/95 rounded-2xl border border-slate-150 p-5 shadow-sm space-y-4 max-w-xl w-full mx-auto font-sans">
         <div class="border-b pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <h4 class="font-black text-sm text-indigo-950 flex items-center">
@@ -225,7 +225,7 @@
                   </tr>
                 </thead>
                 <tbody id="profile-student-history-body">
-                  <!-- JS ประวัติแสดงผลตรงนี้ -->
+                  <!-- JS Generated -->
                 </tbody>
               </table>
             </div>
@@ -235,11 +235,11 @@
       </div>
     </section>
 
-    <!-- VIEW 4: หน้าเวทีประเมินการอ่านออกเสียงสะกดคำ (ดีไซน์ไร้กล้องตลอดเวลาทดสอบ) -->
+    <!-- VIEW 4: หน้าเวทีประเมินการอ่านออกเสียงสะกดคำ (แสดงผลแบบแยกพยางค์อัจฉริยะ) -->
     <section id="view-test" class="view-section hidden py-4 animate-fadeIn no-print">
       <div class="max-w-4xl mx-auto grid grid-cols-1 gap-6">
         
-        <!-- แผงรายงานสถานะคัดกรองส่วนบนแบบเรียบง่ายไร้กล้อง -->
+        <!-- แผงรายงานสถานะคัดกรองส่วนบน -->
         <div class="bg-white p-5 rounded-2xl custom-shadow border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex items-center space-x-3">
             <div class="bg-indigo-50 text-indigo-600 p-3 rounded-xl"><i class="fa-solid fa-graduation-cap text-lg"></i></div>
@@ -264,8 +264,8 @@
           
           <div class="flex justify-between items-center border-b pb-4">
             <div>
-              <h2 class="text-sm font-bold text-slate-700">จงอ่านสะกดคำศัพท์ภาษาไทยที่ปรากฏขึ้นมาดังนี้</h2>
-              <p class="text-xs text-slate-400">กรุณาพูดภายในระยะเวลาประเมินผลรอบตัววิ่ง 6 วินาที</p>
+              <h2 class="text-sm font-bold text-slate-700">จงอ่านสะกดคำศัพท์ภาษาไทยทีละพยางค์ที่ปรากฏ</h2>
+              <p class="text-xs text-slate-400">กรุณาออกเสียงให้อักขระพยางค์ย่อยเปลี่ยนเป็นสีเขียวจนครบคำศัพท์</p>
             </div>
             <button id="tts-audio-btn" onclick="playTtsSound()" class="hidden bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold py-2 px-3.5 rounded-full border border-amber-200 transition flex items-center space-x-1">
               <i class="fa-solid fa-volume-high"></i>
@@ -284,8 +284,9 @@
             </div>
           </div>
 
-          <!-- แสดงคำเป้าหมายเด่นใหญ่ (แผงการ์ดคำศัพท์สำหรับปรับเปลี่ยนสีตามสถานะ) -->
+          <!-- แสดงคำเป้าหมายเด่นใหญ่ (ปรับปรุงเป็นสแปนแยกส่วนพยางค์) -->
           <div id="word-card-container" class="text-center py-12 bg-slate-50/50 rounded-2xl border border-slate-150 transition-all duration-300">
+            <!-- ดึงโครงสร้างสแปนคำย่อยผ่าน JavaScript -->
             <h1 id="target-word-display" class="text-6xl sm:text-7xl md:text-8xl font-black text-indigo-950 tracking-wider">กำลังสุ่มคำ...</h1>
             <p id="target-word-category" class="text-xs text-slate-400 mt-4">หมวดหมู่: - | ระดับความยาก: -</p>
           </div>
@@ -296,7 +297,7 @@
               <i id="mic-icon" class="fa-solid fa-microphone"></i>
             </button>
             <div class="text-center min-h-[48px] space-y-1">
-              <p id="mic-status-text" class="text-xs font-semibold text-slate-400">ระบบอัตโนมัติจะควบคุมจังหวะบันทึกเสียง</p>
+              <p id="mic-status-text" class="text-xs font-semibold text-slate-400">ระบบคัดกรองอัจฉริยะกำลังจับพิกัดเสียงพยางค์สะกด</p>
               <p id="recognized-transcript" class="text-indigo-600 font-bold text-lg italic max-w-md mx-auto">&nbsp;</p>
             </div>
 
@@ -381,7 +382,7 @@
         </div>
 
         <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
-          <button onclick="window.print()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-6 rounded-xl transition flex items-center justify-center space-x-2 font-sans">
+          <button onclick="window.print()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-950 text-white font-bold py-3 px-6 rounded-xl transition flex items-center justify-center space-x-2 font-sans">
             <i class="fa-solid fa-print"></i>
             <span>พิมพ์รายงานผลการทดสอบ (PDF)</span>
           </button>
@@ -449,9 +450,9 @@
             </div>
           </div>
 
-          <!-- ส่วนที่ปรับปรุงเพิ่มเติม: กราฟพัฒนาการแยกรายชั้นเรียน & รายงานสรุปผลภาพรวม -->
+          <!-- กราฟพัฒนาการแยกรายชั้นเรียน & รายงานสรุปผลภาพรวม -->
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- ซ้าย: เลือกชั้นเรียนเพื่อดูกราฟวิวัฒนาการแบบละเอียด -->
+            <!-- ซ้าย: กราฟวิวัฒนาการแบบละเอียด -->
             <div class="lg:col-span-7 bg-white p-6 rounded-2xl custom-shadow border border-slate-100 font-sans">
               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                 <h3 class="font-bold text-xs text-slate-600 uppercase"><i class="fa-solid fa-chart-line text-indigo-600 mr-1.5"></i>วิวัฒนาการประเมินรายชั้นเรียนในแต่ละรอบ</h3>
@@ -472,7 +473,7 @@
               </div>
             </div>
 
-            <!-- ขวา: เมนูจัดการจัดทำเอกสารและรายงานสรุปประเมินความสามารถ -->
+            <!-- ขวา: รายงานสรุปผลสัมฤทธิ์ของโรงเรียน -->
             <div class="lg:col-span-5 bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-2xl custom-shadow border border-slate-800 flex flex-col justify-between font-sans">
               <div class="space-y-3">
                 <span class="bg-indigo-500/30 text-indigo-300 text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">Executive Report Generator</span>
@@ -654,8 +655,8 @@
         <input type="hidden" id="form-word-id">
         
         <div>
-          <label class="block text-[10px] font-bold text-slate-500 mb-1">คำศัพท์ภาษาไทยเป้าหมาย</label>
-          <input type="text" id="form-word-text" class="w-full p-2.5 border rounded-lg text-xs" required placeholder="ตัวอย่าง: กล้วย">
+          <label class="block text-[10px] font-bold text-slate-500 mb-1">คำศัพท์เป้าหมาย (ใช้เครื่องหมาย "-" แบ่งพยางค์ เช่น "กระ-ดาษ")</label>
+          <input type="text" id="form-word-text" class="w-full p-2.5 border rounded-lg text-xs" required placeholder="ตัวอย่าง: กระ-ดาษ">
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -784,11 +785,10 @@
     </div>
   </div>
 
-  <!-- MODAL 5: รายงานสรุปผลคัดกรองฉบับบริหาร (Executive Screening Summary Report) -->
+  <!-- MODAL 5: รายงานสรุปผลคัดกรองฉบับบริหาร -->
   <div id="admin-report-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 font-sans overflow-y-auto">
     <div class="bg-white w-full max-w-4xl rounded-3xl p-8 space-y-6 max-h-[90vh] overflow-y-auto relative shadow-2xl">
       
-      <!-- ส่วนหัวรายงาน (ซ่อนเมื่อพิมพ์ผ่าน CSS ได้ถ้าระบบควบคุม) -->
       <div class="flex justify-between items-center border-b pb-4 no-print">
         <h3 class="font-bold text-slate-800 text-lg flex items-center">
           <i class="fa-solid fa-file-contract text-indigo-600 mr-2"></i> รายงานสรุปผลสัมฤทธิ์คัดกรองการอ่านสะกดคำ
@@ -796,7 +796,6 @@
         <button onclick="closeReportModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <!-- พื้นที่สำหรับสั่งพิมพ์ (Print-ready Area) -->
       <div id="printable-report-content" class="space-y-6 print-area">
         <div class="text-center space-y-2 border-b-2 border-indigo-600 pb-4">
           <h2 class="text-2xl font-black text-slate-900" id="report-title-system">-</h2>
@@ -819,7 +818,6 @@
           </div>
         </div>
 
-        <!-- รายละเอียดวิเคราะห์รายชั้นปี -->
         <div class="space-y-3">
           <h4 class="font-extrabold text-sm text-slate-800 flex items-center">
             <i class="fa-solid fa-table-list mr-1.5 text-indigo-600"></i> ตารางสรุปคะแนนประเมินเฉลี่ยและสัดส่วนผลลัพธ์รายชั้นปี (ป.1 - ป.6)
@@ -843,7 +841,6 @@
           </div>
         </div>
 
-        <!-- แจกแจงจุดแข็ง/จุดอ่อนจำแนกตามทักษะหลัก -->
         <div class="space-y-3">
           <h4 class="font-extrabold text-sm text-slate-800 flex items-center">
             <i class="fa-solid fa-chart-bar mr-1.5 text-indigo-600"></i> สรุปผลวิเคราะห์ทักษะย่อยในการประเมินสะกดคำ
@@ -866,7 +863,6 @@
         </div>
       </div>
 
-      <!-- เมนูปุ่มกดส่วนท้ายเฉพาะหน้าจอ -->
       <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100 no-print">
         <button onclick="printReportModal()" class="bg-slate-900 hover:bg-slate-950 text-white font-bold py-2.5 px-5 rounded-xl text-xs transition flex items-center space-x-1.5">
           <i class="fa-solid fa-print"></i>
@@ -918,11 +914,112 @@
     let countdownTimer = null;
     let timeRemainingForWord = 15;
     let studentProgressChartInstance = null;
-    let gradeDevelopmentChartInstance = null; // อินสแตนซ์ของกราฟพัฒนาการแต่ละรอบรายชั้นเรียน
-    let lastFetchedStats = null;               // สถิติล่าสุดที่ดึงข้อมูลมาจาก Google Apps Script
+    let gradeDevelopmentChartInstance = null; 
+    let lastFetchedStats = null;               
     let hasMatchedCurrentWord = false;
 
-    // ตั้งค่าระบบประมวลเสียงสะกดคำโครงสร้างเสถียรระดับสูง
+    // ตรรกะตัวแปรสำหรับการควบคุมจับความถี่เสียงแยกรายพยางค์
+    let currentSyllableIndex = 0;
+    let targetSyllables = [];
+
+    // --- ส่วนงานถอดรหัสวิเคราะห์เสียงและปรับการประเมินเทียบเสียงเพี้ยน (Phonetic Lenient Mapping) ---
+    function cleanThaiWord(word) {
+      if (!word) return "";
+      return word.trim()
+        .replace(/[่้๊๋]/g, "") 
+        .replace(/[์]/g, "")    
+        .replace(/[\s\-\_\.\,\?]/g, "") 
+        .toLowerCase();
+    }
+
+    function getThaiPhoneticEquivalent(text) {
+      if (!text) return "";
+      let temp = cleanThaiWord(text);
+      // ละเว้นตัวการันต์สะกดเพื่อไม่ให้นำมาคิดพยางค์
+      temp = temp.replace(/[ก-ฮ][์]/g, "").replace(/[์]/g, "");
+      return temp;
+    }
+
+    // ฟังก์ชันตรวจสอบสัทอักษรและเปรียบเทียบความเพี้ยนเสียงสะกดใกล้เคียง (Lenient Mapping)
+    function matchThaiSyllablePhonetically(target, spoken) {
+      const cleanTarget = getThaiPhoneticEquivalent(target);
+      const cleanSpoken = getThaiPhoneticEquivalent(spoken);
+
+      if (cleanSpoken.includes(cleanTarget) || cleanTarget.includes(cleanSpoken)) return true;
+
+      // ตารางความสัมพันธ์เสียงสะกดร่วม 8 แม่หลักในระเบียบไวยากรณ์ไทย
+      const codas = {
+        'ก': ['ก', 'ข', 'ค', 'ฆ'],
+        'ด': ['ด', 'จ', 'ช', 'ซ', 'ฎ', 'ฏ', 'ฐ', 'ฑ', 'ฒ', 'ต', 'ถ', 'ท', 'ธ', 'ศ', 'ษ', 'ส'],
+        'บ': ['บ', 'ป', 'พ', 'ฟ', 'ภ'],
+        'น': ['น', 'ณ', 'ญ', 'ร', 'ล', 'ฬ'],
+        'ม': ['ม'],
+        'ง': ['ง'],
+        'ย': ['ย'],
+        'ว': ['ว']
+      };
+
+      // ยืดหยุ่นเสียงควบกล้ำที่มักออกเสียงเพี้ยนหรือตกหล่นในกลุ่มผู้เรียนช่วงชั้นประถมต้น (ป.1 - ป.3)
+      function normalizePhonemes(str) {
+        let res = str;
+        for (let key in codas) {
+          codas[key].forEach(char => {
+            if (res.endsWith(char) && char !== key) {
+              res = res.substring(0, res.length - 1) + key;
+            }
+          });
+        }
+        // อำนวยความสะดวกการกลืนพยัญชนะควบกล้ำ (เช่น "กระ" -> "กะ", "ปลา" -> "ปา")
+        res = res.replace(/^กร/, "ก")
+                 .replace(/^กล/, "ก")
+                 .replace(/^ขร/, "ข")
+                 .replace(/^ขล/, "ข")
+                 .replace(/^คร/, "ค")
+                 .replace(/^คล/, "ค")
+                 .replace(/^ตร/, "ต")
+                 .replace(/^ปร/, "ป")
+                 .replace(/^ปล/, "ป")
+                 .replace(/^พร/, "พ")
+                 .replace(/^พล/, "พ")
+                 .replace(/^ผล/, "ผ");
+        return res;
+      }
+
+      const normTarget = normalizePhonemes(cleanTarget);
+      const normSpoken = normalizePhonemes(cleanSpoken);
+
+      if (normSpoken.includes(normTarget) || normTarget.includes(normSpoken)) {
+        return true;
+      }
+
+      // ส่งกลับเทียบเคียงด้วยตรรกะระยะห่างสตริงเสถียรสำรอง
+      const similarity = getPhoneticSimilarity(normTarget, normSpoken);
+      return similarity >= 0.70;
+    }
+
+    function getPhoneticSimilarity(target, output) {
+      if (!target || !output) return 0.0;
+      if (target === output) return 1.0;
+
+      const track = Array(output.length + 1).fill(null).map(() => Array(target.length + 1).fill(null));
+      for (let i = 0; i <= target.length; i++) track[0][i] = i;
+      for (let j = 0; j <= output.length; j++) track[j][0] = j;
+      for (let j = 1; j <= output.length; j++) {
+        for (let i = 1; i <= target.length; i++) {
+          const indicator = target[i - 1] === output[j - 1] ? 0 : 1;
+          track[j][i] = Math.min(
+            track[j][i - 1] + 1,
+            track[j - 1][i] + 1,
+            track[j - 1][i - 1] + indicator
+          );
+        }
+      }
+      const distance = track[output.length][target.length];
+      const longest = Math.max(target.length, output.length);
+      return (longest - distance) / longest;
+    }
+
+    // เปิดรับสัญญาณเสียงและประมวลผลแบบ Real-time Syllable Tracking
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRecognition();
@@ -960,17 +1057,40 @@
           transcript += event.results[i][0].transcript;
         }
         const cleanSpeech = transcript.trim();
-        if (cleanSpeech) {
-          document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
+        
+        if (cleanSpeech && targetSyllables.length > 0) {
+          document.getElementById('recognized-transcript').innerHTML = `กำลังพูดสะกด: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
           
-          const currentWordObj = testWords[currentWordIndex];
-          const similarity = getPhoneticSimilarity(currentWordObj.word, cleanSpeech);
-          
-          if (similarity >= 0.70) { 
+          // คัดแยกเปรียบเทียบพยางค์สะกดปัจจุบัน
+          if (currentSyllableIndex < targetSyllables.length) {
+            const currentTargetSyl = targetSyllables[currentSyllableIndex];
+            const isSylMatched = matchThaiSyllablePhonetically(currentTargetSyl, cleanSpeech);
+
+            if (isSylMatched) {
+              // เปลี่ยนโครงสร้างสีพยางค์เดี่ยวเป็นสีเขียวทันทีตามเงื่อนไขที่กำหนด
+              const spanEl = document.getElementById(`syl-span-${currentSyllableIndex}`);
+              if (spanEl) {
+                spanEl.className = "text-emerald-600 font-extrabold transition-colors duration-300 animate-pulse";
+              }
+              
+              playSynthesizedBeep(true); // เล่นบีปเสียงบวกเมื่อพยางค์ผ่านสะกด
+              currentSyllableIndex++;
+
+              // ล้างอักขระแปลเสียงก่อนหน้าบน Web Speech เพื่อพร้อมประเมินพยางค์ถัดไปอย่างรวดเร็ว
+              try {
+                recognition.stop();
+              } catch(e) {}
+            }
+          }
+
+          // หากวิเคราะห์และอ่านได้ครบถ้วนตามทุกพยางค์ที่กำหนด จึงจะถือว่าผ่านคำศัพท์นี้
+          if (currentSyllableIndex === targetSyllables.length) {
             hasMatchedCurrentWord = true;
             if (countdownTimer) clearInterval(countdownTimer);
             stopListeningState();
             setCorrectUI();
+            
+            const currentWordObj = testWords[currentWordIndex];
             recordWordAttemptResult('ผ่าน', 0.99);
             scoreByWordType[currentWordObj.wordType].correct++;
             setTimeout(() => { proceedToNextWord(); }, 1500);
@@ -1013,7 +1133,6 @@
       }
     }
 
-    // ทำงานเมื่อโหลดหน้าจอสำเร็จ โดยใช้ข้อมูลแคช (LocalStorage) เพื่อให้หน้าแรกเรนเดอร์ทันที และขนานงานสตรีม API เบื้องหลังเพื่อปรับปรุงข้อมูล
     document.addEventListener('DOMContentLoaded', () => {
       loadCachedData();
       fetchFreshSystemSettings();
@@ -1037,7 +1156,6 @@
 
     async function fetchFreshSystemSettings() {
       try {
-        // ใช้ Promise.all ควบรวมงานดึงสถิติหน้าแรก เพิ่มความเสถียรและความเร็วสูงสุด 
         const [settings, pubStats] = await Promise.all([
           apiRequest('getSystemSettings', 'GET'),
           apiRequest('getPublicStats', 'GET')
@@ -1056,7 +1174,7 @@
           renderLatestRoundTable(pubStats.latestRound);
         }
       } catch (err) {
-        console.warn("ไม่สามารถเรียกข้อมูลสดจากเครือข่ายได้ ระบบใช้โหมดทำงานออฟไลน์สำรอง: ", err);
+        console.warn("ไม่สามารถเรียกข้อมูลสดได้ ระบบใช้โหมดแคชเสถียรภาพภายนอกแทน: ", err);
       }
     }
 
@@ -1101,7 +1219,7 @@
         stopAllWebcams();
       }
       
-      // การรักษาความปลอดภัยสูงสุด: เมื่อผู้ใช้หลุดกลับหน้าแรก (Home) ให้ตัดสิทธิ์ล็อกอิน Admin ทุกรอบ
+      // เมื่อผู้ใช้กลับสู่หน้าแรก จะบังคับให้ออกจากระบบเสมอเพื่อความปลอดภัย
       if (viewId === 'home') {
         isAdminLoggedIn = false;
         document.getElementById('adminLoginBtn').classList.remove('hidden');
@@ -1388,6 +1506,7 @@
       }
     }
 
+    // ฟังก์ชันจัดเตรียมคำศัพท์ แสดงสเปนพยางค์ และกำหนดตรรกะการคัดแยกเสียง
     function renderWordStage() {
       const currentWordObj = testWords[currentWordIndex];
       
@@ -1396,8 +1515,23 @@
       document.getElementById('test-word-type-meta').textContent = currentWordObj.wordType;
       document.getElementById('test-unclear-meta').textContent = `สัญญาณเสียงสแตนด์บายปกติ`;
       
-      document.getElementById('target-word-display').textContent = currentWordObj.word;
-      document.getElementById('target-word-category').textContent = `หมวดหมู่: ${currentWordObj.category} | ความยากง่าย: ${currentWordObj.difficulty}`;
+      // ดึงโครงสร้างพยางค์ (รองรับรูปแบบ "โรง-เรียน" หรือ "กระ-ดาษ" และแบ่งตามตัวสะกด "-")
+      const rawTargetWord = currentWordObj.word;
+      targetSyllables = rawTargetWord.split('-'); // เก็บอาร์เรย์พยางค์ย่อย
+      currentSyllableIndex = 0; // รีเซ็ตตัวชี้พยางค์สะกดปัจจุบันเป็นพยางค์แรก
+
+      // แสดงคำเป้าหมายโดยตัดเครื่องหมาย "-" ออกเพื่อไม่ให้นักเรียนสับสน
+      let spansHtml = `<h1 class="text-6xl sm:text-7xl md:text-8xl font-black tracking-wider text-indigo-950">`;
+      targetSyllables.forEach((syl, idx) => {
+        spansHtml += `<span id="syl-span-${idx}" class="transition-colors duration-300 text-slate-900">${syl}</span>`;
+      });
+      spansHtml += `</h1>`;
+
+      document.getElementById('word-card-container').innerHTML = `
+        ${spansHtml}
+        <p id="target-word-category" class="text-xs text-slate-400 mt-4">หมวดหมู่: ${currentWordObj.category} | ความยากง่าย: ${currentWordObj.difficulty}</p>
+      `;
+
       document.getElementById('recognized-transcript').innerHTML = '&nbsp;';
       
       stopListeningState(); 
@@ -1503,52 +1637,12 @@
       document.getElementById('manual-speech-input').value = '';
     }
 
-    function cleanThaiWord(word) {
-      if (!word) return "";
-      return word.trim()
-        .replace(/[่้๊๋]/g, "") 
-        .replace(/[์]/g, "")    
-        .replace(/[\s\-\_\.\,\?]/g, "") 
-        .toLowerCase();
-    }
-
-    function getPhoneticSimilarity(s1, s2) {
-      const target = cleanThaiWord(s1);
-      const output = cleanThaiWord(s2);
-      
-      if (!target || !output) return 0.0;
-      if (target === output) return 1.0;
-      
-      if (target.includes(output) || output.includes(target)) {
-        if (output.length >= 2 && target.length >= 2) {
-          return 0.85;
-        }
-      }
-
-      const track = Array(output.length + 1).fill(null).map(() => Array(target.length + 1).fill(null));
-      for (let i = 0; i <= target.length; i++) track[0][i] = i;
-      for (let j = 0; j <= output.length; j++) track[j][0] = j;
-      for (let j = 1; j <= output.length; j++) {
-        for (let i = 1; i <= target.length; i++) {
-          const indicator = target[i - 1] === output[j - 1] ? 0 : 1;
-          track[j][i] = Math.min(
-            track[j][i - 1] + 1,
-            track[j - 1][i] + 1,
-            track[j - 1][i - 1] + indicator
-          );
-        }
-      }
-      const distance = track[output.length][target.length];
-      const longest = Math.max(target.length, output.length);
-      return (longest - distance) / longest;
-    }
-
     function processPronunciationResult(speechText, confidence) {
       if (countdownTimer) clearInterval(countdownTimer);
       stopListeningState();
       
       const currentWordObj = testWords[currentWordIndex];
-      const cleanTarget = currentWordObj.word.trim();
+      const cleanTarget = currentWordObj.word.replace(/-/g, "").trim();
       const cleanSpeech = speechText.trim();
       
       document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
@@ -1576,12 +1670,13 @@
 
     async function recordWordAttemptResult(status, conf) {
       const currentWordObj = testWords[currentWordIndex];
+      const cleanWordText = currentWordObj.word.replace(/-/g, ""); // บันทึกลงฐานข้อมูลแบบล้างขีด
       const record = {
         studentId: currentStudent.studentId,
         name: `${currentStudent.prefix}${currentStudent.firstName} ${currentStudent.lastName}`,
         grade: currentStudent.grade,
         room: currentStudent.room,
-        word: currentWordObj.word,
+        word: cleanWordText,
         result: status,
         confidence: conf,
         wordType: currentWordObj.wordType
@@ -1635,7 +1730,7 @@
       }
       const statusText = document.getElementById('mic-status-text');
       if (statusText) {
-        statusText.innerHTML = "<span class='text-emerald-600 font-bold'><i class='fa-solid fa-check-circle mr-1'></i> ออกเสียงถูกต้อง</span>";
+        statusText.innerHTML = "<span class='text-emerald-600 font-bold'><i class='fa-solid fa-check-circle mr-1'></i> ออกเสียงถูกต้องครบถ้วน</span>";
       }
       playSynthesizedBeep(true);
     }
@@ -1674,7 +1769,7 @@
     }
 
     function playTtsSound() {
-      const textToRead = testWords[currentWordIndex].word;
+      const textToRead = testWords[currentWordIndex].word.replace(/-/g, "");
       const msg = new SpeechSynthesisUtterance();
       msg.text = textToRead;
       msg.lang = 'th-TH';
@@ -1890,7 +1985,7 @@
     async function renderAdminStatsTab() {
       try {
         const stats = await apiRequest('getDashboardStatistics', 'GET');
-        lastFetchedStats = stats; // บันทึกข้อมูลแบบ Global เพื่อใช้วิเคราะห์ประมวลผลรายงาน
+        lastFetchedStats = stats; 
 
         document.getElementById('stats-total-students').textContent = `${stats.totalStudents} คน`;
         document.getElementById('stats-total-assessments').textContent = `${stats.totalAssessments} ครั้ง`;
@@ -1947,7 +2042,6 @@
           }
         });
 
-        // หลังจากเรนเดอร์สถิติหลักแล้ว ให้สั่งอัปเดตกราฟพัฒนาการระดับชั้นเรียนแบบละเอียดทันที
         updateGradeDevelopmentChart();
 
       } catch (err) {
@@ -1955,17 +2049,14 @@
       }
     }
 
-    // ฟังก์ชันวาดกราฟพัฒนาการแบบละเอียดในแต่ละรอบประเมินจำแนกเป็นรายชั้นเรียน
     function updateGradeDevelopmentChart() {
       if (!lastFetchedStats || !lastFetchedStats.rawSummaries) return;
       
       const selectedGrade = document.getElementById('admin-grade-dev-select').value;
       const summaries = lastFetchedStats.rawSummaries;
       
-      // กรองการสอบเฉพาะของระดับชั้นที่เลือก
       const filtered = summaries.filter(s => s.grade.toString() === selectedGrade.toString());
       
-      // จัดกลุ่มคะแนนเฉลี่ยแยกตามวันที่จัดสอบ
       const grouped = {};
       filtered.forEach(s => {
         if (!grouped[s.date]) {
@@ -2018,7 +2109,6 @@
       });
     }
 
-    // ฟังก์ชันสร้างรายงานสรุปผลการคัดกรองฉบับประมวลผลความสามารถของโรงเรียน
     function generateScreeningSummaryReport() {
       if (!lastFetchedStats) {
         Swal.fire('แจ้งเตือน', 'กรุณารอโหลดข้อมูลสถิติให้เสร็จสิ้นก่อนประมวลผลรายงาน', 'info');
@@ -2033,7 +2123,6 @@
       document.getElementById('report-passed').textContent = `${lastFetchedStats.passedCount} คน`;
       document.getElementById('report-needs-work').textContent = `${lastFetchedStats.improvementCount} คน`;
 
-      // ประกอบข้อมูลในตารางรายละเอียดแต่ละระดับชั้น
       const tbody = document.getElementById('report-table-body');
       tbody.innerHTML = '';
 
@@ -2051,7 +2140,6 @@
         let passed = 0;
         let improvement = 0;
 
-        // คำนวณจาก rawSummaries
         if (lastFetchedStats.rawSummaries) {
           lastFetchedStats.rawSummaries.forEach(s => {
             if (s.grade.toString() === g.toString()) {
@@ -2063,7 +2151,6 @@
                 improvement++;
               }
 
-              // เก็บสะสมสถิติคะแนนแยกตามกลุ่มคำศัพท์
               totalSkillsScore['คำพื้นฐาน'].sum += (s.basic || 0);
               totalSkillsScore['คำพื้นฐาน'].count++;
               totalSkillsScore['คำประสม'].sum += (s.compound || 0);
@@ -2094,7 +2181,6 @@
         tbody.appendChild(tr);
       }
 
-      // ตรวจสอบวิเคราะห์ความแม่นยำรายทักษะ
       let maxRatio = -1;
       let minRatio = 999;
       let strongSkill = 'ยังไม่ระบุเด่นชัด';
@@ -2118,7 +2204,6 @@
       document.getElementById('report-strengths-desc').textContent = `จากการเก็บข้อมูลพบว่า นักเรียนในระบบภาพรวมแสดงผลสะกดและอ่านออกเสียงถูกต้องสูงสุดในกลุ่มคำประเภท "${strongSkill}" โดยสามารถสะกดเสียงพยัญชนะได้รวดเร็วตามกรอบเวลา ควรเสริมกิจกรรมท้าทายในระดับที่ซับซ้อนขึ้น`;
       document.getElementById('report-weakness-desc').textContent = `จากการเก็บข้อมูลพบข้อบกพร่องในทักษะกลุ่มคำประเภท "${weakSkill}" ซึ่งมีร้อยละความถูกต้องเฉลี่ยค่อนข้างต่ำ ควรเน้นย้ำครูผู้สอนในการจัดทำใบงานสอนเสริมนอกเวลาเรียนเพื่อปรับโครงสร้างสัทอักษรให้สอดคล้องกัน`;
 
-      // เปิดแสดงโมดอลรายงาน
       document.getElementById('admin-report-modal').classList.remove('hidden');
     }
 
