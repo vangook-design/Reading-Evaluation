@@ -922,7 +922,7 @@
     let currentSyllableIndex = 0;
     let targetSyllables = [];
 
-    // ฟังก์ชันความคืบหน้าปุ่มไมโครโฟน
+    // ฟังก์ชันควบคุมสถานะปุ่มไมโครโฟน (เพิ่มกลับเข้าสู่ระบบเพื่อแก้ไขข้อผิดพลาดการดึงคลังคำศัพท์)
     function setMicUIAwake(awake) {
       const micBtn = document.getElementById('mic-btn');
       const micIcon = document.getElementById('mic-icon');
@@ -953,12 +953,15 @@
       return temp;
     }
 
-    // ตรรกะยืดหยุ่นเสียงสะกดใกล้เคียง (Phonetic Mapping)
+    // ตรรกะคัดแยกเสียงสะกดใกล้เคียง (Phonetic Mapping แกนแก้ไขพยางค์สั้นหลุดง่าย)
     function matchThaiSyllablePhonetically(target, spoken) {
       const cleanTarget = getThaiPhoneticEquivalent(target);
       const cleanSpoken = getThaiPhoneticEquivalent(spoken);
 
-      if (cleanSpoken.includes(cleanTarget) || cleanTarget.includes(cleanSpoken)) return true;
+      if (!cleanTarget || !cleanSpoken) return false;
+
+      // 1. ตรวจสอบความถูกต้องตรงกันแบบอักษรเท่ากัน (Exact Phonetic Match) ป้องกันอักษรตัวเดียวหลุดผ่าน
+      if (cleanSpoken === cleanTarget) return true;
 
       const codas = {
         'ก': ['ก', 'ข', 'ค', 'ฆ'],
@@ -998,12 +1001,15 @@
       const normTarget = normalizePhonemes(cleanTarget);
       const normSpoken = normalizePhonemes(cleanSpoken);
 
-      if (normSpoken.includes(normTarget) || normTarget.includes(normSpoken)) {
-        return true;
+      if (normSpoken === normTarget) return true;
+
+      // ป้องกันการแอบสุ่มพูดอักษรพยัญชนะเดี่ยวที่สั้นเกินไปให้ไม่มีวันผ่านเกณฑ์ (เช่น ออกเสียง "ก" เพื่อสะกด "กระ")
+      if (normTarget.length <= 2 && normSpoken !== normTarget) {
+        return false;
       }
 
       const similarity = getPhoneticSimilarity(normTarget, normSpoken);
-      return similarity >= 0.70;
+      return similarity >= 0.75; // กำหนดเกณฑ์คะแนนจำลองขั้นต่ำสูงขึ้นเป็นร้อยละ 75
     }
 
     function getPhoneticSimilarity(target, output) {
@@ -1028,7 +1034,7 @@
       return (longest - distance) / longest;
     }
 
-    // อัลกอริทึมแกนร่วมวิเคราะห์คำสะกดแบบเรียลไทม์ และหั่นคำสะสม (Strict Sequential Matching Engine)
+    // อัลกอริทึมวิเคราะห์ลำดับสะกดและหั่นคำสะสมแบบเรียลไทม์ (Strict Sequential Matching Engine)
     function evaluateSyllableMatching(speechText) {
       let tempSpeech = cleanThaiWord(speechText);
       let matchCount = 0;
@@ -1039,10 +1045,10 @@
         
         if (matchResult.matched) {
           matchCount++;
-          // ทำการหั่นคำที่แมตช์ผ่านไปแล้วออกจากสตริงเสียง (String Consumption) ป้องกันการประเมินผิดจังหวะ
+          // ทำการหั่นคำที่แมตช์ผ่านไปแล้วออกจากสตริงเสียง (String Consumption) ป้องกันการสับสนของพยางค์ถัดไป
           tempSpeech = tempSpeech.substring(matchResult.endIndex);
         } else {
-          // หากพยางค์ปัจจุบันยังไม่อ่านออกเสียง หรือไม่สอดคล้อง ห้ามสลับพยางค์ข้ามไปตรวจสอบพยางค์หลัง
+          // หากพยางค์ปัจจุบันยังสะกดไม่ถูกหรือสะกดเพี้ยน ห้ามข้ามพยางค์อื่นเด็ดขาด
           break;
         }
       }
@@ -1060,7 +1066,7 @@
         }
       }
       
-      // ยืดหยุ่นค้นหาอักขระเยื้องไปข้างหน้าเล็กน้อย 3 ตำแหน่งเพื่อยอมรับสัญญาณรบกวนช่วงต้นเสียง
+      // เปิดการวิเคราะห์เยื้องเสียงเพื่อหลบเลี่ยงเสียงลมหรือเสียงแทรกช่วงต้นประโยค
       for (let start = 0; start <= Math.min(3, source.length - 1); start++) {
         for (let len = 1; len <= Math.min(source.length - start, target.length + 2); len++) {
           const sub = source.substring(start, start + len);
@@ -1073,7 +1079,7 @@
       return { matched: false };
     }
 
-    // เปิดการประมวลผล Web Speech API
+    // เปิดรับสัญญาณเสียงและประมวลผลแบบ Real-time Syllable Tracking พร้อมระบบระบายสีชิดชิดกัน
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRecognition();
@@ -1113,12 +1119,12 @@
         const cleanSpeech = transcript.trim();
         
         if (cleanSpeech && targetSyllables.length > 0) {
-          document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูด: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
+          document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
           
-          // เรียกใช้งานตัวคัดแยกเสียงอักขระย่อยแบบจัดลำดับเข้มงวด
+          // ตรวจจับพยางค์สะกดแบบเรียลไทม์
           const matchedSyllablesCount = evaluateSyllableMatching(cleanSpeech);
 
-          // อัปเดตไฮไลท์สีเขียวแบบแนบชิดเป็นคำเดียวกันกลมกลืน (Contiguous Highlight)
+          // อัปเดตการระบายสีเขียวพยางค์ชิดกันเป็นคำเดียวกลมกลืน (Contiguous Text Colouring)
           for (let idx = 0; idx < targetSyllables.length; idx++) {
             const badgeEl = document.getElementById(`syl-badge-${idx}`);
             if (badgeEl) {
@@ -1130,7 +1136,7 @@
             }
           }
 
-          // ส่งสัญญาณเสียง Beep เมื่อสะกดผ่านพยางค์เพิ่มขึ้น
+          // ส่งสัญญาน Beep เมื่อสะกดผ่านพยางค์เพิ่มขึ้น
           if (matchedSyllablesCount > currentSyllableIndex) {
             playSynthesizedBeep(true);
             currentSyllableIndex = matchedSyllablesCount;
@@ -1567,7 +1573,7 @@
       }
     }
 
-    // ฟังก์ชันจัดเตรียมคำศัพท์ แสดงแบบรวมเป็นคำเดียวกลมกลืน (Contiguous Word Layout)
+    // ฟังก์ชันจัดเตรียมคำศัพท์ แสดงสแปนพยางค์แบบแนบชิดกันเป็นคำเดียวกลมกลืน (Contiguous Word Layout)
     function renderWordStage() {
       const currentWordObj = testWords[currentWordIndex];
       
@@ -1645,9 +1651,25 @@
 
         if (timeRemainingForWord <= 0) {
           clearInterval(countdownTimer);
-          evaluateAndClosePhase();
+          handleTimeoutFailure(); // เปลี่ยนเป็นการสั่งข้ามข้อทันทีเมื่อหมดเวลาโดยไร้ความหน่วงค้างระบบ
         }
       }, 1000);
+    }
+
+    // ตรรกะประเมินข้ามข้อทันทีแบบเรียลไทม์เมื่อหมดเวลา 15 วินาทีของข้อนั้น ๆ เพื่ออุดปัญหา "กำลังประมวลผลคำตอบ..." ค้างถาวร
+    function handleTimeoutFailure() {
+      stopListeningState();
+      setWrongUI(); // จัดทำหน้าจอกล่องสีแดงว่าผิดพยางค์สะกดในทันที
+      
+      // บันทึกระเบียนประวัติความล้มเหลวลงฐานข้อมูล Google Sheets ในทันที
+      recordWordAttemptResult('ไม่ผ่าน', 0);
+      
+      document.getElementById('mic-status-text').innerHTML = `<span class="text-rose-600 font-bold"><i class="fa-solid fa-clock mr-1"></i> หมดเวลา! กำลังสลับไปข้อถัดไป...</span>`;
+      
+      // ทรานซิชันเวลาสั้น ๆ 1.2 วินาทีเพื่อให้เห็นผลประเมินตัววิ่งก่อนสลับคำใหม่ทันที
+      setTimeout(() => {
+        proceedToNextWord();
+      }, 1200);
     }
 
     function evaluateAndClosePhase() {
