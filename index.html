@@ -235,7 +235,7 @@
       </div>
     </section>
 
-    <!-- VIEW 4: หน้าเวทีประเมินการอ่านออกเสียงสะกดคำ (แสดงผลแบบแยกพยางค์อย่างเสถียร) -->
+    <!-- VIEW 4: หน้าเวทีประเมินการอ่านออกเสียงสะกดคำ (แสดงแบบชิดกันเป็นคำเดียวกลมกลืน) -->
     <section id="view-test" class="view-section hidden py-4 animate-fadeIn no-print">
       <div class="max-w-4xl mx-auto grid grid-cols-1 gap-6">
         
@@ -264,8 +264,8 @@
           
           <div class="flex justify-between items-center border-b pb-4">
             <div>
-              <h2 class="text-sm font-bold text-slate-700">จงอ่านออกเสียงคำเต็ม และสะกดเสียงทีละพยางค์</h2>
-              <p class="text-xs text-slate-400">กรุณาออกเสียงสะกดจากซ้ายไปขวาให้ แถบสีพยางค์ เปลี่ยนเป็นสีเขียวครบทุกตัว</p>
+              <h2 class="text-sm font-bold text-slate-700">จงอ่านออกเสียงสะกดคำศัพท์ภาษาไทยที่ปรากฏ</h2>
+              <p class="text-xs text-slate-400">กรุณาออกเสียงสะกดคำอักขระให้ ค่อยๆ เปลี่ยนเป็นสีเขียว ครบทั้งประโยค</p>
             </div>
             <button id="tts-audio-btn" onclick="playTtsSound()" class="hidden bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold py-2 px-3.5 rounded-full border border-amber-200 transition flex items-center space-x-1">
               <i class="fa-solid fa-volume-high"></i>
@@ -284,8 +284,8 @@
             </div>
           </div>
 
-          <!-- แสดงคำเป้าหมายเด่นใหญ่ (แยกส่วนคำเต็มด้านบน และกล่องพยางค์ badges ด้านล่าง) -->
-          <div id="word-card-container" class="text-center py-10 bg-slate-50/50 rounded-2xl border border-slate-150 transition-all duration-300">
+          <!-- แสดงคำเป้าหมายเด่นใหญ่ (แยกสแปนตรวจสอบเสียงเรียงลำดับแบบชิดกันเป็นคำกลมกลืน) -->
+          <div id="word-card-container" class="text-center py-12 bg-slate-50/50 rounded-2xl border border-slate-150 transition-all duration-300 animate-fadeIn">
             <!-- ดึงโครงสร้างสแปนคำย่อยผ่าน JavaScript -->
             <h1 id="target-word-display" class="text-6xl sm:text-7xl md:text-8xl font-black text-indigo-950 tracking-wider">กำลังสุ่มคำ...</h1>
             <p id="target-word-category" class="text-xs text-slate-400 mt-4">หมวดหมู่: - | ระดับความยาก: -</p>
@@ -422,7 +422,7 @@
               <p class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide">ทำแบบคัดกรองแล้ว</p>
               <h2 id="stats-total-assessments" class="text-2xl font-black text-indigo-600 mt-2">0 ครั้ง</h2>
             </div>
-            <div class="bg-white p-5 rounded-2xl custom-shadow border border-slate-100">
+            <div class="bg-white p-5 rounded-2xl custom-shadow border border-slate-150">
               <p class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide">ผ่านระดับ ดี/พอใช้</p>
               <h2 id="stats-passed" class="text-2xl font-black text-emerald-600 mt-2">0 คน</h2>
             </div>
@@ -922,6 +922,20 @@
     let currentSyllableIndex = 0;
     let targetSyllables = [];
 
+    // ฟังก์ชันความคืบหน้าปุ่มไมโครโฟน
+    function setMicUIAwake(awake) {
+      const micBtn = document.getElementById('mic-btn');
+      const micIcon = document.getElementById('mic-icon');
+      if (!micBtn || !micIcon) return;
+      if (awake) {
+        micBtn.className = "w-16 h-16 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-rose-200 animate-pulse focus:outline-none";
+        micIcon.className = "fa-solid fa-microphone-lines";
+      } else {
+        micBtn.className = "w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-indigo-100 focus:outline-none";
+        micIcon.className = "fa-solid fa-microphone";
+      }
+    }
+
     // --- ส่วนงานถอดรหัสวิเคราะห์เสียงและปรับการประเมินเทียบเสียงเพี้ยน (Phonetic Lenient Mapping) ---
     function cleanThaiWord(word) {
       if (!word) return "";
@@ -1014,7 +1028,7 @@
       return (longest - distance) / longest;
     }
 
-    // อัลกอริทึมวิเคราะห์ลำดับสะกดและหั่นคำสะสมแบบเรียลไทม์ (Strict Sequential Matching Engine)
+    // อัลกอริทึมแกนร่วมวิเคราะห์คำสะกดแบบเรียลไทม์ และหั่นคำสะสม (Strict Sequential Matching Engine)
     function evaluateSyllableMatching(speechText) {
       let tempSpeech = cleanThaiWord(speechText);
       let matchCount = 0;
@@ -1025,10 +1039,10 @@
         
         if (matchResult.matched) {
           matchCount++;
-          // หั่นคำที่ตรวจผ่านแล้วออกจากประโยคทันทีเพื่อป้องกันการตรวจจับซ้ำซ้อน
+          // ทำการหั่นคำที่แมตช์ผ่านไปแล้วออกจากสตริงเสียง (String Consumption) ป้องกันการประเมินผิดจังหวะ
           tempSpeech = tempSpeech.substring(matchResult.endIndex);
         } else {
-          // หากพยางค์ปัจจุบันยังสะกดไม่ถูกหรือสะกดเพี้ยน ห้ามข้ามพยางค์อื่นเด็ดขาด
+          // หากพยางค์ปัจจุบันยังไม่อ่านออกเสียง หรือไม่สอดคล้อง ห้ามสลับพยางค์ข้ามไปตรวจสอบพยางค์หลัง
           break;
         }
       }
@@ -1038,7 +1052,7 @@
     function findPhoneticMatchInString(source, target) {
       if (!source || !target) return { matched: false };
       
-      // สแกนตรวจสอบตั้งแต่จุดเริ่มต้นของประโยคพูด
+      // ตรวจสอบตั้งแต่ต้นคำพูด (ความกว้างพยางค์ภาษาไทยส่วนใหญ่ไม่เกินความยาวจริงบวกเศษผันเสียง 2 ตัวอักษร)
       for (let len = 1; len <= Math.min(source.length, target.length + 2); len++) {
         const sub = source.substring(0, len);
         if (matchThaiSyllablePhonetically(target, sub)) {
@@ -1046,7 +1060,7 @@
         }
       }
       
-      // เปิดการวิเคราะห์เยื้องเสียงเพื่อหลบเลี่ยงเสียงลมหรือเสียงแทรกช่วงต้นประโยค
+      // ยืดหยุ่นค้นหาอักขระเยื้องไปข้างหน้าเล็กน้อย 3 ตำแหน่งเพื่อยอมรับสัญญาณรบกวนช่วงต้นเสียง
       for (let start = 0; start <= Math.min(3, source.length - 1); start++) {
         for (let len = 1; len <= Math.min(source.length - start, target.length + 2); len++) {
           const sub = source.substring(start, start + len);
@@ -1099,24 +1113,24 @@
         const cleanSpeech = transcript.trim();
         
         if (cleanSpeech && targetSyllables.length > 0) {
-          document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
+          document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูด: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
           
-          // ตรวจจับพยางค์สะกดแบบเรียลไทม์
+          // เรียกใช้งานตัวคัดแยกเสียงอักขระย่อยแบบจัดลำดับเข้มงวด
           const matchedSyllablesCount = evaluateSyllableMatching(cleanSpeech);
 
-          // อัปเดตการระบายสีเขียวรายพยางค์ตามความถูกต้อง
+          // อัปเดตไฮไลท์สีเขียวแบบแนบชิดเป็นคำเดียวกันกลมกลืน (Contiguous Highlight)
           for (let idx = 0; idx < targetSyllables.length; idx++) {
             const badgeEl = document.getElementById(`syl-badge-${idx}`);
             if (badgeEl) {
               if (idx < matchedSyllablesCount) {
-                badgeEl.className = "px-6 py-3 rounded-2xl text-xl font-bold bg-emerald-500 text-white border border-emerald-600 shadow-md transition-all duration-300 transform scale-105";
+                badgeEl.className = "text-emerald-500 font-black transition-all duration-300";
               } else {
-                badgeEl.className = "px-6 py-3 rounded-2xl text-xl font-bold bg-slate-100 text-slate-500 border border-slate-200 shadow-sm transition-all duration-300";
+                badgeEl.className = "text-slate-900 transition-all duration-300";
               }
             }
           }
 
-          // ส่งสัญญาน Beep เมื่อสะกดผ่านพยางค์เพิ่มขึ้น
+          // ส่งสัญญาณเสียง Beep เมื่อสะกดผ่านพยางค์เพิ่มขึ้น
           if (matchedSyllablesCount > currentSyllableIndex) {
             playSynthesizedBeep(true);
             currentSyllableIndex = matchedSyllablesCount;
@@ -1553,7 +1567,7 @@
       }
     }
 
-    // ฟังก์ชันจัดเตรียมคำศัพท์ แสดงสแปนพยางค์แบบ Badge และสแปนคำเต็มด้านบน
+    // ฟังก์ชันจัดเตรียมคำศัพท์ แสดงแบบรวมเป็นคำเดียวกลมกลืน (Contiguous Word Layout)
     function renderWordStage() {
       const currentWordObj = testWords[currentWordIndex];
       
@@ -1562,48 +1576,28 @@
       document.getElementById('test-word-type-meta').textContent = currentWordObj.wordType;
       document.getElementById('test-unclear-meta').textContent = `สัญญาณเสียงสแตนด์บายปกติ`;
       
-      // ดึงโครงสร้างพยางค์ (เช่น "กระ-ดาษ")
       const rawTargetWord = currentWordObj.word;
       targetSyllables = rawTargetWord.split('-'); // ดึงพยางค์แยกชิ้นย่อย
       currentSyllableIndex = 0; 
       hasMatchedCurrentWord = false;
 
-      // แสดงคำเต็มขนาดใหญ่ด้านบน
-      const fullWordDisplay = rawTargetWord.replace(/-/g, "");
-
-      // สร้างแผงสแตนด์บายของแต่ละพยางค์ด้านล่าง
-      let badgesHtml = "";
+      // จัดพิมพ์ตัวอักษรชิดติดกันเป็นคำเดียวกัน โดยแบ่ง Span ล่องหนคุมพยางค์
+      let wordHtml = "";
       targetSyllables.forEach((syl, idx) => {
-        badgesHtml += `
-          <span id="syl-badge-${idx}" class="px-6 py-3 rounded-2xl text-xl font-bold bg-slate-100 text-slate-500 border border-slate-200 shadow-sm transition-all duration-300">
-            ${syl}
-          </span>
-        `;
-        if (idx < targetSyllables.length - 1) {
-          badgesHtml += `<i class="fa-solid fa-chevron-right text-xs text-slate-300"></i>`;
-        }
+        wordHtml += `<span id="syl-badge-${idx}" class="transition-all duration-300 text-slate-900">${syl}</span>`;
       });
 
-      // จัดวางองค์ประกอบ UI สองส่วน (คำเต็มด้านบน, พยางค์ Badge ด้านล่าง)
+      // จัดวางองค์ประกอบ UI
       document.getElementById('word-card-container').innerHTML = `
         <div class="flex flex-col items-center justify-center space-y-6 w-full">
           <div>
-            <p class="text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">จงอ่านออกเสียงคำว่า:</p>
-            <h1 id="target-word-full" class="text-5xl sm:text-6xl md:text-7xl font-black text-indigo-950 tracking-wider transition-all duration-300">
-              ${fullWordDisplay}
+            <p class="text-xs text-slate-400 mb-2 font-bold uppercase tracking-wider">จงอ่านออกเสียงคำศัพท์:</p>
+            <h1 class="text-6xl sm:text-7xl md:text-8xl font-black tracking-normal select-none">
+              ${wordHtml}
             </h1>
           </div>
           
-          <div class="w-24 border-t-2 border-slate-150"></div>
-          
-          <div class="w-full">
-            <p class="text-[10px] text-slate-400 mb-3 font-extrabold uppercase tracking-widest">สถานะการออกเสียงสะกดทีละพยางค์:</p>
-            <div class="flex flex-wrap items-center justify-center gap-3">
-              ${badgesHtml}
-            </div>
-          </div>
-          
-          <p id="target-word-category" class="text-xs text-slate-400">หมวดหมู่: ${currentWordObj.category} | ระดับความยาก: ${currentWordObj.difficulty}</p>
+          <p id="target-word-category" class="text-xs text-slate-400 mt-2">หมวดหมู่: ${currentWordObj.category} | ระดับความยาก: ${currentWordObj.difficulty}</p>
         </div>
       `;
 
