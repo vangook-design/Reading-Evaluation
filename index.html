@@ -81,7 +81,8 @@
   <!-- Main Content Body -->
   <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-start">
 
-    <!-- VIEW 1: หน้าหลัก / Landing Page (ฉบับปรับปรุงสีสันและความสวยงามเป็นเลิศ) -->
+    <!-- VIEW 1: หน้าหลัก / Landing Page -->
+<!-- VIEW 1: หน้าหลัก / Landing Page (ฉบับปรับปรุงสีสันและความสวยงามเป็นเลิศ) -->
     <section id="view-home" class="view-section py-8 md:py-14 flex flex-col items-center justify-center space-y-8 animate-fadeIn px-4 no-print bg-gradient-to-b from-slate-50 via-indigo-50/20 to-slate-50 rounded-3xl">
       <div class="text-center max-w-3xl space-y-4 md:space-y-6">
         <span class="bg-indigo-100 text-indigo-800 text-xs font-black px-6 py-2.5 rounded-full uppercase tracking-widest border border-indigo-200 inline-block shadow-sm shadow-indigo-100 animate-bounce">
@@ -151,7 +152,6 @@
         </button>
       </div>
     </section>
-
     <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code (ล็อกอินด้วย QR-Code 100%) -->
     <section id="view-scan" class="view-section hidden py-6 animate-fadeIn no-print">
       <div class="max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-6 space-y-6">
@@ -932,7 +932,7 @@
     let currentSyllableIndex = 0;
     let targetSyllables = [];
 
-    // ฟังก์ชันควบคุมสถานะปุ่มไมโครโฟน
+    // ฟังก์ชันควบคุมสถานะปุ่มไมโครโฟน (เพิ่มกลับเข้าสู่ระบบเพื่อแก้ไขข้อผิดพลาดการดึงคลังคำศัพท์)
     function setMicUIAwake(awake) {
       const micBtn = document.getElementById('mic-btn');
       const micIcon = document.getElementById('mic-icon');
@@ -946,7 +946,229 @@
       }
     }
 
-    // --- ตรรกะตรวจวิเคราะห์และเทียบระดับเสียงได้ถูกถอดออกจากหน้าเว็บนี้โดยสมบูรณ์ เพื่อความปลอดภัยและทำงานผ่าน Dynamic Handshake ---
+    // --- ส่วนงานถอดรหัสวิเคราะห์เสียงและปรับการประเมินเทียบเสียงเพี้ยน (Phonetic Lenient Mapping) ---
+    function cleanThaiWord(word) {
+      if (!word) return "";
+      return word.trim()
+        .replace(/[่้๊๋]/g, "") 
+        .replace(/[์]/g, "")    
+        .replace(/[\s\-\_\.\,\?]/g, "") 
+        .toLowerCase();
+    }
+
+    function getThaiPhoneticEquivalent(text) {
+      if (!text) return "";
+      let temp = cleanThaiWord(text);
+      temp = temp.replace(/[ก-ฮ][์]/g, "").replace(/[์]/g, "");
+      return temp;
+    }
+
+    // ตรรกะคัดแยกเสียงสะกดใกล้เคียง (Phonetic Mapping แกนแก้ไขพยางค์สั้นหลุดง่าย)
+    function matchThaiSyllablePhonetically(target, spoken) {
+      const cleanTarget = getThaiPhoneticEquivalent(target);
+      const cleanSpoken = getThaiPhoneticEquivalent(spoken);
+
+      if (!cleanTarget || !cleanSpoken) return false;
+
+      // 1. ตรวจสอบความถูกต้องตรงกันแบบอักษรเท่ากัน (Exact Phonetic Match) ป้องกันอักษรตัวเดียวหลุดผ่าน
+      if (cleanSpoken === cleanTarget) return true;
+
+      const codas = {
+        'ก': ['ก', 'ข', 'ค', 'ฆ'],
+        'ด': ['ด', 'จ', 'ช', 'ซ', 'ฎ', 'ฏ', 'ฐ', 'ฑ', 'ฒ', 'ต', 'ถ', 'ท', 'ธ', 'ศ', 'ษ', 'ส'],
+        'บ': ['บ', 'ป', 'พ', 'ฟ', 'ภ'],
+        'น': ['น', 'ณ', 'ญ', 'ร', 'ล', 'ฬ'],
+        'ม': ['ม'],
+        'ง': ['ง'],
+        'ย': ['ย'],
+        'ว': ['ว']
+      };
+
+      function normalizePhonemes(str) {
+        let res = str;
+        for (let key in codas) {
+          codas[key].forEach(char => {
+            if (res.endsWith(char) && char !== key) {
+              res = res.substring(0, res.length - 1) + key;
+            }
+          });
+        }
+        res = res.replace(/^กร/, "ก")
+                 .replace(/^กล/, "ก")
+                 .replace(/^ขร/, "ข")
+                 .replace(/^ขล/, "ข")
+                 .replace(/^คร/, "ค")
+                 .replace(/^คล/, "ค")
+                 .replace(/^ตร/, "ต")
+                 .replace(/^ปร/, "ป")
+                 .replace(/^ปล/, "ป")
+                 .replace(/^พร/, "พ")
+                 .replace(/^พล/, "พ")
+                 .replace(/^ผล/, "ผ");
+        return res;
+      }
+
+      const normTarget = normalizePhonemes(cleanTarget);
+      const normSpoken = normalizePhonemes(cleanSpoken);
+
+      if (normSpoken === normTarget) return true;
+
+      // ป้องกันการแอบสุ่มพูดอักษรพยัญชนะเดี่ยวที่สั้นเกินไปให้ไม่มีวันผ่านเกณฑ์ (เช่น ออกเสียง "ก" เพื่อสะกด "กระ")
+      if (normTarget.length <= 2 && normSpoken !== normTarget) {
+        return false;
+      }
+
+      const similarity = getPhoneticSimilarity(normTarget, normSpoken);
+      return similarity >= 0.75; // กำหนดเกณฑ์คะแนนจำลองขั้นต่ำสูงขึ้นเป็นร้อยละ 75
+    }
+
+    function getPhoneticSimilarity(target, output) {
+      if (!target || !output) return 0.0;
+      if (target === output) return 1.0;
+
+      const track = Array(output.length + 1).fill(null).map(() => Array(target.length + 1).fill(null));
+      for (let i = 0; i <= target.length; i++) track[0][i] = i;
+      for (let j = 0; j <= output.length; j++) track[j][0] = j;
+      for (let j = 1; j <= output.length; j++) {
+        for (let i = 1; i <= target.length; i++) {
+          const indicator = target[i - 1] === output[j - 1] ? 0 : 1;
+          track[j][i] = Math.min(
+            track[j][i - 1] + 1,
+            track[j - 1][i] + 1,
+            track[j - 1][i - 1] + indicator
+          );
+        }
+      }
+      const distance = track[output.length][target.length];
+      const longest = Math.max(target.length, output.length);
+      return (longest - distance) / longest;
+    }
+
+    // อัลกอริทึมวิเคราะห์ลำดับสะกดและหั่นคำสะสมแบบเรียลไทม์ (Strict Sequential Matching Engine)
+    function evaluateSyllableMatching(speechText) {
+      let tempSpeech = cleanThaiWord(speechText);
+      let matchCount = 0;
+
+      for (let i = 0; i < targetSyllables.length; i++) {
+        const targetSyl = cleanThaiWord(targetSyllables[i]);
+        const matchResult = findPhoneticMatchInString(tempSpeech, targetSyl);
+        
+        if (matchResult.matched) {
+          matchCount++;
+          // ทำการหั่นคำที่แมตช์ผ่านไปแล้วออกจากสตริงเสียง (String Consumption) ป้องกันการสับสนของพยางค์ถัดไป
+          tempSpeech = tempSpeech.substring(matchResult.endIndex);
+        } else {
+          // หากพยางค์ปัจจุบันยังสะกดไม่ถูกหรือสะกดเพี้ยน ห้ามข้ามพยางค์อื่นเด็ดขาด
+          break;
+        }
+      }
+      return matchCount;
+    }
+
+    function findPhoneticMatchInString(source, target) {
+      if (!source || !target) return { matched: false };
+      
+      // ตรวจสอบตั้งแต่ต้นคำพูด (ความกว้างพยางค์ภาษาไทยส่วนใหญ่ไม่เกินความยาวจริงบวกเศษผันเสียง 2 ตัวอักษร)
+      for (let len = 1; len <= Math.min(source.length, target.length + 2); len++) {
+        const sub = source.substring(0, len);
+        if (matchThaiSyllablePhonetically(target, sub)) {
+          return { matched: true, endIndex: len };
+        }
+      }
+      
+      // เปิดการวิเคราะห์เยื้องเสียงเพื่อหลบเลี่ยงเสียงลมหรือเสียงแทรกช่วงต้นประโยค
+      for (let start = 0; start <= Math.min(3, source.length - 1); start++) {
+        for (let len = 1; len <= Math.min(source.length - start, target.length + 2); len++) {
+          const sub = source.substring(start, start + len);
+          if (matchThaiSyllablePhonetically(target, sub)) {
+            return { matched: true, endIndex: start + len };
+          }
+        }
+      }
+      
+      return { matched: false };
+    }
+
+    // เปิดรับสัญญาณเสียงและประมวลผลแบบ Real-time Syllable Tracking พร้อมระบบระบายสีชิดชิดกัน
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'th-TH';
+
+      recognition.onstart = function() {
+        isListening = true;
+        setMicUIAwake(true);
+      };
+
+      recognition.onerror = function(e) {
+        if (e.error !== 'no-speech') {
+          isListening = false;
+        }
+      };
+
+      recognition.onend = function() {
+        isListening = false;
+        if (timeRemainingForWord > 0 && !document.getElementById('view-test').classList.contains('hidden') && !hasMatchedCurrentWord) {
+          try {
+            recognition.start();
+          } catch(e) {}
+        } else {
+          setMicUIAwake(false);
+        }
+      };
+
+      recognition.onresult = function(event) {
+        if (hasMatchedCurrentWord) return;
+
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        const cleanSpeech = transcript.trim();
+        
+        if (cleanSpeech && targetSyllables.length > 0) {
+          document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
+          
+          // ตรวจจับพยางค์สะกดแบบเรียลไทม์
+          const matchedSyllablesCount = evaluateSyllableMatching(cleanSpeech);
+
+          // อัปเดตการระบายสีเขียวพยางค์ชิดกันเป็นคำเดียวกลมกลืน (Contiguous Text Colouring)
+          for (let idx = 0; idx < targetSyllables.length; idx++) {
+            const badgeEl = document.getElementById(`syl-badge-${idx}`);
+            if (badgeEl) {
+              if (idx < matchedSyllablesCount) {
+                badgeEl.className = "text-emerald-500 font-black transition-all duration-300";
+              } else {
+                badgeEl.className = "text-slate-900 transition-all duration-300";
+              }
+            }
+          }
+
+          // ส่งสัญญาน Beep เมื่อสะกดผ่านพยางค์เพิ่มขึ้น
+          if (matchedSyllablesCount > currentSyllableIndex) {
+            playSynthesizedBeep(true);
+            currentSyllableIndex = matchedSyllablesCount;
+          }
+
+          // ตรวจสอบครบตามเงื่อนไข (ผ่านครบทุกพยางค์) จึงจะนับว่าถูกต้อง
+          if (currentSyllableIndex === targetSyllables.length) {
+            hasMatchedCurrentWord = true;
+            if (countdownTimer) clearInterval(countdownTimer);
+            stopListeningState();
+            setCorrectUI();
+            
+            const currentWordObj = testWords[currentWordIndex];
+            recordWordAttemptResult('ผ่าน', 0.99);
+            scoreByWordType[currentWordObj.wordType].correct++;
+            setTimeout(() => { proceedToNextWord(); }, 1500);
+          }
+        }
+      };
+    } else {
+      document.getElementById('fallback-test-inputs').classList.remove('hidden');
+    }
 
     async function apiRequest(action, method = 'GET', data = {}) {
       try {
@@ -985,7 +1207,7 @@
       fetchFreshSystemSettings();
     });
 
-    function loadCachedData() {
+function loadCachedData() {
       const cachedSettings = localStorage.getItem('screening_settings');
       const cachedPubStats = localStorage.getItem('screening_pub_stats');
 
@@ -1004,30 +1226,12 @@
       }
     }
 
-    // ฟังก์ชันเชื่อมประกอบโครงสร้างโมดูลรักษาความปลอดภัยวิเคราะห์เสียงพูดสะกดคำแบบพลวัตเมื่อเปิดหน้าแรก (Dynamic Security Injection)
-    async function fetchFreshSystemSettings() {
+async function fetchFreshSystemSettings() {
       try {
-        const [settings, pubStats, engineResponse] = await Promise.all([
+        const [settings, pubStats] = await Promise.all([
           apiRequest('getSystemSettings', 'GET'),
-          apiRequest('getPublicStats', 'GET'),
-          apiRequest('getPhoneticEngine', 'GET') 
+          apiRequest('getPublicStats', 'GET')
         ]);
-
-        if (engineResponse && engineResponse.script) {
-          try {
-            // ปรับปรุงกลไกถอดรหัสรองรับอักษรภาษาไทยเต็มระบบ ป้องกันอาการ URI malformed
-            const decodedScript = decodeURIComponent(atob(engineResponse.script).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            
-            const mountEngine = new Function(decodedScript);
-            mountEngine();
-          } catch (scriptErr) {
-            console.error("การโหลดโมดูลวิเคราะห์ภายในล้มเหลว: ", scriptErr);
-          }
-        } else {
-          throw new Error("ระบบปลายทางปฏิเสธการจัดส่งโมดูลวิเคราะห์ระดับเสียง");
-        }
 
         if (settings) {
           systemSettings = settings;
@@ -1040,6 +1244,7 @@
           document.getElementById('home-stat-daily').textContent = pubStats.daily;
           document.getElementById('home-stat-total').textContent = pubStats.total;
           
+          // บันทึกตัวเลขผู้ใช้งานลงทะเบียนรายคนมาแสดงผลในหน้าแรก
           if (document.getElementById('home-stat-registered')) {
             document.getElementById('home-stat-registered').textContent = `${pubStats.registered || 0} คน`;
           }
@@ -1048,14 +1253,9 @@
         }
       } catch (err) {
         console.warn("ไม่สามารถเรียกข้อมูลสดได้ ระบบใช้โหมดแคชเสถียรภาพภายนอกแทน: ", err);
-        Swal.fire({
-          icon: 'warning',
-          title: 'จำลองการเชื่อมต่อออฟไลน์',
-          text: 'ระบบไม่สามารถยืนยันโครงสร้างความปลอดภัยหรือเรียกสดข้อมูลคลังคำศัพท์ได้บางส่วน',
-          confirmButtonColor: '#4f46e5'
-        });
       }
     }
+
     function renderLatestRoundTable(latestRound) {
       document.getElementById('home-round-dates').textContent = `รอบประเมินล่าสุด: ${latestRound.latestDateRange}`;
       const tbody = document.getElementById('home-round-stats-body');
@@ -1204,6 +1404,56 @@
       }
     }
 
+    function renderStudentProgressChart(history) {
+      const ctx = document.getElementById('studentProgressChart').getContext('2d');
+      if (studentProgressChartInstance) {
+        studentProgressChartInstance.destroy();
+      }
+      
+      const chartLabels = [];
+      const chartData = [];
+      
+      const reversedHistory = [...history].reverse();
+      reversedHistory.forEach((row, idx) => {
+        chartLabels.push(`รอบที่ ${idx + 1} (${row.date.split(" ")[0]})`);
+        chartData.push(row.score !== undefined ? Number(row.score) : 0);
+      });
+      
+      if (chartLabels.length === 0) {
+        chartLabels.push("ยังไม่มีข้อมูลการประเมิน");
+        chartData.push(0);
+      }
+
+      studentProgressChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartLabels,
+          datasets: [{
+            label: 'พัฒนาการคะแนนที่ได้',
+            data: chartData,
+            borderColor: 'rgb(79, 70, 229)',
+            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+            borderWidth: 3,
+            tension: 0.3,
+            fill: true,
+            pointBackgroundColor: 'rgb(79, 70, 229)',
+            pointRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              min: 0,
+              max: 10,
+              ticks: { stepSize: 1 }
+            }
+          }
+        }
+      });
+    }
+
     function renderStudentHistoryTable(history) {
       const tbody = document.getElementById('profile-student-history-body');
       tbody.innerHTML = '';
@@ -1342,7 +1592,7 @@
       }
     }
 
-    // ฟังก์ชันจัดเตรียมคำศัพท์ แสดงแบบรวมเป็นคำเดียวกลมกลืน (Contiguous Word Layout)
+    // ฟังก์ชันจัดเตรียมคำศัพท์ แสดงสแปนพยางค์แบบแนบชิดกันเป็นคำเดียวกลมกลืน (Contiguous Word Layout)
     function renderWordStage() {
       const currentWordObj = testWords[currentWordIndex];
       
@@ -1521,33 +1771,6 @@
         await apiRequest('saveWordResult', 'POST', { record });
       } catch (err) {
         console.warn("ไม่สามารถบันทึกประวัติการอ่านรายคำได้: ", err);
-      }
-    }
-
-    // ตรรกะกระบวนการตัดสินวิเคราะห์คะแนนเสียงสะกดรายคำ (ตัวหลักป้องกันระบบสะดุดค้าง)
-    function processPronunciationResult(speechText, confidence) {
-      if (countdownTimer) clearInterval(countdownTimer);
-      stopListeningState();
-      
-      const currentWordObj = testWords[currentWordIndex];
-      const cleanTarget = currentWordObj.word.replace(/-/g, "").trim();
-      const cleanSpeech = speechText.trim();
-      
-      document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
-      
-      // ดึงฟังก์ชันเทียบความคล้ายคลึงเสียงสัทอักษรที่ประมวลผลบน RAM (ป้องกัน Copy)
-      const similarity = window.getPhoneticSimilarity(cleanTarget, cleanSpeech);
-      const isMatch = (similarity >= 0.70);
-
-      if (isMatch) {
-        setCorrectUI();
-        recordWordAttemptResult('ผ่าน', confidence);
-        scoreByWordType[currentWordObj.wordType].correct++;
-        setTimeout(() => { proceedToNextWord(); }, 1500);
-      } else {
-        setWrongUI();
-        recordWordAttemptResult('ไม่ผ่าน', confidence); 
-        setTimeout(() => { proceedToNextWord(); }, 1500);
       }
     }
 
@@ -2115,6 +2338,8 @@
 
     function openWordModal() {
       document.getElementById('word-form').reset();
+      document.getElementById('form-word-id').value = '';
+      document.getElementById('word-modal-title').textContent = "ลงทะเบียนข้อสอบคำศัพท์คำใหม่";
       document.getElementById('word-crud-modal').classList.remove('hidden');
     }
 
