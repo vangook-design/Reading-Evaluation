@@ -82,7 +82,6 @@
   <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-start">
 
     <!-- VIEW 1: หน้าหลัก / Landing Page -->
-<!-- VIEW 1: หน้าหลัก / Landing Page (ฉบับปรับปรุงสีสันและความสวยงามเป็นเลิศ) -->
     <section id="view-home" class="view-section py-8 md:py-14 flex flex-col items-center justify-center space-y-8 animate-fadeIn px-4 no-print bg-gradient-to-b from-slate-50 via-indigo-50/20 to-slate-50 rounded-3xl">
       <div class="text-center max-w-3xl space-y-4 md:space-y-6">
         <span class="bg-indigo-100 text-indigo-800 text-xs font-black px-6 py-2.5 rounded-full uppercase tracking-widest border border-indigo-200 inline-block shadow-sm shadow-indigo-100 animate-bounce">
@@ -152,6 +151,7 @@
         </button>
       </div>
     </section>
+
     <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code (ล็อกอินด้วย QR-Code 100%) -->
     <section id="view-scan" class="view-section hidden py-6 animate-fadeIn no-print">
       <div class="max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-6 space-y-6">
@@ -224,7 +224,7 @@
 
           <div class="space-y-3">
             <h3 class="font-bold text-xs text-slate-500 uppercase tracking-wide flex items-center"><i class="fa-solid fa-clock-rotate-left mr-1.5 text-indigo-600"></i>ประวัติการคัดกรองครั้งก่อนหน้า</h3>
-            <div class="overflow-hidden border border-slate-100 rounded-xl max-h-48 overflow-y-auto bg-white">
+            <div class="overflow-hidden border border-slate-100 rounded-xl max-h-48 overflow-y-auto bg-white shadow-sm">
               <table class="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr class="bg-slate-50 text-slate-500 font-bold border-b">
@@ -413,7 +413,7 @@
             <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-user-shield text-indigo-600 mr-1.5"></i>ระบบจัดการหลังบ้านสำหรับครู</h2>
             <p class="text-xs text-slate-400">ควบคุมข้อมูลสถิติ คลังคำศัพท์ และความคืบหน้าภาพถ่ายรายบุคคล</p>
           </div>
-          <div class="flex flex-wrap gap-1">
+          <div class="flex flex-wrap gap-1 font-sans">
             <button onclick="switchAdminTab('stats')" class="admin-tab-btn bg-indigo-600 text-white text-xs font-bold py-2 px-3.5 rounded-lg">ภาพรวมสถิติ</button>
             <button onclick="switchAdminTab('words')" class="admin-tab-btn bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 text-xs font-bold py-2 px-3.5 rounded-lg">จัดการคลังคำศัพท์</button>
             <button onclick="switchAdminTab('students')" class="admin-tab-btn bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 text-xs font-bold py-2 px-3.5 rounded-lg">ประวัตินักเรียนและ QR</button>
@@ -465,7 +465,10 @@
             <!-- ซ้าย: กราฟวิวัฒนาการแบบละเอียด -->
             <div class="lg:col-span-7 bg-white p-6 rounded-2xl custom-shadow border border-slate-100 font-sans">
               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-                <h3 class="font-bold text-xs text-slate-600 uppercase"><i class="fa-solid fa-chart-line text-indigo-600 mr-1.5"></i>วิวัฒนาการประเมินรายชั้นเรียนในแต่ละรอบ</h3>
+                <div class="flex flex-col">
+                  <h3 class="font-bold text-xs text-slate-600 uppercase"><i class="fa-solid fa-chart-line text-indigo-600 mr-1.5"></i>วิวัฒนาการประเมินรายชั้นเรียนในแต่ละรอบ</h3>
+                  <p class="text-[10px] text-rose-500 font-bold mt-1" id="admin-current-round-text">รอบประเมินปัจจุบัน: กำลังโหลด...</p>
+                </div>
                 <div class="flex items-center space-x-1">
                   <label for="admin-grade-dev-select" class="text-xs text-slate-400 whitespace-nowrap font-medium">ระดับชั้น:</label>
                   <select id="admin-grade-dev-select" onchange="updateGradeDevelopmentChart()" class="text-xs border rounded-lg p-1.5 bg-slate-50 text-indigo-950 font-bold focus:ring-1 focus:ring-indigo-500">
@@ -496,13 +499,17 @@
                   <i class="fa-solid fa-file-invoice text-indigo-600"></i>
                   <span>ประมวลผลรายงานสรุปของโรงเรียน</span>
                 </button>
+                <button onclick="triggerStartNextRound()" class="w-full bg-indigo-600/40 hover:bg-indigo-600/60 text-white font-extrabold py-2 px-4 rounded-xl text-[10px] transition flex items-center justify-center space-x-1.5 border border-indigo-500/30">
+                  <i class="fa-solid fa-forward-step"></i>
+                  <span>เริ่มรอบการประเมินถัดไป (+1)</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
 
         <!-- 6.2 แท็บจัดการคำศัพท์ -->
-        <div id="admin-tab-words" class="admin-tab-content hidden bg-white rounded-2xl custom-shadow p-6 space-y-4">
+        <div id="admin-tab-words" class="admin-tab-content hidden bg-white rounded-2xl custom-shadow p-6 space-y-4 font-sans">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
             <div>
               <h3 class="font-bold text-slate-800">ระบบจัดการคลังคำศัพท์</h3>
@@ -537,7 +544,7 @@
         </div>
 
         <!-- 6.3 แท็บรายชื่อและคิวอาร์นักเรียน -->
-        <div id="admin-tab-students" class="admin-tab-content hidden bg-white rounded-2xl custom-shadow p-6 space-y-4">
+        <div id="admin-tab-students" class="admin-tab-content hidden bg-white rounded-2xl custom-shadow p-6 space-y-4 font-sans">
           <div class="border-b pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
               <h3 class="font-bold text-slate-800">ระบบระเบียนรายชื่อและ QR-Code</h3>
@@ -574,8 +581,8 @@
         <!-- 6.4 แท็บตั้งค่า -->
         <div id="admin-tab-settings" class="admin-tab-content hidden bg-white rounded-2xl custom-shadow p-6 space-y-6">
           <div>
-            <h3 class="font-bold text-slate-800">ตั้งค่าเกณฑ์ประเมินและสิทธิ์ผู้ใช้งาน</h3>
-            <p class="text-xs text-slate-400">ควบคุมระดับมาตรฐาน ชื่อโรงเรียน และรหัสผ่านแผงควบคุมหลัก</p>
+            <h3 class="font-bold text-slate-800 font-sans">ตั้งค่าเกณฑ์ประเมินและสิทธิ์ผู้ใช้งาน</h3>
+            <p class="text-xs text-slate-400 font-sans">ควบคุมระดับมาตรฐาน ชื่อโรงเรียน และรหัสผ่านแผงควบคุมหลัก</p>
           </div>
 
           <form id="settings-form" onsubmit="handleSettingsSave(event)" class="space-y-4 max-w-lg">
@@ -684,7 +691,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 gap-4 font-sans">
           <div>
             <label class="block text-[10px] font-bold text-slate-500 mb-1">หมวดหมู่ทางภาษา</label>
             <input type="text" id="form-word-cat" class="w-full p-2.5 border rounded-lg text-xs">
@@ -710,8 +717,8 @@
 
   <!-- MODAL 3: แสดงประวัติเชิงลึกและการตรวจสอบภาพถ่ายพยานรายคน -->
   <div id="admin-student-history-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 font-sans no-print">
-    <div class="bg-white w-full max-w-2xl rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b pb-3">
+    <div class="bg-white w-full max-w-2xl rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto font-sans">
+      <div class="flex justify-between items-center border-b pb-3 font-sans">
         <h3 class="font-bold text-slate-800 text-base" id="admin-history-modal-title">รายงานการเข้าประเมินและภาพพยานตัวตน</h3>
         <button onclick="closeAdminStudentHistoryModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
@@ -727,7 +734,7 @@
           </div>
         </div>
         
-        <div class="overflow-x-auto border rounded-xl">
+        <div class="overflow-x-auto border rounded-xl font-sans">
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="bg-slate-50 text-slate-600 border-b">
@@ -795,97 +802,7 @@
     </div>
   </div>
 
-  <!-- MODAL 5: รายงานสรุปผลคัดกรองฉบับบริหาร -->
-  <div id="admin-report-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 font-sans overflow-y-auto">
-    <div class="bg-white w-full max-w-4xl rounded-3xl p-8 space-y-6 max-h-[90vh] overflow-y-auto relative shadow-2xl">
-      
-      <div class="flex justify-between items-center border-b pb-4 no-print">
-        <h3 class="font-bold text-slate-800 text-lg flex items-center">
-          <i class="fa-solid fa-file-contract text-indigo-600 mr-2"></i> รายงานสรุปผลสัมฤทธิ์คัดกรองการอ่านสะกดคำ
-        </h3>
-        <button onclick="closeReportModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <div id="printable-report-content" class="space-y-6 print-area">
-        <div class="text-center space-y-2 border-b-2 border-indigo-600 pb-4">
-          <h2 class="text-2xl font-black text-slate-900" id="report-title-system">-</h2>
-          <p class="text-sm font-bold text-indigo-700" id="report-title-org">-</p>
-          <p class="text-xs text-slate-400">ข้อมูลรอบการประเมิน ณ วันที่: <span id="report-date-run">-</span></p>
-        </div>
-
-        <div class="grid grid-cols-3 gap-4 text-center">
-          <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-            <p class="text-[10px] text-slate-400 font-bold uppercase">จำนวนการทดสอบคัดกรองทั้งหมด</p>
-            <h3 id="report-total-screened" class="text-2xl font-black text-indigo-950 mt-1">-</h3>
-          </div>
-          <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
-            <p class="text-[10px] text-slate-400 font-bold uppercase">ผ่านเกณฑ์ขั้นต่ำ (ดี/พอใช้)</p>
-            <h3 id="report-passed" class="text-2xl font-black text-emerald-700 mt-1">-</h3>
-          </div>
-          <div class="bg-rose-50/50 p-4 rounded-xl border border-rose-100">
-            <p class="text-[10px] text-slate-400 font-bold uppercase">อัตราส่วนต้องการปรับปรุงแก้ไข</p>
-            <h3 id="report-needs-work" class="text-2xl font-black text-rose-600 mt-1">-</h3>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <h4 class="font-extrabold text-sm text-slate-800 flex items-center">
-            <i class="fa-solid fa-table-list mr-1.5 text-indigo-600"></i> ตารางสรุปคะแนนประเมินเฉลี่ยและสัดส่วนผลลัพธ์รายชั้นปี (ป.1 - ป.6)
-          </h4>
-          <div class="overflow-hidden border border-slate-200 rounded-xl">
-            <table class="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr class="bg-slate-100 text-slate-600 font-bold border-b text-center">
-                  <th class="p-2.5 text-left">ระดับชั้น</th>
-                  <th class="p-2.5">คัดกรองแล้ว</th>
-                  <th class="p-2.5">คะแนนเฉลี่ยรวม (10)</th>
-                  <th class="p-2.5">ระดับ ดี/พอใช้</th>
-                  <th class="p-2.5">ระดับ ควรปรับปรุง</th>
-                  <th class="p-2.5 text-right">ร้อยละกลุ่มผ่านเกณฑ์</th>
-                </tr>
-              </thead>
-              <tbody id="report-table-body" class="text-center font-medium text-slate-700">
-                <!-- JS Dynamic -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <h4 class="font-extrabold text-sm text-slate-800 flex items-center">
-            <i class="fa-solid fa-chart-bar mr-1.5 text-indigo-600"></i> สรุปผลวิเคราะห์ทักษะย่อยในการประเมินสะกดคำ
-          </h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 text-xs space-y-2">
-              <h5 class="font-bold text-emerald-700 flex items-center"><i class="fa-solid fa-check-double mr-1.5"></i> ทักษะที่นักเรียนมีความพร้อมสูง</h5>
-              <p id="report-strengths-desc" class="text-slate-600 leading-relaxed">-</p>
-            </div>
-            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 text-xs space-y-2">
-              <h5 class="font-bold text-rose-600 flex items-center"><i class="fa-solid fa-circle-exclamation mr-1.5"></i> ทักษะย่อยที่ควรเร่งพัฒนาเพิ่มเติม</h5>
-              <p id="report-weakness-desc" class="text-slate-600 leading-relaxed">-</p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="pt-6 border-t border-dashed border-slate-300 flex justify-between items-center text-[10px] text-slate-400">
-          <p>จัดทำรายงานโดย: ระบบคัดกรองอ่านสะกดคำอัตโนมัติ Thai Speech Recognition Engine</p>
-          <p>ลายเซ็นผู้ประเมินผล: ..............................................................</p>
-        </div>
-      </div>
-
-      <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100 no-print">
-        <button onclick="printReportModal()" class="bg-slate-900 hover:bg-slate-950 text-white font-bold py-2.5 px-5 rounded-xl text-xs transition flex items-center space-x-1.5">
-          <i class="fa-solid fa-print"></i>
-          <span>สั่งพิมพ์รายงาน (PDF)</span>
-        </button>
-        <button onclick="closeReportModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 px-4 rounded-xl text-xs transition">
-          ปิดหน้าต่าง
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div id="print-qrcode-area" class="hidden"></div>
+  <div id="print-qrcode-area" class="hidden font-sans"></div>
 
   <!-- SCRIPT LOGIC -->
   <script>
@@ -932,7 +849,7 @@
     let currentSyllableIndex = 0;
     let targetSyllables = [];
 
-    // ฟังก์ชันควบคุมสถานะปุ่มไมโครโฟน (เพิ่มกลับเข้าสู่ระบบเพื่อแก้ไขข้อผิดพลาดการดึงคลังคำศัพท์)
+    // ฟังก์ชันควบคุมสถานะปุ่มไมโครโฟน
     function setMicUIAwake(awake) {
       const micBtn = document.getElementById('mic-btn');
       const micIcon = document.getElementById('mic-icon');
@@ -944,230 +861,6 @@
         micBtn.className = "w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-indigo-100 focus:outline-none";
         micIcon.className = "fa-solid fa-microphone";
       }
-    }
-
-    // --- ส่วนงานถอดรหัสวิเคราะห์เสียงและปรับการประเมินเทียบเสียงเพี้ยน (Phonetic Lenient Mapping) ---
-    function cleanThaiWord(word) {
-      if (!word) return "";
-      return word.trim()
-        .replace(/[่้๊๋]/g, "") 
-        .replace(/[์]/g, "")    
-        .replace(/[\s\-\_\.\,\?]/g, "") 
-        .toLowerCase();
-    }
-
-    function getThaiPhoneticEquivalent(text) {
-      if (!text) return "";
-      let temp = cleanThaiWord(text);
-      temp = temp.replace(/[ก-ฮ][์]/g, "").replace(/[์]/g, "");
-      return temp;
-    }
-
-    // ตรรกะคัดแยกเสียงสะกดใกล้เคียง (Phonetic Mapping แกนแก้ไขพยางค์สั้นหลุดง่าย)
-    function matchThaiSyllablePhonetically(target, spoken) {
-      const cleanTarget = getThaiPhoneticEquivalent(target);
-      const cleanSpoken = getThaiPhoneticEquivalent(spoken);
-
-      if (!cleanTarget || !cleanSpoken) return false;
-
-      // 1. ตรวจสอบความถูกต้องตรงกันแบบอักษรเท่ากัน (Exact Phonetic Match) ป้องกันอักษรตัวเดียวหลุดผ่าน
-      if (cleanSpoken === cleanTarget) return true;
-
-      const codas = {
-        'ก': ['ก', 'ข', 'ค', 'ฆ'],
-        'ด': ['ด', 'จ', 'ช', 'ซ', 'ฎ', 'ฏ', 'ฐ', 'ฑ', 'ฒ', 'ต', 'ถ', 'ท', 'ธ', 'ศ', 'ษ', 'ส'],
-        'บ': ['บ', 'ป', 'พ', 'ฟ', 'ภ'],
-        'น': ['น', 'ณ', 'ญ', 'ร', 'ล', 'ฬ'],
-        'ม': ['ม'],
-        'ง': ['ง'],
-        'ย': ['ย'],
-        'ว': ['ว']
-      };
-
-      function normalizePhonemes(str) {
-        let res = str;
-        for (let key in codas) {
-          codas[key].forEach(char => {
-            if (res.endsWith(char) && char !== key) {
-              res = res.substring(0, res.length - 1) + key;
-            }
-          });
-        }
-        res = res.replace(/^กร/, "ก")
-                 .replace(/^กล/, "ก")
-                 .replace(/^ขร/, "ข")
-                 .replace(/^ขล/, "ข")
-                 .replace(/^คร/, "ค")
-                 .replace(/^คล/, "ค")
-                 .replace(/^ตร/, "ต")
-                 .replace(/^ปร/, "ป")
-                 .replace(/^ปล/, "ป")
-                 .replace(/^พร/, "พ")
-                 .replace(/^พล/, "พ")
-                 .replace(/^ผล/, "ผ");
-        return res;
-      }
-
-      const normTarget = normalizePhonemes(cleanTarget);
-      const normSpoken = normalizePhonemes(cleanSpoken);
-
-      if (normSpoken === normTarget) return true;
-
-      // ป้องกันการแอบสุ่มพูดอักษรพยัญชนะเดี่ยวที่สั้นเกินไปให้ไม่มีวันผ่านเกณฑ์ (เช่น ออกเสียง "ก" เพื่อสะกด "กระ")
-      if (normTarget.length <= 2 && normSpoken !== normTarget) {
-        return false;
-      }
-
-      const similarity = getPhoneticSimilarity(normTarget, normSpoken);
-      return similarity >= 0.75; // กำหนดเกณฑ์คะแนนจำลองขั้นต่ำสูงขึ้นเป็นร้อยละ 75
-    }
-
-    function getPhoneticSimilarity(target, output) {
-      if (!target || !output) return 0.0;
-      if (target === output) return 1.0;
-
-      const track = Array(output.length + 1).fill(null).map(() => Array(target.length + 1).fill(null));
-      for (let i = 0; i <= target.length; i++) track[0][i] = i;
-      for (let j = 0; j <= output.length; j++) track[j][0] = j;
-      for (let j = 1; j <= output.length; j++) {
-        for (let i = 1; i <= target.length; i++) {
-          const indicator = target[i - 1] === output[j - 1] ? 0 : 1;
-          track[j][i] = Math.min(
-            track[j][i - 1] + 1,
-            track[j - 1][i] + 1,
-            track[j - 1][i - 1] + indicator
-          );
-        }
-      }
-      const distance = track[output.length][target.length];
-      const longest = Math.max(target.length, output.length);
-      return (longest - distance) / longest;
-    }
-
-    // อัลกอริทึมวิเคราะห์ลำดับสะกดและหั่นคำสะสมแบบเรียลไทม์ (Strict Sequential Matching Engine)
-    function evaluateSyllableMatching(speechText) {
-      let tempSpeech = cleanThaiWord(speechText);
-      let matchCount = 0;
-
-      for (let i = 0; i < targetSyllables.length; i++) {
-        const targetSyl = cleanThaiWord(targetSyllables[i]);
-        const matchResult = findPhoneticMatchInString(tempSpeech, targetSyl);
-        
-        if (matchResult.matched) {
-          matchCount++;
-          // ทำการหั่นคำที่แมตช์ผ่านไปแล้วออกจากสตริงเสียง (String Consumption) ป้องกันการสับสนของพยางค์ถัดไป
-          tempSpeech = tempSpeech.substring(matchResult.endIndex);
-        } else {
-          // หากพยางค์ปัจจุบันยังสะกดไม่ถูกหรือสะกดเพี้ยน ห้ามข้ามพยางค์อื่นเด็ดขาด
-          break;
-        }
-      }
-      return matchCount;
-    }
-
-    function findPhoneticMatchInString(source, target) {
-      if (!source || !target) return { matched: false };
-      
-      // ตรวจสอบตั้งแต่ต้นคำพูด (ความกว้างพยางค์ภาษาไทยส่วนใหญ่ไม่เกินความยาวจริงบวกเศษผันเสียง 2 ตัวอักษร)
-      for (let len = 1; len <= Math.min(source.length, target.length + 2); len++) {
-        const sub = source.substring(0, len);
-        if (matchThaiSyllablePhonetically(target, sub)) {
-          return { matched: true, endIndex: len };
-        }
-      }
-      
-      // เปิดการวิเคราะห์เยื้องเสียงเพื่อหลบเลี่ยงเสียงลมหรือเสียงแทรกช่วงต้นประโยค
-      for (let start = 0; start <= Math.min(3, source.length - 1); start++) {
-        for (let len = 1; len <= Math.min(source.length - start, target.length + 2); len++) {
-          const sub = source.substring(start, start + len);
-          if (matchThaiSyllablePhonetically(target, sub)) {
-            return { matched: true, endIndex: start + len };
-          }
-        }
-      }
-      
-      return { matched: false };
-    }
-
-    // เปิดรับสัญญาณเสียงและประมวลผลแบบ Real-time Syllable Tracking พร้อมระบบระบายสีชิดชิดกัน
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'th-TH';
-
-      recognition.onstart = function() {
-        isListening = true;
-        setMicUIAwake(true);
-      };
-
-      recognition.onerror = function(e) {
-        if (e.error !== 'no-speech') {
-          isListening = false;
-        }
-      };
-
-      recognition.onend = function() {
-        isListening = false;
-        if (timeRemainingForWord > 0 && !document.getElementById('view-test').classList.contains('hidden') && !hasMatchedCurrentWord) {
-          try {
-            recognition.start();
-          } catch(e) {}
-        } else {
-          setMicUIAwake(false);
-        }
-      };
-
-      recognition.onresult = function(event) {
-        if (hasMatchedCurrentWord) return;
-
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        const cleanSpeech = transcript.trim();
-        
-        if (cleanSpeech && targetSyllables.length > 0) {
-          document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
-          
-          // ตรวจจับพยางค์สะกดแบบเรียลไทม์
-          const matchedSyllablesCount = evaluateSyllableMatching(cleanSpeech);
-
-          // อัปเดตการระบายสีเขียวพยางค์ชิดกันเป็นคำเดียวกลมกลืน (Contiguous Text Colouring)
-          for (let idx = 0; idx < targetSyllables.length; idx++) {
-            const badgeEl = document.getElementById(`syl-badge-${idx}`);
-            if (badgeEl) {
-              if (idx < matchedSyllablesCount) {
-                badgeEl.className = "text-emerald-500 font-black transition-all duration-300";
-              } else {
-                badgeEl.className = "text-slate-900 transition-all duration-300";
-              }
-            }
-          }
-
-          // ส่งสัญญาน Beep เมื่อสะกดผ่านพยางค์เพิ่มขึ้น
-          if (matchedSyllablesCount > currentSyllableIndex) {
-            playSynthesizedBeep(true);
-            currentSyllableIndex = matchedSyllablesCount;
-          }
-
-          // ตรวจสอบครบตามเงื่อนไข (ผ่านครบทุกพยางค์) จึงจะนับว่าถูกต้อง
-          if (currentSyllableIndex === targetSyllables.length) {
-            hasMatchedCurrentWord = true;
-            if (countdownTimer) clearInterval(countdownTimer);
-            stopListeningState();
-            setCorrectUI();
-            
-            const currentWordObj = testWords[currentWordIndex];
-            recordWordAttemptResult('ผ่าน', 0.99);
-            scoreByWordType[currentWordObj.wordType].correct++;
-            setTimeout(() => { proceedToNextWord(); }, 1500);
-          }
-        }
-      };
-    } else {
-      document.getElementById('fallback-test-inputs').classList.remove('hidden');
     }
 
     async function apiRequest(action, method = 'GET', data = {}) {
@@ -1207,7 +900,7 @@
       fetchFreshSystemSettings();
     });
 
-function loadCachedData() {
+    function loadCachedData() {
       const cachedSettings = localStorage.getItem('screening_settings');
       const cachedPubStats = localStorage.getItem('screening_pub_stats');
 
@@ -1226,12 +919,31 @@ function loadCachedData() {
       }
     }
 
-async function fetchFreshSystemSettings() {
+    // ฟังก์ชันเชื่อมประกอบโครงสร้างโมดูลรักษาความปลอดภัยวิเคราะห์เสียงพูดสะกดคำแบบพลวัตเมื่อเปิดหน้าแรก (Dynamic Security Injection)
+    async function fetchFreshSystemSettings() {
       try {
-        const [settings, pubStats] = await Promise.all([
+        const [settings, pubStats, engineResponse] = await Promise.all([
           apiRequest('getSystemSettings', 'GET'),
-          apiRequest('getPublicStats', 'GET')
+          apiRequest('getPublicStats', 'GET'),
+          apiRequest('getPhoneticEngine', 'GET') // ดาวน์โหลดโมดูลวิเคราะห์เสียงสะกดคำ
         ]);
+
+        // ถอดรหัส Base64 สคริปต์ความปลอดภัย และนำเข้าประกอบการทำงานบนหน่วยความจำเครื่อง
+        if (engineResponse && engineResponse.script) {
+          try {
+            // ปรับปรุงกลไกถอดรหัสรองรับอักษรภาษาไทยเต็มระบบ ป้องกันอาการ URI malformed
+            const decodedScript = decodeURIComponent(atob(engineResponse.script).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            
+            const mountEngine = new Function(decodedScript);
+            mountEngine();
+          } catch (scriptErr) {
+            console.error("การโหลดโมดูลวิเคราะห์สัทศาสตร์ภายในล้มเหลว: ", scriptErr);
+          }
+        } else {
+          throw new Error("ระบบปลายทางปฏิเสธการจัดส่งโมดูลวิเคราะห์ระดับเสียง");
+        }
 
         if (settings) {
           systemSettings = settings;
@@ -1244,7 +956,6 @@ async function fetchFreshSystemSettings() {
           document.getElementById('home-stat-daily').textContent = pubStats.daily;
           document.getElementById('home-stat-total').textContent = pubStats.total;
           
-          // บันทึกตัวเลขผู้ใช้งานลงทะเบียนรายคนมาแสดงผลในหน้าแรก
           if (document.getElementById('home-stat-registered')) {
             document.getElementById('home-stat-registered').textContent = `${pubStats.registered || 0} คน`;
           }
@@ -1253,6 +964,12 @@ async function fetchFreshSystemSettings() {
         }
       } catch (err) {
         console.warn("ไม่สามารถเรียกข้อมูลสดได้ ระบบใช้โหมดแคชเสถียรภาพภายนอกแทน: ", err);
+        Swal.fire({
+          icon: 'warning',
+          title: 'จำลองการเชื่อมต่อออฟไลน์',
+          text: 'ระบบไม่สามารถยืนยันโครงสร้างความปลอดภัยหรือเรียกสดข้อมูลคลังคำศัพท์ได้บางส่วน',
+          confirmButtonColor: '#4f46e5'
+        });
       }
     }
 
@@ -1470,11 +1187,17 @@ async function fetchFreshSystemSettings() {
           photoCell = `<img src="${row.photoUrl}" onclick="viewImageFullSize('${row.photoUrl}')" class="w-10 h-10 rounded-md object-cover border border-slate-200 mx-auto cursor-pointer hover:scale-105 transition" title="รูปถ่ายผู้เข้าสอบ">`;
         }
 
+        // แสดงผลรายการ "คำศัพท์ที่อ่านไม่ได้" เฉพาะนักเรียนที่ได้ผลลัพธ์ในเกณฑ์ระดับ "ปรับปรุง" เท่านั้น
+        let levelBadge = `<span class="px-2.5 py-1 text-[10px] font-black rounded-full ${row.level === 'ดี' ? 'bg-green-100 text-green-700' : row.level === 'พอใช้' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}">${row.level || 'ไม่มีข้อมูล'}</span>`;
+        if (row.level === 'ปรับปรุง' && row.failedWords && row.failedWords.length > 0) {
+          levelBadge += `<div class="text-[9px] text-rose-500 font-medium mt-1 leading-normal italic">คำที่สะกดไม่ได้: ${row.failedWords.join(', ')}</div>`;
+        }
+
         tr.innerHTML = `
-          <td class="p-3 font-semibold text-slate-500">${row.date}</td>
+          <td class="p-3 font-semibold text-slate-500">${row.date} (รอบที่ ${row.round || 1})</td>
           <td class="p-3 text-center">${photoCell}</td>
           <td class="p-3 text-center font-bold text-indigo-700">${row.score || 0}/10</td>
-          <td class="p-3 text-right"><span class="px-2.5 py-1 text-[10px] font-black rounded-full ${row.level === 'ดี' ? 'bg-green-100 text-green-700' : row.level === 'พอใช้' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}">${row.level || 'ไม่มีข้อมูล'}</span></td>
+          <td class="p-3 text-right">${levelBadge}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -1592,7 +1315,7 @@ async function fetchFreshSystemSettings() {
       }
     }
 
-    // ฟังก์ชันจัดเตรียมคำศัพท์ แสดงสแปนพยางค์แบบแนบชิดกันเป็นคำเดียวกลมกลืน (Contiguous Word Layout)
+    // ฟังก์ชันจัดเตรียมคำศัพท์ แสดงแบบรวมเป็นคำเดียวกลมกลืน (Contiguous Word Layout)
     function renderWordStage() {
       const currentWordObj = testWords[currentWordIndex];
       
@@ -1741,7 +1464,7 @@ async function fetchFreshSystemSettings() {
 
     function skipCurrentWord() {
       if (countdownTimer) clearInterval(countdownTimer);
-      recordWordAttemptResult('ไม่ผ่าน', 0);
+      recordWordAttemptResult('not', 0);
       proceedToNextWord();
     }
 
@@ -1774,27 +1497,46 @@ async function fetchFreshSystemSettings() {
       }
     }
 
+    // ตรรกะกระบวนการตัดสินวิเคราะห์คะแนนเสียงสะกดรายคำ (ตัวหลักป้องกันระบบสะดุดค้าง)
+    function processPronunciationResult(speechText, confidence) {
+      if (countdownTimer) clearInterval(countdownTimer);
+      stopListeningState();
+      
+      const currentWordObj = testWords[currentWordIndex];
+      const cleanTarget = currentWordObj.word.replace(/-/g, "").trim();
+      const cleanSpeech = speechText.trim();
+      
+      document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
+      
+      // ดึงฟังก์ชันเทียบความคล้ายคลึงเสียงสัทอักษรที่ประมวลผลบน RAM (ป้องกัน Copy)
+      const similarity = window.getPhoneticSimilarity(cleanTarget, cleanSpeech);
+      const isMatch = (similarity >= 0.70);
+
+      if (isMatch) {
+        setCorrectUI();
+        recordWordAttemptResult('ผ่าน', confidence);
+        scoreByWordType[currentWordObj.wordType].correct++;
+        setTimeout(() => { proceedToNextWord(); }, 1500);
+      } else {
+        setWrongUI();
+        recordWordAttemptResult('ไม่ผ่าน', confidence); 
+        setTimeout(() => { proceedToNextWord(); }, 1500);
+      }
+    }
+
+    // ปรับปรุงกลไกถ่ายภาพสดเบื้องหลังอัติโนมัติ โดยไม่สะดุดกั้นแถบแจ้งเตือนเด็ก (Seamless Snapshot Transition)
     function proceedToNextWord() {
       if (currentWordResults.length === 5 && currentWordIndex < 5) {
         if (countdownTimer) clearInterval(countdownTimer);
         stopListeningState();
         
         initTestWebcamStream().then(() => {
-          setTimeout(() => {
-            takeSilentSnapshot();
-            stopAllWebcams(); 
-            
-            Swal.fire({
-              title: 'พักครึ่งการทดสอบ',
-              icon: 'info',
-              confirmButtonText: 'ทำแบบทดสอบข้อ 6 ต่อไป',
-              confirmButtonColor: '#4f46e5',
-              allowOutsideClick: false
-            }).then(() => {
-              currentWordIndex++;
-              renderWordStage();
-            });
-          }, 1500);
+          takeSilentSnapshot(); // ถ่ายรูปยืนยันเงียบๆ ทันที
+          stopAllWebcams(); 
+          
+          // เปลี่ยนผ่านสู่ข้อสอบข้อที่ 6 ทันทีโดยไม่ต้องกดปุ่มตกลงยืนยันตัวตน
+          currentWordIndex++;
+          renderWordStage();
         });
         return;
       }
@@ -2410,7 +2152,7 @@ async function fetchFreshSystemSettings() {
               renderAdminWordsTab();
             }
           } catch (err) {
-            Swal.fire('ปฏิเสธการกระทำ', 'ความล่าช้าในการจัดการของฐานระบบล้มเหลว', 'error');
+            Swal.fire('ปฏิเสตการกระทำ', 'ความล่าช้าในการจัดการของฐานระบบล้มเหลว', 'error');
           }
         }
       });
@@ -2553,6 +2295,36 @@ async function fetchFreshSystemSettings() {
         }
         
         students.forEach(s => {
+          // ตรวจสอบสถานะการสอบขาดสอบในรอบปัจจุบัน
+          const isAbsentInCurrentRound = s.absentRounds && s.absentRounds.split(",").indexOf(lastFetchedStats ? lastFetchedStats.currentRound.toString() : "1") !== -1;
+          
+          let actionButtons = `
+            <button onclick="viewStudentIndividualHistory('${s.studentId}', '${s.prefix}${s.firstName} ${s.lastName}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-1.5 px-3 rounded-md font-bold text-xs transition">
+              <i class="fa-solid fa-clock-rotate-left mr-1"></i> ประวัติการอ่าน
+            </button>
+          `;
+          
+          if (!isAbsentInCurrentRound) {
+            actionButtons += `
+              <button onclick="markAbsent('${s.studentId}')" class="bg-amber-50 hover:bg-amber-100 text-amber-700 py-1.5 px-3 rounded-md font-bold text-xs transition">
+                ทำเครื่องหมายขาดสอบ
+              </button>
+            `;
+          } else {
+            actionButtons += `
+              <span class="text-xs bg-red-100 text-red-700 py-1.5 px-3 rounded-md font-bold">ขาดสอบรอบนี้</span>
+            `;
+          }
+
+          actionButtons += `
+            <button onclick="printSingleQRCode('${s.studentId}', '${s.firstName} ${s.lastName}', 'ป.${s.grade}/${s.room}')" class="bg-slate-100 hover:bg-slate-200 text-slate-750 py-1.5 px-3 rounded-md font-bold text-xs transition inline-block">
+              <i class="fa-solid fa-print"></i> QR
+            </button>
+            <button onclick="confirmDeleteStudent('${s.studentId}')" class="bg-red-50 hover:bg-red-100 text-red-600 py-1.5 px-3 rounded-md font-bold text-xs transition inline-block">
+              <i class="fa-solid fa-trash-can"></i> ลบ
+            </button>
+          `;
+
           const tr = document.createElement('tr');
           tr.className = "border-b hover:bg-slate-50";
           tr.innerHTML = `
@@ -2560,23 +2332,77 @@ async function fetchFreshSystemSettings() {
             <td class="p-3 font-bold text-slate-800">${s.prefix}${s.firstName} ${s.lastName}</td>
             <td class="p-3">ป.${s.grade}</td>
             <td class="p-3">ห้อง ${s.room}</td>
-            <td class="p-3 text-right space-x-1">
-              <button onclick="viewStudentIndividualHistory('${s.studentId}', '${s.prefix}${s.firstName} ${s.lastName}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-1.5 px-3 rounded-md font-bold text-xs transition">
-                <i class="fa-solid fa-clock-rotate-left mr-1"></i> ประวัติการอ่าน
-              </button>
-              <button onclick="printSingleQRCode('${s.studentId}', '${s.firstName} ${s.lastName}', 'ป.${s.grade}/${s.room}')" class="bg-slate-100 hover:bg-slate-200 text-slate-750 py-1.5 px-3 rounded-md font-bold text-xs transition inline-block">
-                <i class="fa-solid fa-print"></i> QR
-              </button>
-              <button onclick="confirmDeleteStudent('${s.studentId}')" class="bg-red-50 hover:bg-red-100 text-red-600 py-1.5 px-3 rounded-md font-bold text-xs transition inline-block">
-                <i class="fa-solid fa-trash-can"></i> ลบ
-              </button>
-            </td>
+            <td class="p-3 text-right space-x-1">${actionButtons}</td>
           `;
           tbody.appendChild(tr);
         });
       } catch (err) {
         tbody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-rose-500">ไม่สามารถติดต่อเรียกข้อมูลผ่าน API ได้</td></tr>';
       }
+    }
+
+    // ฟังก์ชันทำเครื่องหมายขาดสอบรอบปัจจุบันจากแผงแอดมิน
+    async function markAbsent(studentId) {
+      Swal.fire({
+        title: 'ยืนยันทำเครื่องหมายขาดสอบ?',
+        text: 'การบันทึกนี้จะนับว่านักเรียนขาดสอบในรอบการคัดกรองปัจจุบันเพื่อขยับข้อมูลวิเคราะห์ภาพรวม',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'บันทึกขาดสอบ',
+        cancelButtonText: 'ยกเลิก'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+          try {
+            const res = await apiRequest('markStudentAbsent', 'POST', { studentId });
+            Swal.close();
+            if (res && res.success) {
+              Swal.fire('สำเร็จ', 'ระบุการขาดสอบสำเร็จ', 'success');
+              renderAdminStudentsTab();
+              renderAdminStatsTab(); // อัปเดตสถิติให้ลื่นไหล
+            }
+          } catch(e) {
+            Swal.close();
+            Swal.fire('ล้มเหลว', 'เกิดข้อผิดพลาดในการเข้าบันทึกสิทธิ์', 'error');
+          }
+        }
+      });
+    }
+
+    // ฟังก์ชันสั่งเริ่มต้นรอบการทดสอบประเมินถัดไปผ่านหลังบ้าน (+1)
+    async function triggerStartNextRound() {
+      if (!lastFetchedStats) return;
+      const nextR = lastFetchedStats.currentRound + 1;
+      
+      Swal.fire({
+        title: 'เริ่มรอบการประเมินถัดไป?',
+        text: `คุณยืนยันที่จะขยับขึ้นรอบการคัดกรองที่ ${nextR} หรือไม่? (ระบบจะเริ่มนับจำนวนคนสอบครั้งละ 1 ครั้งสำหรับทุกคนใหม่หมด)`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5',
+        confirmButtonText: 'เริ่มต้นรอบใหม่',
+        cancelButtonText: 'ยกเลิก'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'กำลังสลับรอบข้อมูล...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+          });
+          try {
+            const res = await apiRequest('startNextRound', 'POST');
+            Swal.close();
+            if (res && res.success) {
+              Swal.fire('เสร็จสิ้น', 'เริ่มรอบการทดสอบใหม่เรียบร้อยแล้ว', 'success');
+              loadAdminDashboard();
+            }
+          } catch(e) {
+            Swal.close();
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถติดต่อฐานระบบหลังบ้านได้', 'error');
+          }
+        }
+      });
     }
 
     function openStudentModal() {
@@ -2671,12 +2497,17 @@ async function fetchFreshSystemSettings() {
             photoCell = `<img src="${row.photoUrl}" onclick="viewImageFullSize('${row.photoUrl}')" class="w-10 h-10 rounded-md object-cover border border-slate-200 mx-auto cursor-pointer hover:scale-105 transition" title="รูปถ่ายผู้เข้าสอบ">`;
           }
 
+          let levelBadge = `<span class="px-2 py-0.5 text-[10px] font-black rounded-full ${row.level === 'ดี' ? 'bg-green-100 text-green-700' : row.level === 'พอใช้' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-650'}">${row.level || 'ไม่มีข้อมูล'}</span>`;
+          if (row.level === 'ปรับปรุง' && row.failedWords && row.failedWords.length > 0) {
+            levelBadge += `<div class="text-[9px] text-red-500 font-medium mt-1 leading-normal italic">คำที่สะกดไม่ได้: ${row.failedWords.join(', ')}</div>`;
+          }
+
           tr.innerHTML = `
-            <td class="p-3 font-semibold text-slate-500">${row.date}</td>
+            <td class="p-3 font-semibold text-slate-500">${row.date} (รอบที่ ${row.round})</td>
             <td class="p-3 text-center">${photoCell}</td>
             <td class="p-3 text-center font-bold text-indigo-700">${row.score || 0}/10</td>
             <td class="p-3 text-center text-teal-600 font-bold">${row.percent}%</td>
-            <td class="p-3 text-right"><span class="px-2 py-0.5 text-[10px] font-black rounded-full ${row.level === 'ดี' ? 'bg-green-100 text-green-700' : row.level === 'พอใช้' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}">${row.level || 'ไม่มีข้อมูล'}</span></td>
+            <td class="p-3 text-right">${levelBadge}</td>
           `;
           tbody.appendChild(tr);
         });
