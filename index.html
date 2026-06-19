@@ -1010,17 +1010,20 @@
         const [settings, pubStats, engineResponse] = await Promise.all([
           apiRequest('getSystemSettings', 'GET'),
           apiRequest('getPublicStats', 'GET'),
-          apiRequest('getPhoneticEngine', 'GET') // ดาวน์โหลดโมดูลวิเคราะห์เสียงสะกดคำ
+          apiRequest('getPhoneticEngine', 'GET') 
         ]);
 
-        // ถอดรหัส Base64 สคริปต์ความปลอดภัย และนำเข้าประกอบการทำงานบนหน่วยความจำเครื่อง
         if (engineResponse && engineResponse.script) {
           try {
-            const decodedScript = decodeURIComponent(escape(atob(engineResponse.script)));
+            // ปรับปรุงกลไกถอดรหัสรองรับอักษรภาษาไทยเต็มระบบ ป้องกันอาการ URI malformed
+            const decodedScript = decodeURIComponent(atob(engineResponse.script).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            
             const mountEngine = new Function(decodedScript);
             mountEngine();
           } catch (scriptErr) {
-            console.error("การโหลดโมดูลวิเคราะห์สัทศาสตร์ภายในล้มเหลว: ", scriptErr);
+            console.error("การโหลดโมดูลวิเคราะห์ภายในล้มเหลว: ", scriptErr);
           }
         } else {
           throw new Error("ระบบปลายทางปฏิเสธการจัดส่งโมดูลวิเคราะห์ระดับเสียง");
@@ -1053,7 +1056,6 @@
         });
       }
     }
-
     function renderLatestRoundTable(latestRound) {
       document.getElementById('home-round-dates').textContent = `รอบประเมินล่าสุด: ${latestRound.latestDateRange}`;
       const tbody = document.getElementById('home-round-stats-body');
