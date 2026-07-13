@@ -83,311 +83,6 @@
 
     <!-- VIEW 1: หน้าหลัก / Landing Page -->
 <!-- VIEW 1: หน้าหลัก / Landing Page (ฉบับปรับปรุงสีสันและความสวยงามเป็นเลิศ) -->
-   <!-- VIEW 1: หน้าหลัก / Landing Page -->
-    <section id="view-home" class="view-section py-8 md:py-14 flex flex-col items-center justify-center space-y-8 animate-fadeIn px-4 no-print bg-gradient-to-b from-slate-50 via-indigo-50/20 to-slate-50 rounded-3xl">
-      <div class="text-center max-w-3xl space-y-4 md:space-y-6">
-        <span class="bg-indigo-100 text-indigo-800 text-xs font-black px-6 py-2.5 rounded-full uppercase tracking-widest border border-indigo-200 inline-block shadow-sm shadow-indigo-100 animate-bounce">
-          <i class="fa-solid fa-sparkles mr-1.5 text-amber-500"></i> ระบบคัดกรองระดับความสามารถนักเรียน
-        </span>
-        <h2 id="home-system-title" class="text-3xl sm:text-4xl md:text-5xl font-black text-indigo-950 tracking-tight leading-snug md:leading-tight text-balance bg-clip-text text-transparent bg-gradient-to-r from-indigo-900 via-violet-800 to-indigo-950">
-          ประเมินความสามารถการอ่านออกเสียงสะกดคำ
-        </h2>
-        <p id="home-org-subtitle" class="text-slate-500 text-xs sm:text-sm md:text-base max-w-xl mx-auto leading-relaxed text-balance font-medium">
-          เครื่องมือคัดกรองทักษะรายบุคคลของนักเรียนผ่านคลื่นเสียงระบบตรวจจับอัตโนมัติ
-        </p>
-      </div>
-
-      <!-- สัดส่วนตัวสะสมประจำวัน -->
-      <div class="grid grid-cols-2 gap-4 max-w-2xl w-full mx-auto text-center">
-        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-md shadow-indigo-100/40 hover:scale-102 transition duration-300">
-          <div class="bg-indigo-50 text-indigo-600 w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2"><i class="fa-solid fa-calendar-day text-xs"></i></div>
-          <p class="text-[9px] md:text-[10px] text-slate-400 font-extrabold uppercase tracking-wide">ประเมินแล้ววันนี้</p>
-          <h3 id="home-stat-daily" class="text-lg md:text-3xl font-black text-indigo-600 mt-1">-</h3>
-        </div>
-        <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-md shadow-indigo-100/40 hover:scale-102 transition duration-300">
-          <div class="bg-violet-50 text-violet-600 w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2"><i class="fa-solid fa-chart-line text-xs"></i></div>
-          <p class="text-[9px] md:text-[10px] text-slate-400 font-extrabold uppercase tracking-wide">ประเมินสะสมทั้งหมด</p>
-          <h3 id="home-stat-total" class="text-lg md:text-3xl font-black text-violet-600 mt-1">-</h3>
-        </div>
-      </div>
-
-      <!-- ปุ่มเริ่มทดสอบ -->
-      <div class="w-full max-w-xs mx-auto text-center pt-2">
-        <button onclick="startStudentScreen()" class="w-full bg-gradient-to-r from-indigo-600 to-violet-700 hover:from-indigo-700 hover:to-violet-800 text-white font-extrabold py-4 px-6 rounded-2xl transition flex items-center justify-center space-x-3 text-base shadow-xl shadow-indigo-600/20 transform hover:-translate-y-1 duration-200">
-          <i class="fa-solid fa-circle-play text-xl animate-pulse"></i>
-          <span>เริ่มทำการทดสอบการอ่าน</span>
-        </button>
-      </div>
-      
-      <!-- แผงรายงานสถิติรอบการคัดกรองล่าสุด -->
-      <div class="bg-white/95 rounded-3xl border border-slate-200/60 p-6 shadow-lg shadow-indigo-950/5 space-y-4 max-w-xl w-full mx-auto font-sans backdrop-blur-md">
-        <div class="border-b pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-          <h4 class="font-black text-sm text-indigo-950 flex items-center">
-            <i class="fa-solid fa-clock-rotate-left text-indigo-600 mr-2 animate-pulse"></i>
-            สถานะรอบการคัดกรองล่าสุด
-          </h4>
-          <span id="home-round-dates" class="text-[10px] bg-indigo-50 text-indigo-700 font-extrabold px-3 py-1 rounded-full uppercase">กำลังดึงข้อมูล...</span>
-        </div>
-        
-        <div class="overflow-hidden border border-slate-100 rounded-2xl bg-white shadow-inner">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="bg-slate-50 text-slate-500 font-bold border-b text-center">
-                <th class="p-3 text-left">ระดับชั้น</th>
-                <th class="p-3">คัดกรองแล้ว</th>
-                <th class="p-3">ยังไม่ได้คัดกรอง</th>
-                <th class="p-3 text-right">จำนวนทั้งหมด</th>
-              </tr>
-            </thead>
-            <tbody id="home-round-stats-body" class="text-center font-medium text-slate-700">
-              <!-- ข้อมูลจะถูกเติมโดย JS -->
-            </tbody>
-          </table>   
-        </div>
-      </div>
-      
-      <!-- รายงานคำศัพท์ที่นักเรียนอ่านผิดมากที่สุด -->
-      <div class="bg-white/95 rounded-3xl border border-slate-200/60 p-6 shadow-lg shadow-indigo-950/5 space-y-4 max-w-xl w-full mx-auto font-sans backdrop-blur-md">
-        <div class="border-b pb-3">
-          <h4 class="font-black text-sm text-rose-950 flex items-center">
-            <i class="fa-solid fa-circle-exclamation text-rose-600 mr-2 animate-pulse"></i>
-            คำศัพท์ที่นักเรียนอ่านผิดมากที่สุด (รายชั้น)
-          </h4>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-center">
-            <p class="text-[9px] text-rose-400 font-bold uppercase">ป.1</p>
-            <h5 id="misread-word-1" class="text-xs md:text-sm font-black text-rose-700 truncate">-</h5>
-          </div>
-          <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-center">
-            <p class="text-[9px] text-rose-400 font-bold uppercase">ป.2</p>
-            <h5 id="misread-word-2" class="text-xs md:text-sm font-black text-rose-700 truncate">-</h5>
-          </div>
-          <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-center">
-            <p class="text-[9px] text-rose-400 font-bold uppercase">ป.3</p>
-            <h5 id="misread-word-3" class="text-xs md:text-sm font-black text-rose-700 truncate">-</h5>
-          </div>
-          <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-center">
-            <p class="text-[9px] text-rose-400 font-bold uppercase">ป.4</p>
-            <h5 id="misread-word-4" class="text-xs md:text-sm font-black text-rose-700 truncate">-</h5>
-          </div>
-          <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-center">
-            <p class="text-[9px] text-rose-400 font-bold uppercase">ป.5</p>
-            <h5 id="misread-word-5" class="text-xs md:text-sm font-black text-rose-700 truncate">-</h5>
-          </div>
-          <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-center">
-            <p class="text-[9px] text-rose-400 font-bold uppercase">ป.6</p>
-            <h5 id="misread-word-6" class="text-xs md:text-sm font-black text-rose-700 truncate">-</h5>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- VIEW 2: หน้าตรวจสิทธิ์ QR-Code -->
-    <section id="view-scan" class="view-section hidden py-6 animate-fadeIn no-print">
-      <div class="max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-6 space-y-6">
-        <div class="flex items-center space-x-3 border-b pb-4">
-          <button onclick="showView('home')" class="text-slate-400 hover:text-indigo-600 transition"><i class="fa-solid fa-arrow-left text-lg"></i></button>
-          <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-qrcode text-indigo-600 mr-1.5"></i>สแกนบัตรคิวอาร์โค้ดผู้เข้าสอบ</h2>
-        </div>
-        <div id="scan-qr-section" class="space-y-4">
-          <p class="text-xs text-slate-400 text-center">กรุณาหันบัตรสอบคิวอาร์โค้ดประเมินสิทธิ์ที่จัดพิมพ์ให้เข้าหาหน้ากล้อง</p>
-          <div class="overflow-hidden rounded-2xl bg-black aspect-square max-w-xs mx-auto mb-4 border-2 border-indigo-500 relative">
-            <div id="qr-reader-element" class="w-full h-full"></div>
-          </div>
-          <div class="text-center">
-            <span id="qr-status" class="text-xs bg-slate-100 text-slate-500 py-1 px-3 rounded-full font-semibold">กำลังตรวจสอบสัญญาณกล้อง...</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- VIEW 3: หน้าประวัติโปรไฟล์ผู้เรียน -->
-    <section id="view-student-profile" class="view-section hidden py-6 animate-fadeIn no-print">
-      <div class="max-w-5xl mx-auto bg-white rounded-3xl custom-shadow p-8 border border-slate-150 grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-        <div class="lg:col-span-4 text-center space-y-5 flex flex-col items-center border-r border-slate-100 lg:pr-8">
-          <div class="relative w-24 h-24 mb-1 flex items-center justify-center">
-            <div id="profile-pic-container" class="w-24 h-24 rounded-full overflow-hidden border-4 border-indigo-150 flex items-center justify-center bg-indigo-50 shadow-inner">
-              <i id="profile-default-icon" class="fa-solid fa-user-graduate text-4xl text-indigo-400"></i>
-              <img id="profile-real-pic" class="w-full h-full object-cover hidden" src="" alt="ประวัติตัวตน">
-            </div>
-          </div>
-          <div class="space-y-1">
-            <span class="text-xs bg-emerald-100 text-emerald-700 py-1 px-3 rounded-full font-bold">ยืนยันสิทธิ์สำเร็จ</span>
-            <h2 class="text-xl font-extrabold text-slate-800 pt-2" id="profile-student-name">-</h2>
-            <p class="text-[11px] text-slate-400">รหัสประจำตัว: <span id="profile-student-id" class="font-bold text-slate-700">-</span></p>
-          </div>
-          <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 w-full">
-            <div><p class="text-[9px] text-slate-400 font-bold uppercase">ชั้นเรียน</p><p class="text-sm font-extrabold text-indigo-950" id="profile-student-grade">ป. -</p></div>
-            <div><p class="text-[9px] text-slate-400 font-bold uppercase">ห้อง</p><p class="text-sm font-extrabold text-indigo-950" id="profile-student-room">ห้อง -</p></div>
-          </div>
-          <div class="pt-4 flex flex-col space-y-3 w-full">
-            <button onclick="startReadingTest()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 rounded-xl transition text-sm shadow-lg shadow-indigo-100 flex items-center justify-center space-x-2"><i class="fa-solid fa-play"></i><span>เริ่มต้นทำการทดสอบ</span></button>
-            <button onclick="showView('home')" class="text-slate-400 hover:text-slate-600 text-[11px]">ข้อมูลไม่ถูกต้อง? ยกเลิกและย้อนกลับ</button>
-          </div>
-        </div>
-        <div class="lg:col-span-8 space-y-6 w-full font-sans">
-          <div class="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-            <h4 class="font-bold text-xs text-indigo-900 uppercase tracking-wider mb-3 flex items-center"><i class="fa-solid fa-chart-line mr-1.5"></i> เส้นกราฟสรุปพัฒนาการอ่านรายบุคคล</h4>
-            <div class="h-48 w-full relative"><canvas id="studentProgressChart"></canvas></div>
-          </div>
-          <div class="space-y-3">
-            <h3 class="font-bold text-xs text-slate-500 uppercase tracking-wide flex items-center"><i class="fa-solid fa-clock-rotate-left mr-1.5 text-indigo-600"></i>ประวัติการคัดกรองครั้งก่อนหน้า</h3>
-            <div class="overflow-hidden border border-slate-100 rounded-xl max-h-48 overflow-y-auto bg-white">
-              <table class="w-full text-left border-collapse text-xs">
-                <thead><tr class="bg-slate-50 text-slate-500 font-bold border-b"><th class="p-3">วันที่สอบ</th><th class="p-3 text-center">ภาพยืนยัน</th><th class="p-3 text-center">คะแนน</th><th class="p-3 text-right">เกณฑ์คุณภาพ</th></tr></thead>
-                <tbody id="profile-student-history-body"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- VIEW 4: หน้าเวทีประเมินการอ่าน (ข้ามไปดูส่วน Script เลยเพื่อความรวดเร็ว) -->
-    <section id="view-test" class="view-section hidden py-4 animate-fadeIn no-print">
-       <!-- ... ส่วน UI ทำข้อสอบ (คงเดิมตามไฟล์ของคุณ) ... -->
-       <div class="max-w-4xl mx-auto grid grid-cols-1 gap-6 text-center bg-white p-10 rounded-2xl shadow-lg border">
-          <div id="test-progress-text" class="text-sm font-bold text-slate-400 mb-4"></div>
-          <div id="word-timer-text" class="text-rose-500 font-black text-xl mb-4"></div>
-          <div id="word-card-container" class="py-10"></div>
-          <div id="recognized-transcript" class="text-indigo-600 font-bold italic mb-4"></div>
-          <div id="mic-status-text" class="text-xs text-slate-400"></div>
-          <button id="mic-btn" onclick="toggleSpeechRecognition()" class="hidden"></button>
-          <video id="test-video" class="hidden" autoplay playsinline muted></video>
-          <div id="camera-offline-msg" class="hidden"></div>
-          <button onclick="skipCurrentWord()" class="mt-10 text-xs text-slate-400 underline">ข้ามคำศัพท์</button>
-       </div>
-    </section>
-
-    <!-- VIEW 5: รายงานผลสัมฤทธิ์ (ข้ามไปดูส่วน Script) -->
-    <section id="view-result" class="view-section hidden py-6 animate-fadeIn no-print">
-       <div class="max-w-4xl mx-auto text-center space-y-6">
-          <div class="bg-white p-10 rounded-3xl shadow-xl border">
-             <h2 id="result-student-name" class="text-2xl font-black"></h2>
-             <h1 id="result-score-raw" class="text-7xl font-black text-indigo-600"></h1>
-             <div id="result-level-card" class="mt-4 p-4 rounded-xl text-xl font-bold">
-                <span id="result-score-level"></span>
-             </div>
-             <div id="word-type-analysis-container" class="mt-10 space-y-4 text-left"></div>
-             <div id="diagnostic-feedback-text" class="mt-6 p-4 bg-slate-50 rounded-xl text-sm"></div>
-             <button onclick="showView('home')" class="mt-8 bg-indigo-600 text-white px-10 py-3 rounded-full font-bold">กลับหน้าหลัก</button>
-          </div>
-       </div>
-    </section>
-
-    <!-- แผง Admin (ข้าม) -->
-    <section id="view-admin" class="view-section hidden py-6 animate-fadeIn no-print">
-       <!-- ... โค้ดแผงแอดมินเดิม ... -->
-    </section>
-
-  </main>
-
-  <script>
-    // --- สรุปตัวแปรสถานะ ---
-    let masterGradeWords = []; 
-    let currentStudent = null;
-    let testWords = [];
-    let currentWordIndex = 0;
-    let currentWordResults = [];
-    let recognition = null;
-    let isListening = false;
-    let systemSettings = {};
-    let countdownTimer = null;
-    let timeRemainingForWord = 15;
-    let targetSyllables = [];
-    let currentSyllableIndex = 0;
-    let hasMatchedCurrentWord = false;
-    let scoreByWordType = { 'คำพื้นฐาน': { count: 0, correct: 0 }, 'คำประสม': { count: 0, correct: 0 }, 'คำควบกล้ำ': { count: 0, correct: 0 }, 'คำที่มีตัวสะกด': { count: 0, correct: 0 }, 'คำหลายพยางค์': { count: 0, correct: 0 } };
-
-    // --- ส่วนแก้ไข: ฟังก์ชันสแกน และแสดงโปรไฟล์ ---
-    function onScanSuccess(decodedText) {
-      const studentId = decodedText.trim();
-      stopQRScanner();
-      Swal.fire({ title: 'กำลังตรวจสอบสิทธิ์และรอบการสอบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
-      google.script.run
-        .withFailureHandler(err => { Swal.fire('Error', 'ไม่สามารถติดต่อ Server ได้', 'error'); startQRScannerCamera(); })
-        .withSuccessHandler(roundRes => {
-          if (roundRes.alreadyScreened) {
-            Swal.fire({
-              title: 'ไม่สามารถทดสอบได้',
-              html: `นักเรียนอ่านใน <b>รอบที่ ${roundRes.currentRound}</b> ไปแล้ว<br>กรุณารอนักเรียนคนอื่นอ่านให้ครบถ้วนก่อน<br>(สถานะรอบ: อ่านแล้ว ${roundRes.totalInRound}/${roundRes.totalStudents} คน)`,
-              icon: 'warning', confirmButtonText: 'รับทราบ'
-            });
-            showView('home');
-          } else {
-            fetchStudentProfile(studentId);
-          }
-        }).getSystemRoundInfo(studentId);
-    }
-
-    async function fetchStudentProfile(studentId) {
-      try {
-        const student = await apiRequest('getStudentInfo', 'GET', { studentId });
-        if (student) {
-          currentStudent = student;
-          const history = await apiRequest('getStudentHistory', 'GET', { studentId });
-          renderStudentHistoryTable(history);
-          renderStudentProgressChart(history);
-          document.getElementById('profile-student-name').textContent = `${student.prefix} ${student.firstName} ${student.lastName}`;
-          document.getElementById('profile-student-id').textContent = student.studentId;
-          document.getElementById('profile-student-grade').textContent = `ป.${student.grade}`;
-          document.getElementById('profile-student-room').textContent = `ห้อง ${student.room}`;
-          Swal.close();
-          showView('student-profile');
-        } else {
-          Swal.fire('ไม่พบข้อมูล', 'ไม่พบคิวอาร์ในระบบ', 'error');
-          startQRScannerCamera();
-        }
-      } catch (err) { Swal.fire('Error', err.message, 'error'); }
-    }
-
-    // --- ส่วนดักจับเพื่อแสดงคำศัพท์ที่อ่านผิด (Override) ---
-    (function() {
-      const originalRenderLatestRoundTable = renderLatestRoundTable;
-      renderLatestRoundTable = function(data) {
-        if (typeof originalRenderLatestRoundTable === 'function') originalRenderLatestRoundTable(data);
-        if (data && data.misreadWords) {
-          for (let g = 1; g <= 6; g++) {
-            const el = document.getElementById('misread-word-' + g);
-            if (el) el.textContent = data.misreadWords[g] || "-";
-          }
-        }
-      };
-    })();
-  <!-- Navigation bar -->
-  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100 py-3.5 px-4 md:px-6 shadow-sm no-print">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div class="flex items-center space-x-3 cursor-pointer" onclick="showView('home')">
-        <div class="bg-indigo-600 text-white p-2.5 rounded-xl flex items-center justify-center shadow-md shadow-indigo-200">
-          <i class="fa-solid fa-graduation-cap text-lg"></i>
-        </div>
-        <div>
-          <h1 id="nav-system-name" class="font-extrabold text-sm md:text-base leading-tight text-indigo-950">ระบบประเมินการอ่านออกเสียงสะกดคำ</h1>
-          <p id="nav-org-name" class="text-[9px] md:text-[10px] text-indigo-600 font-bold uppercase tracking-wider font-mono">หน่วยงานส่งเสริมการศึกษา</p>
-        </div>
-      </div>
-      
-      <div class="flex items-center space-x-2">
-        <button id="adminLoginBtn" onclick="openAdminModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3 md:py-2.5 md:px-4 rounded-xl flex items-center space-x-2 transition">
-          <i class="fa-solid fa-user-lock"></i>
-          <span class="hidden sm:inline">แผงควบคุมคุณครู</span>
-          <span class="sm:hidden">แอดมิน</span>
-        </button>
-        <button id="adminLogoutBtn" onclick="logoutAdmin()" class="hidden bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold py-2.5 px-4 rounded-xl flex items-center space-x-2 transition">
-          <i class="fa-solid fa-right-from-bracket"></i>
-          <span>ออกจากระบบ</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Content Body -->
-  <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-start">
-
-    <!-- VIEW 1: หน้าหลัก / Landing Page -->
-<!-- VIEW 1: หน้าหลัก / Landing Page (ฉบับปรับปรุงสีสันและความสวยงามเป็นเลิศ) -->
     <section id="view-home" class="view-section py-8 md:py-14 flex flex-col items-center justify-center space-y-8 animate-fadeIn px-4 no-print bg-gradient-to-b from-slate-50 via-indigo-50/20 to-slate-50 rounded-3xl">
       <div class="text-center max-w-3xl space-y-4 md:space-y-6">
         <span class="bg-indigo-100 text-indigo-800 text-xs font-black px-6 py-2.5 rounded-full uppercase tracking-widest border border-indigo-200 inline-block shadow-sm shadow-indigo-100 animate-bounce">
@@ -3064,9 +2759,33 @@ async function fetchFreshSystemSettings() {
         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมบันทึกระบบความปลอดภัย', 'error');
       }
     }
-    // --- ส่วนงานพื้นฐาน (คัดลอกจากของเดิมที่ใช้งานได้) ---
-    // (หมายเหตุ: คุณต้องคงฟังก์ชัน apiRequest, renderStudentProgressChart, renderStudentHistoryTable ฯลฯ ไว้ด้านล่างนี้)
-    // ... คัดลอกฟังก์ชันที่เหลือจากไฟล์เดิมของคุณมาวางต่อตรงนี้ ...
+
+    // --- ส่วนที่เพิ่มเข้าไปเพื่อแสดงคำศัพท์ที่อ่านผิดมากที่สุด ---
+// สร้างฟังก์ชันใหม่ทับฟังก์ชันเดิม หรือดักจับผ่าน Callback
+(function() {
+  const originalRenderLatestRoundTable = renderLatestRoundTable;
+  
+  // เขียนทับฟังก์ชัน renderLatestRoundTable เพื่อดักจับข้อมูล res
+  renderLatestRoundTable = function(data) {
+    // 1. เรียกฟังก์ชันเดิมของระบบให้ทำงานตามปกติ (เพื่อให้ตารางสถิติยังแสดงผลอยู่)
+    if (typeof originalRenderLatestRoundTable === 'function') {
+      originalRenderLatestRoundTable(data);
+    }
+    
+    // 2. ดึงข้อมูลคำศัพท์ที่อ่านผิดจาก data (res) มาแสดงผลใน HTML
+    // หมายเหตุ: data ในที่นี้คือค่า res ที่ส่งมาจาก getPublicStats ใน Code.gs
+    if (data && data.misreadWords) {
+      console.log("กำลังอัปเดตคำศัพท์ที่อ่านผิด:", data.misreadWords);
+      for (let g = 1; g <= 6; g++) {
+        const elementId = 'misread-word-' + g;
+        const el = document.getElementById(elementId);
+        if (el) {
+          el.textContent = data.misreadWords[g] || "-";
+        }
+      }
+    }
+  };
+})();
   </script>
 </body>
 </html>
