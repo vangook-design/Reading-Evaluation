@@ -128,6 +128,25 @@
           </h4>
           <span id="home-round-dates" class="text-[10px] bg-indigo-50 text-indigo-700 font-extrabold px-3 py-1 rounded-full uppercase">กำลังดึงข้อมูล...</span>
         </div>
+
+<!-- แผงรายงานคำศัพท์ที่นักเรียนอ่านผิดมากที่สุด -->
+<div class="bg-white/95 rounded-3xl border border-slate-200/60 p-6 shadow-lg shadow-indigo-950/5 space-y-4 max-w-xl w-full mx-auto font-sans backdrop-blur-md mt-6">
+  <div class="border-b pb-3">
+    <h4 class="font-black text-sm text-rose-950 flex items-center">
+      <i class="fa-solid fa-triangle-exclamation text-rose-600 mr-2"></i>
+      คำศัพท์ที่นักเรียนอ่านผิดมากที่สุด (รายชั้น)
+    </h4>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <!-- วนซ้ำแสดงผล ป.1-ป.6 -->
+    <template v-for="g in [1,2,3,4,5,6]" :key="g">
+      <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-center">
+        <p class="text-[10px] text-rose-400 font-bold uppercase">ป.{{ g }}</p>
+        <h5 :id="'misread-word-' + g" class="text-xs md:text-sm font-black text-rose-700 truncate">-</h5>
+      </div>
+    </template>
+  </div>
+</div>
         
         <div class="overflow-hidden border border-slate-100 rounded-2xl bg-white shadow-inner">
           <table class="w-full text-left border-collapse text-xs">
