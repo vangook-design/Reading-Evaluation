@@ -428,6 +428,15 @@ let BACKEND_URL = BACKEND_URL_STANDARD;
     <!-- VIEW 6: แดชบอร์ดแอดมินคุณครู -->
     <section id="view-admin" class="view-section hidden py-6 animate-fadeIn no-print">
       <div class="space-y-6">
+
+       <!-- ค้นหาและวางโค้ดสวิตช์ควบคุมนี้ไว้ข้างๆ ปุ่มแถบตั้งค่าระบบ -->
+<div class="flex items-center space-x-2 bg-indigo-50 p-2.5 rounded-xl border border-indigo-150 ml-auto">
+  <label class="text-xs font-bold text-indigo-900"><i class="fa-solid fa-arrows-spin mr-1"></i>โหมดคลังข้อมูล:</label>
+  <select id="admin-system-mode-select" onchange="toggleAdminSystemMode()" class="text-xs border rounded-lg p-1.5 bg-white text-indigo-950 font-bold focus:ring-1 focus:ring-indigo-500">
+    <option value="standard">1. ระบบสะกดคำปกติ (ป.1-ป.6)</option>
+    <option value="pisa">2. ระบบการอ่าน PISA (ป.3-ป.6)</option>
+  </select>
+</div>
         
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-4 rounded-2xl custom-shadow gap-4 border border-slate-100">
           <div>
@@ -682,48 +691,98 @@ let BACKEND_URL = BACKEND_URL_STANDARD;
         <h3 class="font-bold text-slate-800" id="word-modal-title">ปรับแต่งคลังข้อสอบสะกดคำ</h3>
         <button onclick="closeWordModal()" class="text-slate-400 hover:text-indigo-600"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <form id="word-form" onsubmit="handleWordSubmit(event)" class="space-y-4">
+<form id="word-form" onsubmit="handleWordSubmit(event)" class="space-y-4">
         <input type="hidden" id="form-word-id">
         
-        <div>
-          <label class="block text-[10px] font-bold text-slate-500 mb-1">คำศัพท์เป้าหมาย (ใช้เครื่องหมาย "-" แบ่งพยางค์ เช่น "กระ-ดาษ")</label>
-          <input type="text" id="form-word-text" class="w-full p-2.5 border rounded-lg text-xs" required placeholder="ตัวอย่าง: กระ-ดาษ">
+        <!-- ========================================== -->
+        <!-- ฟิลด์ชุดที่ 1: สำหรับจัดการคลังคำสะกดคำปกติเดิม -->
+        <!-- ========================================== -->
+        <div id="standard-form-fields" class="space-y-4">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 mb-1">คำศัพท์เป้าหมาย (ใช้เครื่องหมาย "-" แบ่งพยางค์)</label>
+            <input type="text" id="form-word-text" class="w-full p-2.5 border rounded-lg text-xs" placeholder="ตัวอย่าง: กระ-ดาษ">
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">ระดับชั้นการประเมิน (1-6)</label>
+              <input type="number" min="1" max="6" id="form-word-grade" class="w-full p-2.5 border rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">ระดับความยากง่าย</label>
+              <select id="form-word-diff" class="w-full p-2.5 border rounded-lg text-xs">
+                <option value="ง่าย">ง่าย</option>
+                <option value="ปานกลาง">ปานกลาง</option>
+                <option value="ยาก">ยาก</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">หมวดหมู่ทางภาษา</label>
+              <input type="text" id="form-word-cat" class="w-full p-2.5 border rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">หลักสัจศาสตร์/ไวยากรณ์</label>
+              <select id="form-word-type" class="w-full p-2.5 border rounded-lg text-xs">
+                <option value="คำพื้นฐาน">คำพื้นฐาน</option>
+                <option value="คำประสม">คำประสม</option>
+                <option value="คำควบกล้ำ">คำควบกล้ำ</option>
+                <option value="คำที่มีตัวสะกด">คำที่มีตัวสะกด</option>
+                <option value="คำหลายพยางค์">คำหลายพยางค์</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-[10px] font-bold text-slate-500 mb-1">ระดับชั้นการประเมิน (1-6)</label>
-            <input type="number" min="1" max="6" id="form-word-grade" class="w-full p-2.5 border rounded-lg text-xs" required>
+        <!-- ========================================== -->
+        <!-- ฟิลด์ชุดที่ 2: สำหรับจัดการคลังข้อสอบ PISA (เพิ่มใหม่) -->
+        <!-- ========================================== -->
+        <div id="pisa-form-fields" class="hidden space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">ระดับชั้นการประเมิน PISA (3-6)</label>
+              <input type="number" min="3" max="6" id="form-pisa-grade" class="w-full p-2.5 border rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">โจทย์คำถามวิเคราะห์</label>
+              <input type="text" id="form-pisa-question" class="w-full p-2.5 border rounded-lg text-xs" placeholder="พิมพ์โจทย์เช่น: ผึ้งมีบทบาทสำคัญอย่างไร?">
+            </div>
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-slate-500 mb-1">ระดับความยากง่าย</label>
-            <select id="form-word-diff" class="w-full p-2.5 border rounded-lg text-xs">
-              <option value="ง่าย">ง่าย</option>
-              <option value="ปานกลาง">ปานกลาง</option>
-              <option value="ยาก">ยาก</option>
-            </select>
+            <label class="block text-[10px] font-bold text-slate-500 mb-1">บทอ่านเชิงวิเคราะห์แนว PISA (Passage)</label>
+            <textarea id="form-pisa-passage" rows="3" class="w-full p-2.5 border rounded-lg text-xs" placeholder="พิมพ์หรือวางบทอ่านที่คัดเลือกมา..."></textarea>
           </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-[10px] font-bold text-slate-500 mb-1">หมวดหมู่ทางภาษา</label>
-            <input type="text" id="form-word-cat" class="w-full p-2.5 border rounded-lg text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">ตัวเลือก ก. (ตัวเลือก 1)</label>
+              <input type="text" id="form-pisa-choice-0" class="w-full p-2.5 border rounded-lg text-xs" placeholder="คำตอบตัวเลือกแรก">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">ตัวเลือก ข. (ตัวเลือก 2)</label>
+              <input type="text" id="form-pisa-choice-1" class="w-full p-2.5 border rounded-lg text-xs" placeholder="คำตอบตัวเลือกสอง">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">ตัวเลือก ค. (ตัวเลือก 3)</label>
+              <input type="text" id="form-pisa-choice-2" class="w-full p-2.5 border rounded-lg text-xs" placeholder="คำตอบตัวเลือกสาม">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1">ตัวเลือก ง. (ตัวเลือก 4)</label>
+              <input type="text" id="form-pisa-choice-3" class="w-full p-2.5 border rounded-lg text-xs" placeholder="คำตอบตัวเลือกสี่">
+            </div>
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-slate-500 mb-1">หลักสัจศาสตร์/ไวยากรณ์</label>
-            <select id="form-word-type" class="w-full p-2.5 border rounded-lg text-xs">
-              <option value="คำพื้นฐาน">คำพื้นฐาน</option>
-              <option value="คำประสม">คำประสม</option>
-              <option value="คำควบกล้ำ">คำควบกล้ำ</option>
-              <option value="คำที่มีตัวสะกด">คำที่มีตัวสะกด</option>
-              <option value="คำหลายพยางค์">คำหลายพยางค์</option>
+            <label class="block text-[10px] font-bold text-slate-500 mb-1">คำตอบที่ถูกต้องที่แท้จริง</label>
+            <select id="form-pisa-correct-index" class="w-full p-2.5 border rounded-lg text-xs">
+              <option value="0">ตัวเลือก ก. (ตัวเลือก 1)</option>
+              <option value="1">ตัวเลือก ข. (ตัวเลือก 2)</option>
+              <option value="2">ตัวเลือก ค. (ตัวเลือก 3)</option>
+              <option value="3">ตัวเลือก ง. (ตัวเลือก 4)</option>
             </select>
           </div>
         </div>
 
         <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg transition text-xs">
-          บันทึกคำศัพท์ลงฐานข้อมูลคลัง
+          บันทึกข้อมูลคลังลงฐานข้อมูล
         </button>
       </form>
     </div>
@@ -994,34 +1053,80 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
 // =========================================================================
 // สคริปต์สลับช่องทางและควบคุมระบบคัดกรอง PISA v3.1 (แก้ไขปัญหาการข้ามข้อ & เสียงซ้ำ)
 // =========================================================================
+// =========================================================================
+// สคริปต์สลับช่องทางและควบคุมระบบคัดกรอง PISA v3.2 (ครอบคลุมระบบปิดกล้อง & หน้าแอดมินแยกชีต)
+// =========================================================================
 (function() {
   const originalApiRequest = window.apiRequest;
   const originalStartReadingTest = window.startReadingTest;
   const originalToggleSpeechRecognition = window.toggleSpeechRecognition;
   const originalSkipCurrentWord = window.skipCurrentWord;
+  const originalShowView = window.showView;
+
+  // แบ็กอัปฟังก์ชันหน้าแอดมินเดิมสำหรับการเขียนทับอย่างเสถียร
+  const originalRenderAdminWordsTab = window.renderAdminWordsTab;
+  const originalRenderAdminStatsTab = window.renderAdminStatsTab;
+  const originalOpenWordModal = window.openWordModal;
+  const originalEditWord = window.editWord;
+  const originalHandleWordSubmit = window.handleWordSubmit;
+  const originalConfirmDeleteWord = window.confirmDeleteWord;
 
   window.activeScreeningMode = "standard"; 
+  window.activeAdminMode = "standard"; // ค่าเริ่มต้นควบคุมระบบผู้ดูแล: 'standard' หรือ 'pisa'
+
   window.pisaQuestions = [];
   window.pisaCurrentIndex = 0;
   window.pisaAnswers = [];
   window.pisaTimer = null;
-  window.pisaTimeRemaining = 30; // ปรับเวลาเป็น 30 วินาทีต่อข้อ
-  window.isProcessingPisaAnswer = false; // ตัวแปรล็อคสิทธิ์เพื่อป้องกันการข้ามข้อซ้ำซ้อน (State Lock)
+  window.pisaTimeRemaining = 30; 
+  window.isProcessingPisaAnswer = false; 
 
+  // ป้องกันปัญหากล้องทำงานค้าง: ทำลายสถานะกล้องสตรีมทันทีเมื่อเปลี่ยนหน้าจอสำเร็จ
+  window.showView = function(viewName) {
+    if (viewName === "home" || viewName === "result" || viewName === "admin") {
+      window.stopAllWebcams();
+    }
+    originalShowView(viewName);
+  };
+
+  window.stopAllWebcams = function() {
+    if (window.cameraStream) {
+      window.cameraStream.getTracks().forEach(track => track.stop());
+      window.cameraStream = null;
+      if (window.vmN_78d8ec) {
+        window.vmN_78d8ec['cameraStream'] = null;
+      }
+      console.log("Webcam stream stopped successfully to save resources.");
+    }
+  };
+
+  // แฟกทอริงระบบเชื่อมต่อเครือข่ายสลับราง Web App คู่
   window.apiRequest = async function(action, data, method) {
-    if (action === "getStudentInfo" || action === "getStudentHistory" || window.activeScreeningMode === "standard") {
-      window.BACKEND_URL = BACKEND_URL_STANDARD; 
-      return originalApiRequest(action, data, method);
+    const isPisaAction = ["getAllQuestions", "getQuestionsForGrade", "getDashboardStatistics", "saveQuestion", "deleteQuestion", "getSystemSettings", "saveSettings"].includes(action);
+    
+    if (isPisaAction && window.activeScreeningMode !== "standard" && action !== "getStudentInfo" && action !== "getStudentHistory") {
+      window.BACKEND_URL = BACKEND_URL_PISA;
+    } else if (isPisaAction && window.activeAdminMode === "pisa") {
+      window.BACKEND_URL = BACKEND_URL_PISA;
     } else {
+      window.BACKEND_URL = BACKEND_URL_STANDARD;
+    }
+
+    // สำหรับกรณีแอกชันปกติ หรือดึงข้อมูลนักเรียน ให้ยิงเข้าหลังบ้านสะกดคำปกติ
+    if (window.BACKEND_URL === BACKEND_URL_STANDARD) {
+      return originalApiRequest(action, data, method);
+    } 
+    
+    // ยิง API เข้าหลังบ้าน PISA
+    else {
       try {
-        let url = BACKEND_URL_PISA;
-        let options = { redirect: "follow" };
-        options.method = "POST";
+        let url = window.BACKEND_URL;
+        let options = { redirect: "follow", method: "POST" };
         options.headers = { "Content-Type": "text/plain;charset=utf-8" };
         options.body = JSON.stringify({ action: action, ...data });
 
         const response = await fetch(url, options);
-        if (!response.ok) throw new Error("HTTP Network error");
+        if (!response.ok) throw new Error("Network HTTP Error");
         const json = await response.json();
         return json;
       } catch (err) {
@@ -1029,6 +1134,243 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
         return { success: false, message: err.message };
       }
     }
+  };
+
+  // ดักจับและควบคุมการเปลี่ยนโหมดจัดการในแผงคุณครูสลอต
+  window.toggleAdminSystemMode = function() {
+    const modeSelect = document.getElementById("admin-system-mode-select");
+    window.activeAdminMode = modeSelect.value;
+    
+    // รีเฟรชตารางสถิติตามการคัดสรรชีตเฉพาะ
+    renderAdminStatsTab();
+    renderAdminWordsTab();
+  };
+
+  // เขียนทับตารางสถิติตารางวิวัฒนาการพัฒนาการตามประเภทระบบที่เลือก
+  window.renderAdminStatsTab = async function() {
+    if (window.activeAdminMode === "standard") {
+      originalRenderAdminStatsTab();
+    } else {
+      // เรียกสถิติตารางประมวลผล PISA จากหลังบ้าน PISA ชีตใหม่
+      try {
+        const stats = await apiRequest("getDashboardStatistics");
+        if (!stats) return;
+
+        // เชื่อมโยงและแสดงผลข้อมูลตารางการผ่านเกณฑ์ประเมิน PISA ในหน้าจอ
+        document.getElementById("stats-total-students").textContent = stats.totalAssessments + " คน";
+        document.getElementById("stats-total-assessments").textContent = stats.totalAssessments + " ครั้ง";
+        document.getElementById("stats-passed").textContent = stats.passedCount + " คน";
+        document.getElementById("stats-improvement").textContent = stats.improvementCount + " คน";
+
+        // เขียนทับเก็บแคชวิวัฒนาการชาร์ต Chart.js ตัวเดิมมาป้อนข้อมูล PISA แทน
+        window.lastFetchedStats = stats;
+        
+        // รันอัปเดตกราฟระดับชั้น และกราฟพัฒนาการตามโหมด PISA 
+        updatePisaStatsCharts(stats);
+      } catch(e) {
+        console.log("Error loading PISA stats:", e);
+      }
+    }
+  };
+
+  // ปรับการทำงานของชาร์ตเมื่ออยู่ในโหมด PISA
+  function updatePisaStatsCharts(stats) {
+    if (window.gradeStatsChartInstance) {
+      const grades = ["3", "4", "5", "6"];
+      const averages = grades.map(g => {
+        const s = stats.gradeStats[g];
+        return s && s.total > 0 ? Number((s.sumScore / s.total).toFixed(1)) : 0;
+      });
+      window.gradeStatsChartInstance.data.labels = ["ประถมศึกษาปีที่ 3", "ประถมศึกษาปีที่ 4", "ประถมศึกษาปีที่ 5", "ประถมศึกษาปีที่ 6"];
+      window.gradeStatsChartInstance.data.datasets[0].data = averages;
+      window.gradeStatsChartInstance.update();
+    }
+    
+    if (window.ratioChartInstance) {
+      window.ratioChartInstance.data.datasets[0].data = [stats.passedCount, stats.improvementCount];
+      window.ratioChartInstance.update();
+    }
+    window.updateGradeDevelopmentChart();
+  }
+
+  // เขียนทับการจัดการคลังข้อสอบ PISA แสดงฟิลด์และหัวข้อตารางให้เหมาะสม
+  window.renderAdminWordsTab = async function() {
+    if (window.activeAdminMode === "standard") {
+      // คืนค่าหัวตารางแบบสะกดคำปกติ
+      const tableHeader = document.querySelector("#admin-tab-words thead tr");
+      if (tableHeader) {
+        tableHeader.innerHTML = `
+          <th class="p-3 font-semibold">ID</th>
+          <th class="p-3 font-semibold">ระดับชั้น</th>
+          <th class="p-3 font-semibold">คำศัพท์เป้าหมาย</th>
+          <th class="p-3 font-semibold">หมวดหมู่</th>
+          <th class="p-3 font-semibold">ความยากง่าย</th>
+          <th class="p-3 font-semibold">โครงสร้างภาษา</th>
+          <th class="p-3 font-semibold text-right">การจัดการ</th>
+        `;
+      }
+      originalRenderAdminWordsTab();
+    } else {
+      // แสดงหัวตารางรูปแบบ PISA
+      const tableHeader = document.querySelector("#admin-tab-words thead tr");
+      if (tableHeader) {
+        tableHeader.innerHTML = `
+          <th class="p-3 font-semibold">ID</th>
+          <th class="p-3 font-semibold">ระดับชั้น</th>
+          <th class="p-3 font-semibold">บทอ่าน (Passage)</th>
+          <th class="p-3 font-semibold">โจทย์คำถาม</th>
+          <th class="p-3 font-semibold">เฉลยตัวเลือกตอบที่ถูกต้อง</th>
+          <th class="p-3 font-semibold text-right">การจัดการ</th>
+        `;
+      }
+
+      const tbody = document.getElementById("words-table-body");
+      tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-slate-400">กำลังดึงคลังข้อสอบ PISA จากหลังบ้าน...</td></tr>`;
+
+      try {
+        const questions = await apiRequest("getAllQuestions");
+        tbody.innerHTML = "";
+        
+        if (!questions || questions.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-slate-400">ไม่มีข้อมูลข้อสอบ PISA ในระบบ</td></tr>`;
+          return;
+        }
+
+        questions.forEach(q => {
+          const tr = document.createElement("tr");
+          tr.className = "border-b hover:bg-slate-50/50";
+          
+          const ansLetters = ["ก.", "ข.", "ค.", "ง."];
+          const correctText = q.choices[q.correctIndex] || "-";
+          
+          tr.innerHTML = `
+            <td class="p-3">${q.id}</td>
+            <td class="p-3 font-bold text-slate-700">ป.${q.grade}</td>
+            <td class="p-3 truncate max-w-xs" title="${q.passage}">${q.passage}</td>
+            <td class="p-3 truncate max-w-xs font-semibold text-slate-700">${q.question}</td>
+            <td class="p-3"><span class="text-xs bg-emerald-50 text-emerald-700 font-bold px-2 py-1 rounded-full">${ansLetters[q.correctIndex]} ${correctText}</span></td>
+            <td class="p-3 text-right space-x-1">
+              <button onclick="editPisaQuestion(${q.id}, '${q.grade}', '${encodeURIComponent(q.passage)}', '${encodeURIComponent(q.question)}', ['${encodeURIComponent(q.choices[0])}','${encodeURIComponent(q.choices[1])}','${encodeURIComponent(q.choices[2])}','${encodeURIComponent(q.choices[3])}'], ${q.correctIndex})" class="text-indigo-600 hover:text-indigo-900 font-bold"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="confirmDeletePisaQuestion(${q.id})" class="text-red-500 hover:text-red-900 font-bold"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-rose-500">เกิดข้อผิดพลาดในการโหลดข้อสอบ</td></tr>`;
+      }
+    }
+  };
+
+  // ตั้งค่าแสดงฟิลด์ Modal ให้สอดรับกับสวิตช์โหมด
+  window.openWordModal = function() {
+    const stdFields = document.getElementById("standard-form-fields");
+    const pisaFields = document.getElementById("pisa-form-fields");
+    const title = document.getElementById("word-modal-title");
+
+    if (window.activeAdminMode === "standard") {
+      stdFields.classList.remove("hidden");
+      pisaFields.classList.add("hidden");
+      title.textContent = "ปรับแต่งคลังข้อสอบสะกดคำ";
+      originalOpenWordModal();
+    } else {
+      stdFields.classList.add("hidden");
+      pisaFields.classList.remove("hidden");
+      title.textContent = "สร้างโจทย์คำถามเชิงวิเคราะห์ PISA";
+      
+      document.getElementById("word-form").reset();
+      document.getElementById("form-word-id").value = "";
+      
+      // แสดง modal ในโหมด PISA
+      document.getElementById("word-crud-modal").classList.remove("hidden");
+    }
+  };
+
+  // แอกชันสำหรับการกดปุ่มแก้ไขในคลัง PISA
+  window.editPisaQuestion = function(id, grade, encPassage, encQuestion, choicesArray, correctIndex) {
+    window.openWordModal();
+    
+    document.getElementById("form-word-id").value = id;
+    document.getElementById("form-pisa-grade").value = grade;
+    document.getElementById("form-pisa-passage").value = decodeURIComponent(encPassage);
+    document.getElementById("form-pisa-question").value = decodeURIComponent(encQuestion);
+    
+    for (let i = 0; i < 4; i++) {
+      document.getElementById(`form-pisa-choice-${i}`).value = decodeURIComponent(choicesArray[i]);
+    }
+    document.getElementById("form-pisa-correct-index").value = correctIndex;
+  };
+
+  // สลับการควบคุมบันทึกคำสะกด และข้อสอบ PISA
+  window.handleWordSubmit = async function(event) {
+    event.preventDefault();
+
+    if (window.activeAdminMode === "standard") {
+      originalHandleWordSubmit(event);
+    } else {
+      Swal.fire({ title: "กำลังบันทึกข้อมูล...", allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+      const qId = document.getElementById("form-word-id").value;
+      const qObj = {
+        id: qId ? qId : null,
+        grade: document.getElementById("form-pisa-grade").value,
+        passage: document.getElementById("form-pisa-passage").value,
+        question: document.getElementById("form-pisa-question").value,
+        choices: [
+          document.getElementById("form-pisa-choice-0").value,
+          document.getElementById("form-pisa-choice-1").value,
+          document.getElementById("form-pisa-choice-2").value,
+          document.getElementById("form-pisa-choice-3").value
+        ],
+        correctIndex: parseInt(document.getElementById("form-pisa-correct-index").value)
+      };
+
+      try {
+        const res = await apiRequest("saveQuestion", { wordObj: qObj });
+        Swal.close();
+        if (res && res.success) {
+          Swal.fire("สำเร็จ", "บันทึกข้อสอบ PISA เรียบร้อยแล้ว", "success");
+          document.getElementById("word-crud-modal").classList.add("hidden");
+          renderAdminWordsTab();
+        } else {
+          Swal.fire("ข้อผิดพลาด", "บันทึกล้มเหลว", "error");
+        }
+      } catch (e) {
+        Swal.close();
+        Swal.fire("ข้อผิดพลาด", e.toString(), "error");
+      }
+    }
+  };
+
+  // แอกชันสำหรับการกดปุ่มลบคำถาม PISA
+  window.confirmDeletePisaQuestion = function(id) {
+    Swal.fire({
+      title: "ยืนยันการลบข้อสอบ?",
+      text: "การกระทำนี้จะลบข้อสอบ PISA ออกจากฐานข้อมูลชีตอย่างถาวร!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#EF4444",
+      cancelButtonColor: "#64748B",
+      confirmButtonText: "ลบข้อสอบออก",
+      cancelButtonText: "ยกเลิก"
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        Swal.fire({ title: "กำลังดำเนินการ...", allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        try {
+          const res = await apiRequest("deleteQuestion", { id: id });
+          Swal.close();
+          if (res && res.success) {
+            Swal.fire("สำเร็จ", "ลบข้อสอบ PISA ออกเรียบร้อยแล้ว", "success");
+            renderAdminWordsTab();
+          } else {
+            Swal.fire("ผิดพลาด", "การลบล้มเหลว", "error");
+          }
+        } catch (e) {
+          Swal.close();
+          Swal.fire("ข้อผิดพลาด", e.toString(), "error");
+        }
+      }
+    });
   };
 
   window.startReadingTest = function() {
@@ -1076,50 +1418,6 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
     });
   };
 
-  function setupUILayoutByMode() {
-    const standardUI = document.getElementById("standard-test-ui");
-    const pisaUI = document.getElementById("pisa-test-ui");
-    const skipBtn = document.querySelector("#view-test button[onclick='skipCurrentWord()']");
-
-    if (window.activeScreeningMode === "standard") {
-      if (standardUI) standardUI.classList.remove("hidden");
-      if (pisaUI) pisaUI.classList.add("hidden");
-      document.getElementById("test-header-meta-label").textContent = "ความคืบหน้าคำถามคัดกรอง";
-      document.getElementById("test-word-type-meta-container").style.display = "block";
-      document.getElementById("test-main-title").textContent = "จงอ่านออกเสียงสะกดคำศัพท์ภาษาไทยที่ปรากฏ";
-      document.getElementById("test-main-subtitle").textContent = "กรุณาออกเสียงสะกดคำอักขระให้ ค่อยๆ เปลี่ยนเป็นสีเขียว ครบทั้งประโยค";
-      if (skipBtn) skipBtn.innerHTML = 'ข้ามคำศัพท์ (0 คะแนน) <i class="fa-solid fa-angles-right ml-0.5"></i>';
-    } else {
-      if (standardUI) standardUI.classList.add("hidden");
-      if (pisaUI) pisaUI.classList.remove("hidden");
-      document.getElementById("test-header-meta-label").textContent = "ความคืบหน้าการประเมิน PISA";
-      document.getElementById("test-word-type-meta-container").style.display = "none";
-      document.getElementById("test-main-title").textContent = 'วิธีทำ: อ่านออกเสียง "ข้อความตัวเลือก" ที่ถูกต้อง 1 ตัวเลือกอย่างชัดเจนเพื่อตอบ';
-      document.getElementById("test-main-subtitle").textContent = "ระบบจะทำการเปรียบเทียบคลื่นเสียงอ่านของคุณกับข้อความในตัวเลือกเพื่อบันทึกผล";
-      if (skipBtn) skipBtn.innerHTML = 'ข้ามคำถามนี้ (0 คะแนน) <i class="fa-solid fa-angles-right ml-0.5"></i>';
-    }
-  }
-
-  window.skipCurrentWord = function() {
-    if (window.activeScreeningMode === "standard") {
-      originalSkipCurrentWord();
-    } else {
-      skipPisaQuestion();
-    }
-  };
-
-  window.toggleSpeechRecognition = function() {
-    if (window.activeScreeningMode === "standard") {
-      originalToggleSpeechRecognition();
-    } else {
-      if (isListening) {
-        stopListeningState();
-      } else {
-        startPisaVoiceListening();
-      }
-    }
-  };
-
   async function initPisaScreeningFlow() {
     Swal.fire({
       title: "กำลังจัดเรียงชุดข้อสอบ PISA",
@@ -1137,7 +1435,6 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
         return;
       }
 
-      // จำกัดให้รันการทำแบบประเมินทดสอบที่ 5 ข้อตามโควตาที่ระบุ
       window.pisaQuestions = res.slice(0, 5); 
       window.pisaCurrentIndex = 0;
       window.pisaAnswers = [];
@@ -1152,7 +1449,6 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
   }
 
   function loadPisaQuestion() {
-    // ปลดล็อคระบบประมวลผลคำตอบเพื่อให้ข้อใหม่ทำงานได้
     window.isProcessingPisaAnswer = false; 
 
     if (window.pisaCurrentIndex >= window.pisaQuestions.length) {
@@ -1177,7 +1473,7 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
       card.onclick = function() { processPisaChoiceSelection(i); };
     }
 
-    window.pisaTimeRemaining = 30; // ปรับเวลาเป็น 30 วินาที
+    window.pisaTimeRemaining = 30; 
     startPisaTimer();
     startPisaVoiceListening();
   }
@@ -1211,7 +1507,7 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
   }
 
   function handlePisaTimeout() {
-    if (window.isProcessingPisaAnswer) return; // หากกำลังทำงานข้ามข้ออยู่ ให้ระงับทันที
+    if (window.isProcessingPisaAnswer) return; 
     window.isProcessingPisaAnswer = true;
 
     stopListeningState();
@@ -1261,24 +1557,21 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
     }
   }
 
-  // ระบบตรวจสอบคำพูดอัจฉริยะ (Smart Matching) แก้ไขปัญหาคำซ้ำซ้อนสะกดคำ
   function evaluatePisaVoiceAnswer(spokenText) {
     if (window.isProcessingPisaAnswer) return;
 
     const currentQuestion = window.pisaQuestions[window.pisaCurrentIndex];
     let detectedChoiceIndex = -1;
 
-    // 1. ตรรกะระดับที่ 1: ตรวจจับ "อักษรย่อ" หรือ "ชื่อย่อหัวข้อ" ที่สั้นและคมชัด เช่น "กอ", "ขอ", "คอ", "งอ" หรือ "ข้อ ก"
     const choiceKeywords = [
-      ["ก", "ก.", "กอ", "ข้อ ก", "ข้อแรก", "เอ", "a", "1"], // ก.
-      ["ข", "ข.", "ขอ", "ข้อ ข", "ข้อสอง", "บี", "b", "2"], // ข.
-      ["ค", "ค.", "คอ", "ข้อ ค", "ข้อสาม", "ซี", "c", "3"], // ค.
-      ["ง", "ง.", "งอ", "ข้อ ง", "ข้อสี่", "ดี", "d", "4"]   // ง.
+      ["ก", "ก.", "กอ", "ข้อ ก", "ข้อแรก", "เอ", "a", "1"], 
+      ["ข", "ข.", "ขอ", "ข้อ ข", "ข้อสอง", "บี", "b", "2"], 
+      ["ค", "ค.", "คอ", "ข้อ ค", "ข้อสาม", "ซี", "c", "3"], 
+      ["ง", "ง.", "งอ", "ข้อ ง", "ข้อสี่", "ดี", "d", "4"]   
     ];
 
     for (let i = 0; i < 4; i++) {
       const matchFound = choiceKeywords[i].some(keyword => {
-        // ค้นหาเปรียบเทียบแบบเจาะจงว่าพูดพยางค์ตัวย่อตรงกันหรือไม่
         return spokenText === keyword || spokenText.endsWith(" " + keyword) || spokenText.startsWith(keyword + " ");
       });
       if (matchFound) {
@@ -1287,7 +1580,6 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
       }
     }
 
-    // 2. ตรรกะระดับที่ 2: หากไม่มีเสียงตัวย่อ ให้ทำการวัดความคล้ายคลึงของเสียงประโยคยาวแบบเดิม (แต่เพิ่มความยาวคำสแกนที่ละเอียดขึ้น)
     if (detectedChoiceIndex === -1) {
       let highestSimilarity = 0;
       for (let i = 0; i < 4; i++) {
@@ -1297,7 +1589,7 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
           break;
         }
         const similarity = getPhoneticSimilarity(getThaiPhoneticEquivalent(choiceText), getThaiPhoneticEquivalent(spokenText));
-        if (similarity > highestSimilarity && similarity >= 0.78) { // ขยับความปลอดภัยเพื่อกันคำซ้ำซ้อน
+        if (similarity > highestSimilarity && similarity >= 0.78) { 
           highestSimilarity = similarity;
           detectedChoiceIndex = i;
         }
@@ -1310,7 +1602,7 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
   }
 
   function processPisaChoiceSelection(choiceIndex) {
-    if (window.isProcessingPisaAnswer) return; // หากล็อคสถานะประมวลผลอยู่ ปฏิเสธคำขอซ้ำทันที
+    if (window.isProcessingPisaAnswer) return; 
     window.isProcessingPisaAnswer = true;
 
     if (window.pisaTimer) clearInterval(window.pisaTimer);
@@ -1389,7 +1681,7 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
     const scorePercent = (correctCount / totalCount) * 100;
 
     let level = "ควรปรับปรุง";
-    if (correctCount >= 4) level = "ดีเยี่ยม"; // อ้างอิงเกณฑ์ตาม 5 ข้อ
+    if (correctCount >= 4) level = "ดีเยี่ยม"; 
     else if (correctCount >= 3) level = "พอใช้";
 
     const pisaSummary = {
