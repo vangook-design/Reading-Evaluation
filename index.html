@@ -976,6 +976,10 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
 // ระบบผสานการทำงานและจัดการคลังข้อมูลสะกดคำปกติ & การอ่านวิเคราะห์ PISA (Unified Engine v3.3)
 // จัดการระบบกล้องปิดอัตโนมัติ และสลับคลังข้อมูลสถิติ/หลังบ้าน PISA แยกชีตอย่างเป็นสัดส่วน
 // =========================================================================
+// =========================================================================
+// ระบบผสานควบคุมคัดกรองแบบสะกดคำปกติ & การประเมินวิเคราะห์ PISA (Unified Engine v3.3)
+// จัดการระบบกล้องปิดอัตโนมัติ และสลับคลังข้อมูลสถิติ/หลังบ้าน PISA แยกชีตอย่างเป็นสัดส่วน
+// =========================================================================
 (function() {
   // สำรองฟังก์ชันดั้งเดิมของระบบสะกดคำสะกดปกติ
   const originalApiRequest = window.apiRequest;
@@ -1005,7 +1009,7 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
   window.isProcessingPisaAnswer = false; 
   window.currentStudentPisa = null; // ข้อมูลผู้สอบฝั่ง PISA ดึงข้อมูลข้ามระบบปิด
 
-  // 1. ฟังก์ชันตัวช่วยตรวจประมวลผลข้อมูลผู้เรียนจาก DOM หน้าจอ เพื่อข้ามขอบเขตตัวแปรปิดกั้นเดิม
+  // 1. ฟังก์ชันตัวช่วยดึงระดับชั้นเรียนผ่านอักขระสากล (Regex) ป้องกันปัญหาช่องระดับชั้นมีตัวหนังสือปน
   function getActiveStudentFromDOM() {
     const idEl = document.getElementById("profile-student-id");
     const nameEl = document.getElementById("profile-student-name");
@@ -1016,8 +1020,15 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
       return null;
     }
     
-    let gradeVal = gradeEl ? gradeEl.textContent.replace("ป.", "").trim() : "3";
-    let roomVal = roomEl ? roomEl.textContent.replace("ห้อง", "").trim() : "1";
+    // ค้นหาเฉพาะตัวเลขแรกที่เจอเสมอในช่องชั้นเรียน เช่น "ป. 3" -> "3" , "ประถมศึกษาปีที่ 5" -> "5"
+    let gradeText = gradeEl ? gradeEl.textContent : "";
+    let gradeMatch = gradeText.match(/\d+/);
+    let gradeVal = gradeMatch ? gradeMatch[0] : "3"; 
+
+    // ค้นหาเฉพาะตัวเลขแรกที่เจอเสมอในช่องห้องเรียน
+    let roomText = roomEl ? roomEl.textContent : "";
+    let roomMatch = roomText.match(/\d+/);
+    let roomVal = roomMatch ? roomMatch[0] : "1";
     
     return {
       studentId: idEl.textContent.trim(),
@@ -1028,7 +1039,7 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
     };
   }
 
-  // 2. ควบคุมระบบทำลายสถานะกล้องสตรีมทันทีเมื่อจบแบบทดสอบหรือเปลี่ยนหน้าจอเพื่อป้องกันกล้องค้าง
+  // 2. ควบคุมระบบทำลายสถานะกล้องสตรีมทันทีเมื่อเปลี่ยนหน้าจอสำเร็จ เพื่อป้องกันกล้องค้างทำงานตลอด
   window.showView = function(viewName) {
     if (viewName === "home" || viewName === "result" || viewName === "admin" || viewName === "student-profile") {
       window.stopAllWebcams();
@@ -1191,8 +1202,22 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
       const res = await apiRequest("getQuestionsForGrade", { grade: window.currentStudentPisa.grade });
       Swal.close();
 
+      // ปล่อยระบบตรวจหาบั๊กข้อผิดพลาดเชิงลึกและแสดงรายละเอียดให้คุณครูทราบทันทีหากดึงข้อมูลมาว่างเปล่า
       if (!res || !Array.isArray(res) || res.length === 0) {
-        Swal.fire("คลังข้อสอบ PISA ว่าง", "กรุณาตรวจเช็คระดับชั้นหรือข้อมูลในชีต PisaQuestions", "warning");
+        let debugMsg = "ไม่พบข้อสอบในชีต PisaQuestions ที่ตรงกับระดับชั้นนี้";
+        if (res && res.message) {
+          debugMsg = "หลังบ้านแครชและส่งข้อความดังนี้: " + res.message;
+        }
+        Swal.fire({
+          title: "คลังข้อสอบว่างเปล่า",
+          html: `<div class='text-left text-xs bg-slate-50 p-3 rounded-lg border space-y-1'>
+                  <p>• ระดับชั้นเรียนที่ระบบหน้าบ้านสแกนส่งไป: <strong>ป.${window.currentStudentPisa.grade}</strong></p>
+                  <p>• ข้อมูลดิบที่หลังบ้านส่งคืนกลับมา: <strong>${JSON.stringify(res)}</strong></p>
+                  <p class='text-rose-600 font-bold'>• สาเหตุที่เป็นไปได้: ลืมเปลี่ยนเวอร์ชัน Apps Script เป็น 'เวอร์ชันใหม่' ตอนกดเผยแพร่ (Deploy) หรือระบบ Google ชีต PisaQuestions มีคอลัมน์ไม่ตรงรูปแบบ</p>
+                 </div>`,
+          icon: "warning",
+          confirmButtonText: "กลับสู่หน้าประวัติ"
+        });
         return;
       }
 
