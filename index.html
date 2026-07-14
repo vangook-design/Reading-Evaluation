@@ -1009,13 +1009,33 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
   window.pisaTimeRemaining = 10; 
 
   // 2. การดักจับและเปลี่ยนทิศทาง API ไปหลังบ้านแยกตัวที่ 1 และ 2 ตามแอกชันเรียกข้อมูล
-  window.apiRequest = async function(action, data, method) {
+window.apiRequest = async function(action, data, method) {
+    // โหมดการทำงานปกติ: ส่งให้ฟังก์ชันดั้งเดิมประมวลผลตามปกติไม่รบกวนกัน
     if (action === "getStudentInfo" || action === "getStudentHistory" || window.activeScreeningMode === "standard") {
-      window.BACKEND_URL = BACKEND_URL_STANDARD; // วิ่งเข้าหลังบ้านระบบดั้งเดิม
-    } else {
-      window.BACKEND_URL = BACKEND_URL_PISA; // วิ่งเข้าหลังบ้านระบบ PISA ใหม่
+      window.BACKEND_URL = BACKEND_URL_STANDARD; 
+      return originalApiRequest(action, data, method);
+    } 
+    
+    // โหมด PISA: ยิงคำขอเข้าสู่ Web App PISA โดยตรงแบบอิสระ ขจัดปัญหา Scoping Const
+    else {
+      try {
+        let url = BACKEND_URL_PISA;
+        let options = { redirect: "follow" };
+        
+        // บังคับส่งแบบ POST พร้อมจัดการ Content-Type แบบ Plain-Text เพื่อเลี่ยงการติดบล็อกนโยบาย CORS ของ Google Web App
+        options.method = "POST";
+        options.headers = { "Content-Type": "text/plain;charset=utf-8" };
+        options.body = JSON.stringify({ action: action, ...data });
+
+        const response = await fetch(url, options);
+        if (!response.ok) throw new Error("HTTP Network error occurred");
+        const json = await response.json();
+        return json;
+      } catch (err) {
+        console.error("PISA Connection Error:", err);
+        return { success: false, message: err.message };
+      }
     }
-    return originalApiRequest(action, data, method);
   };
 
   // 3. ปรับเมื่อนักเรียนยืนยันโปรไฟล์แล้วคลิก 'เริ่มทำแบบทดสอบ' เพื่อแสดงตัวเลือก
@@ -1112,7 +1132,7 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
     }
   };
 
-  // 6. การดึงชุดทดสอบ PISA จากหลังบ้านตัวใหม่
+  // 6.ปรับปรุงการตรวจสอบและดักจับข้อผิดพลาด (Defensive Check) ป้องกันแอปค้างหน้าแรก
   async function initPisaScreeningFlow() {
     Swal.fire({
       title: "กำลังจัดเรียงชุดข้อสอบ PISA",
@@ -1125,8 +1145,18 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
       const res = await apiRequest("getQuestionsForGrade", { grade: currentStudent.grade });
       Swal.close();
 
-      if (!res || res.length === 0) {
-        Swal.fire("คลังข้อสอบ PISA ว่าง", "กรุณาตรวจเช็คระดับชั้นหรือข้อมูลในชีต PisaQuestions", "warning");
+      // เพิ่มระบบตรวจสอบความถูกต้อง: ผลลัพธ์ต้องไม่ใช่ค่าว่าง และต้องเป็นข้อมูลชนิด Array เท่านั้น
+      if (!res || !Array.isArray(res) || res.length === 0) {
+        let errMsg = "ยังไม่มีข้อสอบ PISA ของระดับชั้นนี้ในตาราง PisaQuestions";
+        if (res && res.message) {
+          errMsg = "เกิดข้อผิดพลาดจากทางหลังบ้าน: " + res.message;
+        }
+        Swal.fire({
+          title: "ไม่สามารถเริ่มการประเมินได้",
+          text: errMsg,
+          icon: "warning",
+          confirmButtonText: "กลับสู่หน้าประวัติ"
+        });
         return;
       }
 
@@ -1135,14 +1165,13 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
       window.pisaAnswers = [];
 
       showView("test");
-      initTestWebcamStream(); // ทำงานสุ่มจับภาพพยานแบบเงียบๆ
+      initTestWebcamStream(); // เปิดระบบกล้องบันทึกพยานในเบื้องหลัง
       loadPisaQuestion();
     } catch (e) {
       Swal.close();
-      Swal.fire("ข้อผิดพลาด", e.toString(), "error");
+      Swal.fire("ดึงข้อมูลข้อสอบล้มเหลว", "กรุณาเช็กสิทธิ์หรือลิงก์ URL ของระบบ PISA ของคุณอีกครั้ง: " + e.toString(), "error");
     }
   }
-
   // แสดงผลโจทย์และบทความสั้นวิเคราะห์
   function loadPisaQuestion() {
     if (window.pisaCurrentIndex >= window.pisaQuestions.length) {
