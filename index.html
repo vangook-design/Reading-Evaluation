@@ -991,44 +991,37 @@ let vmL=typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?w
     // =========================================================================
 // สคริปต์สลับช่องทางและควบคุมระบบคัดกรองสองโหมด (Dual-Mode Router Override)
 // =========================================================================
+// =========================================================================
+// สคริปต์สลับช่องทางและควบคุมระบบคัดกรอง PISA v3.1 (แก้ไขปัญหาการข้ามข้อ & เสียงซ้ำ)
+// =========================================================================
 (function() {
-  // 1. แบ็กอัปสำรองฟังก์ชันดั้งเดิมของโปรเจกต์เดิมทั้งหมด
   const originalApiRequest = window.apiRequest;
   const originalStartReadingTest = window.startReadingTest;
   const originalToggleSpeechRecognition = window.toggleSpeechRecognition;
   const originalSkipCurrentWord = window.skipCurrentWord;
 
-  // ประกาศตัวแปรควบคุมสถานะสลับราง (สแตนด์บายเป็น 'standard' โหมดดั้งเดิม)
   window.activeScreeningMode = "standard"; 
-
-  // ตัวแปรการนับกติกาการทำแบบทดสอบสำหรับ PISA โดยเฉพาะ
   window.pisaQuestions = [];
   window.pisaCurrentIndex = 0;
   window.pisaAnswers = [];
   window.pisaTimer = null;
-  window.pisaTimeRemaining = 10; 
+  window.pisaTimeRemaining = 30; // ปรับเวลาเป็น 30 วินาทีต่อข้อ
+  window.isProcessingPisaAnswer = false; // ตัวแปรล็อคสิทธิ์เพื่อป้องกันการข้ามข้อซ้ำซ้อน (State Lock)
 
-  // 2. การดักจับและเปลี่ยนทิศทาง API ไปหลังบ้านแยกตัวที่ 1 และ 2 ตามแอกชันเรียกข้อมูล
-window.apiRequest = async function(action, data, method) {
-    // โหมดการทำงานปกติ: ส่งให้ฟังก์ชันดั้งเดิมประมวลผลตามปกติไม่รบกวนกัน
+  window.apiRequest = async function(action, data, method) {
     if (action === "getStudentInfo" || action === "getStudentHistory" || window.activeScreeningMode === "standard") {
       window.BACKEND_URL = BACKEND_URL_STANDARD; 
       return originalApiRequest(action, data, method);
-    } 
-    
-    // โหมด PISA: ยิงคำขอเข้าสู่ Web App PISA โดยตรงแบบอิสระ ขจัดปัญหา Scoping Const
-    else {
+    } else {
       try {
         let url = BACKEND_URL_PISA;
         let options = { redirect: "follow" };
-        
-        // บังคับส่งแบบ POST พร้อมจัดการ Content-Type แบบ Plain-Text เพื่อเลี่ยงการติดบล็อกนโยบาย CORS ของ Google Web App
         options.method = "POST";
         options.headers = { "Content-Type": "text/plain;charset=utf-8" };
         options.body = JSON.stringify({ action: action, ...data });
 
         const response = await fetch(url, options);
-        if (!response.ok) throw new Error("HTTP Network error occurred");
+        if (!response.ok) throw new Error("HTTP Network error");
         const json = await response.json();
         return json;
       } catch (err) {
@@ -1038,7 +1031,6 @@ window.apiRequest = async function(action, data, method) {
     }
   };
 
-  // 3. ปรับเมื่อนักเรียนยืนยันโปรไฟล์แล้วคลิก 'เริ่มทำแบบทดสอบ' เพื่อแสดงตัวเลือก
   window.startReadingTest = function() {
     if (!currentStudent) {
       Swal.fire("ข้อผิดพลาด", "ไม่พบข้อมูลโปรไฟล์นักเรียน", "error");
@@ -1047,7 +1039,6 @@ window.apiRequest = async function(action, data, method) {
 
     const studentGrade = parseInt(currentStudent.grade);
 
-    // นักเรียน ป.1 - ป.2 บังคับให้สอบวัดระดับการสะกดคำดั้งเดิมทันที
     if (studentGrade < 3) {
       Swal.fire({
         title: "ประเมินการอ่านปกติ",
@@ -1063,7 +1054,6 @@ window.apiRequest = async function(action, data, method) {
       return;
     }
 
-    // นักเรียน ป.3 - ป.6 สามารถเลือกประเภทการสอบได้
     Swal.fire({
       title: "เลือกรูปแบบการประเมินการอ่าน",
       text: "โปรดเลือกประเภทแบบทดสอบที่ต้องการเริ่มคัดกรอง",
@@ -1086,7 +1076,6 @@ window.apiRequest = async function(action, data, method) {
     });
   };
 
-  // 4. สลับบล็อกแท็บหน้าจอและการแสดงผลตัวเลือกของหน้าเวทีสอบ
   function setupUILayoutByMode() {
     const standardUI = document.getElementById("standard-test-ui");
     const pisaUI = document.getElementById("pisa-test-ui");
@@ -1111,7 +1100,6 @@ window.apiRequest = async function(action, data, method) {
     }
   }
 
-  // 5. เขียนทับคำสั่งปุ่ม 'ข้ามข้อ' และปุ่ม 'ไมโครโฟนรับเสียง' ให้ประมวลตามโหมดทดสอบ
   window.skipCurrentWord = function() {
     if (window.activeScreeningMode === "standard") {
       originalSkipCurrentWord();
@@ -1132,7 +1120,6 @@ window.apiRequest = async function(action, data, method) {
     }
   };
 
-  // 6.ปรับปรุงการตรวจสอบและดักจับข้อผิดพลาด (Defensive Check) ป้องกันแอปค้างหน้าแรก
   async function initPisaScreeningFlow() {
     Swal.fire({
       title: "กำลังจัดเรียงชุดข้อสอบ PISA",
@@ -1145,35 +1132,29 @@ window.apiRequest = async function(action, data, method) {
       const res = await apiRequest("getQuestionsForGrade", { grade: currentStudent.grade });
       Swal.close();
 
-      // เพิ่มระบบตรวจสอบความถูกต้อง: ผลลัพธ์ต้องไม่ใช่ค่าว่าง และต้องเป็นข้อมูลชนิด Array เท่านั้น
       if (!res || !Array.isArray(res) || res.length === 0) {
-        let errMsg = "ยังไม่มีข้อสอบ PISA ของระดับชั้นนี้ในตาราง PisaQuestions";
-        if (res && res.message) {
-          errMsg = "เกิดข้อผิดพลาดจากทางหลังบ้าน: " + res.message;
-        }
-        Swal.fire({
-          title: "ไม่สามารถเริ่มการประเมินได้",
-          text: errMsg,
-          icon: "warning",
-          confirmButtonText: "กลับสู่หน้าประวัติ"
-        });
+        Swal.fire("คลังข้อสอบ PISA ว่าง", "กรุณาตรวจเช็คระดับชั้นหรือข้อมูลในชีต PisaQuestions", "warning");
         return;
       }
 
-      window.pisaQuestions = res;
+      // จำกัดให้รันการทำแบบประเมินทดสอบที่ 5 ข้อตามโควตาที่ระบุ
+      window.pisaQuestions = res.slice(0, 5); 
       window.pisaCurrentIndex = 0;
       window.pisaAnswers = [];
 
       showView("test");
-      initTestWebcamStream(); // เปิดระบบกล้องบันทึกพยานในเบื้องหลัง
+      initTestWebcamStream(); 
       loadPisaQuestion();
     } catch (e) {
       Swal.close();
-      Swal.fire("ดึงข้อมูลข้อสอบล้มเหลว", "กรุณาเช็กสิทธิ์หรือลิงก์ URL ของระบบ PISA ของคุณอีกครั้ง: " + e.toString(), "error");
+      Swal.fire("ข้อผิดพลาด", e.toString(), "error");
     }
   }
-  // แสดงผลโจทย์และบทความสั้นวิเคราะห์
+
   function loadPisaQuestion() {
+    // ปลดล็อคระบบประมวลผลคำตอบเพื่อให้ข้อใหม่ทำงานได้
+    window.isProcessingPisaAnswer = false; 
+
     if (window.pisaCurrentIndex >= window.pisaQuestions.length) {
       finishPisaTest();
       return;
@@ -1193,17 +1174,14 @@ window.apiRequest = async function(action, data, method) {
       document.getElementById(`choice-text-${i}`).textContent = question.choices[i];
       const card = document.getElementById(`choice-btn-${i}`);
       card.className = "choice-card p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-400 bg-slate-50 text-left transition duration-150 w-full";
-      
-      // รองรับทั้งระบบทัชสกรีน/คลิกเมาส์เพิ่มเติมจากเสียงอ่าน
       card.onclick = function() { processPisaChoiceSelection(i); };
     }
 
-    window.pisaTimeRemaining = 10; // กำหนด 10 วินาทีตามเกณฑ์ PISA
+    window.pisaTimeRemaining = 30; // ปรับเวลาเป็น 30 วินาที
     startPisaTimer();
     startPisaVoiceListening();
   }
 
-  // ระบบนับถอยหลังรายข้อ 10 วินาที
   function startPisaTimer() {
     if (window.pisaTimer) clearInterval(window.pisaTimer);
 
@@ -1218,10 +1196,10 @@ window.apiRequest = async function(action, data, method) {
       window.pisaTimeRemaining--;
       timerText.textContent = window.pisaTimeRemaining + " วินาที";
 
-      const percentLeft = (window.pisaTimeRemaining / 10) * 100;
+      const percentLeft = (window.pisaTimeRemaining / 30) * 100;
       timerBar.style.width = percentLeft + "%";
 
-      if (window.pisaTimeRemaining <= 4) {
+      if (window.pisaTimeRemaining <= 10) {
         timerBar.style.backgroundColor = "#EF4444";
       }
 
@@ -1232,8 +1210,10 @@ window.apiRequest = async function(action, data, method) {
     }, 1000);
   }
 
-  // ข้ามข้ออัตโนมัติเมื่อหมดเวลา 10 วินาที
   function handlePisaTimeout() {
+    if (window.isProcessingPisaAnswer) return; // หากกำลังทำงานข้ามข้ออยู่ ให้ระงับทันที
+    window.isProcessingPisaAnswer = true;
+
     stopListeningState();
     playSynthesizedBeep(false);
 
@@ -1251,10 +1231,9 @@ window.apiRequest = async function(action, data, method) {
     setTimeout(() => {
       window.pisaCurrentIndex++;
       loadPisaQuestion();
-    }, 1200);
+    }, 1500);
   }
 
-  // การสแตนด์บายวิเคราะห์เสียงพูดของนักเรียน
   function startPisaVoiceListening() {
     if (recognition) {
       try { recognition.stop(); } catch(e){}
@@ -1282,24 +1261,46 @@ window.apiRequest = async function(action, data, method) {
     }
   }
 
-  // ระบบเปรียบเทียบคลื่นเสียงพูดของโหมด PISA ร่วมกับตัวดั้งเดิม
+  // ระบบตรวจสอบคำพูดอัจฉริยะ (Smart Matching) แก้ไขปัญหาคำซ้ำซ้อนสะกดคำ
   function evaluatePisaVoiceAnswer(spokenText) {
+    if (window.isProcessingPisaAnswer) return;
+
     const currentQuestion = window.pisaQuestions[window.pisaCurrentIndex];
-    let highestSimilarity = 0;
     let detectedChoiceIndex = -1;
 
+    // 1. ตรรกะระดับที่ 1: ตรวจจับ "อักษรย่อ" หรือ "ชื่อย่อหัวข้อ" ที่สั้นและคมชัด เช่น "กอ", "ขอ", "คอ", "งอ" หรือ "ข้อ ก"
+    const choiceKeywords = [
+      ["ก", "ก.", "กอ", "ข้อ ก", "ข้อแรก", "เอ", "a", "1"], // ก.
+      ["ข", "ข.", "ขอ", "ข้อ ข", "ข้อสอง", "บี", "b", "2"], // ข.
+      ["ค", "ค.", "คอ", "ข้อ ค", "ข้อสาม", "ซี", "c", "3"], // ค.
+      ["ง", "ง.", "งอ", "ข้อ ง", "ข้อสี่", "ดี", "d", "4"]   // ง.
+    ];
+
     for (let i = 0; i < 4; i++) {
-      const choiceText = currentQuestion.choices[i];
-      if (spokenText.includes(choiceText) || choiceText.includes(spokenText)) {
+      const matchFound = choiceKeywords[i].some(keyword => {
+        // ค้นหาเปรียบเทียบแบบเจาะจงว่าพูดพยางค์ตัวย่อตรงกันหรือไม่
+        return spokenText === keyword || spokenText.endsWith(" " + keyword) || spokenText.startsWith(keyword + " ");
+      });
+      if (matchFound) {
         detectedChoiceIndex = i;
         break;
       }
+    }
 
-      // นำระบบ Phonetic Engine ตัวดั้งเดิมของหน้าเว็บมาทำงานช่วยสแกนคำพูด
-      const similarity = getPhoneticSimilarity(getThaiPhoneticEquivalent(choiceText), getThaiPhoneticEquivalent(spokenText));
-      if (similarity > highestSimilarity && similarity >= 0.70) {
-        highestSimilarity = similarity;
-        detectedChoiceIndex = i;
+    // 2. ตรรกะระดับที่ 2: หากไม่มีเสียงตัวย่อ ให้ทำการวัดความคล้ายคลึงของเสียงประโยคยาวแบบเดิม (แต่เพิ่มความยาวคำสแกนที่ละเอียดขึ้น)
+    if (detectedChoiceIndex === -1) {
+      let highestSimilarity = 0;
+      for (let i = 0; i < 4; i++) {
+        const choiceText = currentQuestion.choices[i];
+        if (spokenText === choiceText) {
+          detectedChoiceIndex = i;
+          break;
+        }
+        const similarity = getPhoneticSimilarity(getThaiPhoneticEquivalent(choiceText), getThaiPhoneticEquivalent(spokenText));
+        if (similarity > highestSimilarity && similarity >= 0.78) { // ขยับความปลอดภัยเพื่อกันคำซ้ำซ้อน
+          highestSimilarity = similarity;
+          detectedChoiceIndex = i;
+        }
       }
     }
 
@@ -1308,8 +1309,10 @@ window.apiRequest = async function(action, data, method) {
     }
   }
 
-  // ประมวลผลเมื่อเลือกคำตอบ (จากการอ่านออกเสียง หรือกดทัชสกรีน)
   function processPisaChoiceSelection(choiceIndex) {
+    if (window.isProcessingPisaAnswer) return; // หากล็อคสถานะประมวลผลอยู่ ปฏิเสธคำขอซ้ำทันที
+    window.isProcessingPisaAnswer = true;
+
     if (window.pisaTimer) clearInterval(window.pisaTimer);
     stopListeningState();
 
@@ -1341,7 +1344,7 @@ window.apiRequest = async function(action, data, method) {
       }
     });
 
-    takeSilentSnapshot(); // ทำงานจับภาพสุ่มเงียบๆ ในเบื้องหลัง
+    takeSilentSnapshot();
 
     setTimeout(() => {
       window.pisaCurrentIndex++;
@@ -1350,6 +1353,9 @@ window.apiRequest = async function(action, data, method) {
   }
 
   function skipPisaQuestion() {
+    if (window.isProcessingPisaAnswer) return;
+    window.isProcessingPisaAnswer = true;
+
     if (window.pisaTimer) clearInterval(window.pisaTimer);
     stopListeningState();
 
@@ -1361,11 +1367,12 @@ window.apiRequest = async function(action, data, method) {
 
     takeSilentSnapshot();
 
-    window.pisaCurrentIndex++;
-    loadPisaQuestion();
+    setTimeout(() => {
+      window.pisaCurrentIndex++;
+      loadPisaQuestion();
+    }, 500);
   }
 
-  // ประเมินสัมฤทธิ์และแสดงเฉลยคะแนนตอนท้าย
   async function finishPisaTest() {
     if (window.pisaTimer) clearInterval(window.pisaTimer);
     stopListeningState();
@@ -1382,8 +1389,8 @@ window.apiRequest = async function(action, data, method) {
     const scorePercent = (correctCount / totalCount) * 100;
 
     let level = "ควรปรับปรุง";
-    if (correctCount >= 8) level = "ดีเยี่ยม";
-    else if (correctCount >= 5) level = "พอใช้";
+    if (correctCount >= 4) level = "ดีเยี่ยม"; // อ้างอิงเกณฑ์ตาม 5 ข้อ
+    else if (correctCount >= 3) level = "พอใช้";
 
     const pisaSummary = {
       studentId: currentStudent.studentId,
@@ -1411,7 +1418,6 @@ window.apiRequest = async function(action, data, method) {
     }
   }
 
-  // วาดตารางสรุปแบบประเมินและเฉลยคำตอบในหน้าสรุปผลสัมฤทธิ์ (VIEW 5)
   function renderPisaSummaryView(correctCount, totalCount, finalLevel) {
     showView("result");
 
@@ -1436,11 +1442,12 @@ window.apiRequest = async function(action, data, method) {
     }
 
     const container = document.getElementById("word-type-analysis-container");
-    container.innerHTML = `<h3 class="font-extrabold text-sm text-slate-800 mb-3"><i class="fa-solid fa-list-check text-indigo-600 mr-1.5"></i> ตารางเฉลยข้อสอบวิเคราะห์ PISA</h3>`;
+    container.innerHTML = `<h3 class="font-extrabold text-sm text-slate-800 mb-3"><i class="fa-solid fa-list-check text-indigo-600 mr-1.5"></i> สรุปตารางข้อสอบวิเคราะห์ PISA (5 ข้อ)</h3>`;
 
     window.pisaQuestions.forEach((q, idx) => {
       const studentAnswer = window.pisaAnswers[idx];
-      const isCorrect = studentAnswer.isCorrect;
+      const isCorrect = studentAnswer ? studentAnswer.isCorrect : false;
+      const ansText = studentAnswer ? studentAnswer.selectedChoice : "ไม่ตอบ";
       const correctText = q.choices[q.correctIndex];
 
       const block = document.createElement("div");
@@ -1451,14 +1458,13 @@ window.apiRequest = async function(action, data, method) {
           <span class="${isCorrect ? 'text-emerald-700' : 'text-rose-700'}">${isCorrect ? '✔ ถูกต้อง' : '❌ ผิด'}</span>
         </div>
         <p class="text-slate-500">บทอ่าน: "${q.passage.substring(0, 45)}..."</p>
-        <p class="text-slate-600">คำตอบของนักเรียน: <strong class="${isCorrect ? 'text-emerald-700' : 'text-rose-700'}">${studentAnswer.selectedChoice}</strong></p>
+        <p class="text-slate-600">คำตอบของนักเรียน: <strong class="${isCorrect ? 'text-emerald-700' : 'text-rose-700'}">${ansText}</strong></p>
         ${!isCorrect ? `<p class="text-emerald-800">คำตอบที่ถูกต้องคือ: <strong>${correctText}</strong></p>` : ''}
       `;
       container.appendChild(block);
     });
   }
 
-  // ฟังก์ชันควบคุมสตรีมกล้องและสุ่มบันทึกพยานแบบไร้การขัดจังหวะ (ทำงานเงียบ ๆ ในเบื้องหลัง)
   window.initTestWebcamStream = async function() {
     const video = document.getElementById('test-video');
     if (!video) return;
