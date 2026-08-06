@@ -2702,6 +2702,89 @@
         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมบันทึกระบบความปลอดภัย', 'error');
       }
     }
+    // --- ระบบวิเคราะห์เสียงอัจฉริยะ (Enhanced Phonetic Matcher) ---
+    function isPhoneticallySimilar(target, spoken) {
+      let t = target.replace(/[^ก-ฮะ-ูเ-โ]/g, "").trim();
+      let s = spoken.replace(/[^ก-ฮะ-ูเ-โ]/g, "").trim();
+      
+      if (t === s) return true;
+
+      // 1. กฎการสลับเสียง (ร/ล, ควบกล้ำหลุด)
+      // เปลี่ยน ร เป็น ล ทั้งหมดเพื่อเช็คความหมายหลัก
+      let tL = t.replace(/ร/g, "ล");
+      let sL = s.replace(/ร/g, "ล");
+      if (tL === sL) return true;
+
+      // 2. กฎคำควบกล้ำ (ถ้าเด็กอ่านคำควบกล้ำไม่ชัด แต่พยัญชนะต้นตัวแรกถูก)
+      // เช่น 'ปลา' (pla) -> 'ปา' (pa) ระบบจะให้ผ่านแบบมีเงื่อนไข (Threshold 0.7)
+      const similarity = getLevenshteinDistance(t, s);
+      return similarity >= 0.75; 
+    }
+
+    function getLevenshteinDistance(s1, s2) {
+      // (ฟังก์ชันคำนวณความคล้ายคลึงของอักขระเพื่อความแม่นยำ)
+      var longer = s1; var shorter = s2;
+      if (s1.length < s2.length) { longer = s2; shorter = s1; }
+      var longerLength = longer.length;
+      if (longerLength == 0) return 1.0;
+      return (longerLength - editDistance(longer, shorter)) / longerLength;
+    }
+
+    function editDistance(s1, s2) {
+      s1 = s1.toLowerCase(); s2 = s2.toLowerCase();
+      var costs = new Array();
+      for (var i = 0; i <= s1.length; i++) {
+        var lastValue = i;
+        for (var j = 0; j <= s2.length; j++) {
+          if (i == 0) costs[j] = j;
+          else {
+            if (j > 0) {
+              var newValue = costs[j - 1];
+              if (s1.charAt(i - 1) != s2.charAt(j - 1))
+                newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+              costs[j - 1] = lastValue; lastValue = newValue;
+            }
+          }
+        }
+        if (i > 0) costs[s2.length] = lastValue;
+      }
+      return costs[s2.length];
+    }
+
+    // --- ปรับปรุงการรับผลลัพธ์จากไมโครโฟน ---
+    recognition.onresult = function(event) {
+        let interimTranscript = "";
+        let finalTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          let trans = event.results[i][0].transcript;
+          if (event.results[i].isFinal) finalTranscript += trans;
+          else interimTranscript += trans;
+        }
+
+        const cleanSpeech = (finalTranscript || interimTranscript).trim();
+        if (!cleanSpeech) return;
+
+        document.getElementById('recognized-transcript').innerHTML = `ตรวจจับได้: <span class="text-indigo-900">"${cleanSpeech}"</span>`;
+
+        // ตรวจสอบพยางค์ทีละตัว
+        targetSyllables.forEach((syl, idx) => {
+           if (idx >= currentSyllableIndex) {
+              if (isPhoneticallySimilar(syl, cleanSpeech) || cleanSpeech.includes(syl)) {
+                  document.getElementById(`syl-badge-${idx}`).className = "text-emerald-500 font-black";
+                  if (idx === currentSyllableIndex) {
+                      currentSyllableIndex++;
+                      playSynthesizedBeep(true);
+                  }
+              }
+           }
+        });
+
+        // จบข้อเมื่อผ่านครบ
+        if (currentSyllableIndex === targetSyllables.length && !hasMatchedCurrentWord) {
+            hasMatchedCurrentWord = true;
+            handleCorrectAnswer();
+        }
+    };
   </script>
 </body>
 </html>
