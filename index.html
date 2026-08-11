@@ -916,9 +916,31 @@
           
           // เรนเดอร์ตารางประเมินผลรอบการคัดกรองล่าสุด
           renderLatestRoundTable(pubStats.latestRound);
+        } else {
+          showDatabaseErrorConnection();
         }
       } catch (err) {
         console.warn("ไม่สามารถเรียกข้อมูลเกณฑ์สิทธิ์ได้: ", err);
+        showDatabaseErrorConnection(err.message);
+      }
+    }
+
+    // ฟังก์ชันแสดงข้อความแจ้งเตือนความล้มเหลวในการดึงข้อมูลจากชีต
+    function showDatabaseErrorConnection(errMsg = "") {
+      document.getElementById('home-round-dates').textContent = "เชื่อมต่อฐานข้อมูลล้มเหลว";
+      document.getElementById('home-round-dates').className = "text-[10px] bg-red-100 text-red-700 font-extrabold px-3 py-1 rounded-full uppercase";
+      
+      const tbody = document.getElementById('home-round-stats-body');
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="p-4 text-center text-rose-500 font-medium">
+              <i class="fa-solid fa-triangle-exclamation mr-1"></i> 
+              ไม่สามารถเชื่อมต่อระบบฐานข้อมูลได้ <br>
+              <span class="text-[10px] text-slate-400 font-normal">สาเหตุ: ${errMsg || 'กรุณาตรวจสอบการตั้งค่า Deployment ของ Google Apps Script'}</span>
+            </td>
+          </tr>
+        `;
       }
     }
 
