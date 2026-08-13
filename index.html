@@ -1194,42 +1194,69 @@
         stopAllWebcams();
       }
     }
-
-    async function startStudentScreen() {
+async function startStudentScreen() {
       showView('scan');
       Swal.fire({
         title: 'กำลังเชื่อมต่อและดึงสิทธิ์ระบบคลาวด์...',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
       });
-      const success = await fetchAllStudentsToCache();
+      
+      const result = await fetchAllStudentsToCache();
       Swal.close();
-      if (!success) {
-        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลรายชื่อนักเรียนผ่านระบบคลาวด์ได้', 'error');
+      
+      // กรณีเกิดข้อผิดพลาดในการรับ-ส่งข้อมูล API หรือ CORS Block
+      if (!result.success) {
+        Swal.fire({
+          icon: 'error',
+          title: 'การเชื่อมต่อคลาวด์ล้มเหลว',
+          html: `ไม่สามารถดึงข้อมูลรายชื่อนักเรียนได้<br>
+                 <span class="text-xs text-rose-500 font-semibold">สาเหตุ: ${result.error || 'CORS Block / ลิงก์ API ไม่ถูกต้อง'}</span><br><br>
+                 <div class="text-[11px] text-slate-500 text-left leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
+                   <strong>แนวทางการตรวจสอบแก้ไข:</strong><br>
+                   1. ตรวจสอบว่าตั้งสิทธิ์การเข้าใช้งาน (Who has access) ใน Deployment ของ Apps Script เป็น <strong>"Anyone" (ทุกคน)</strong> แล้วหรือยัง<br>
+                   2. เข้าหน้าแก้ไข Apps Script แล้วกดปุ่ม <strong>เรียกใช้งาน (Run)</strong> ในฟังก์ชัน <code>initDatabase</code> เพื่ออนุมัติสิทธิ์เชื่อมต่อข้ามชีตกับบัญชี Google ของท่าน
+                 </div>`,
+          confirmButtonColor: '#4f46e5'
+        });
         showView('home');
         return;
       }
-      document.getElementById('login-mic-status').textContent = "คลิกไมค์แล้วเริ่มพูดชื่อตนเอง";
-      document.getElementById('login-transcript').innerHTML = '&nbsp;';
-      document.getElementById('manual-student-name-input').value = '';
-      setLoginMicUI(false);
+      
+      // กรณีเชื่อมต่อได้สมบูรณ์ แต่ไม่พบนักเรียนในระบบ
+      if (result.empty) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ไม่พบรายชื่อนักเรียน',
+          text: 'ระบบเชื่อมต่อฐานข้อมูลได้สำเร็จ แต่ไม่พบข้อมูลรายชื่อนักเรียนที่เปิดใช้งานในแผ่นงาน "Students"',
+          confirmButtonColor: '#4f46e5'
+        });
+        showView('home');
+        return;
+      }
+      
+      // เริ่มต้นระเบียบล็อกอินตามปกติ
       initLoginSpeechRecognition();
     }
 
     async function fetchAllStudentsToCache() {
-      if (allStudentsCached.length > 0) return true;
+      if (allStudentsCached.length > 0) return { success: true, empty: false };
       try {
         const students = await apiRequest('getAllStudents', 'GET');
-        if (students && students.length > 0) {
-          allStudentsCached = students;
-          return true;
+        if (students) {
+          if (students.length > 0) {
+            allStudentsCached = students;
+            return { success: true, empty: false };
+          } else {
+            return { success: true, empty: true }; // เชื่อมต่อได้ แต่ชีตนักเรียนว่างเปล่า
+          }
         }
       } catch (e) {
         console.error("ไม่สามารถ Cache รายชื่อเด็กได้: ", e);
+        return { success: false, error: e.message };
       }
-      return false;
+      return { success: false, error: "พารามิเตอร์การตอบกลับไม่ตรงตามมาตรฐานสากล" };
     }
-
     function initLoginSpeechRecognition() {
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         document.getElementById('login-mic-status').textContent = "เบราว์เซอร์ไม่รองรับระบบเสียง กรุณาใช้พิมพ์ค้นหา";
