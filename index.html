@@ -48,7 +48,7 @@
 
   <script>
     // *** นำ Web App URL ที่ได้จากการ Deploy Google Apps Script มาใส่ลงตรงนี้ ***
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxuUkhvagEPZLCZ1aQcNBoUnYTQqgU-Cn5QmFMvjvYN8WJxwvuZ6zcozV0G-NS5t6-o/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzAXFzn_XwAd477SH20GArajcqfxxJx0i_XNb50EQJ7J70Z8ns92MYO9VP9tGAlwPrH/exec";
   </script>
 
   <!-- Navigation bar -->
@@ -81,7 +81,7 @@
   <!-- Main Content Body -->
   <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-start">
 
-    <!-- VIEW 1: หน้าหลัก / Landing Page -->
+    <!-- VIEW 1: หน้าหลัก -->
     <section id="view-home" class="view-section py-8 md:py-14 flex flex-col items-center justify-center space-y-8 animate-fadeIn px-4 no-print bg-gradient-to-b from-slate-50 via-indigo-50/20 to-slate-50 rounded-3xl">
       <div class="text-center max-w-3xl space-y-4 md:space-y-6">
         <span class="bg-indigo-100 text-indigo-800 text-xs font-black px-6 py-2.5 rounded-full uppercase tracking-widest border border-indigo-200 inline-block shadow-sm shadow-indigo-100 animate-bounce">
@@ -220,7 +220,7 @@
 
         <div class="lg:col-span-8 space-y-6 w-full font-sans">
           <div class="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-            <h4 class="font-bold text-xs text-indigo-900 uppercase tracking-wider mb-3 flex items-center"><i class="fa-solid fa-chart-line mr-1.5"></i> เส้นกราฟสรุปพัฒนาการอ่านรายบุคคล</h4>
+            <h4 class="font-bold text-xs text-indigo-900 uppercase tracking-wider mb-3 flex items-center"><i class="fa-solid fa-chart-line mr-1.5"></i> เส้นกราบสรุปพัฒนาการอ่านรายบุคคล</h4>
             <div class="h-48 w-full relative">
               <canvas id="studentProgressChart"></canvas>
             </div>
@@ -300,7 +300,7 @@
           </div>
 
           <div class="flex flex-col items-center justify-center space-y-3">
-            <button id="mic-btn" onclick="toggleSpeechRecognition()" class="hidden w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-indigo-100 focus:outline-none transition transform hover:scale-105 active:scale-95">
+            <button id="mic-btn" onclick="toggleSpeechRecognition()" class="hidden w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center text-2xl shadow-lg focus:outline-none transition transform hover:scale-105 active:scale-95">
               <i id="mic-icon" class="fa-solid fa-microphone"></i>
             </button>
             <div class="text-center min-h-[48px] space-y-1">
@@ -875,36 +875,181 @@
 
   <div id="print-qrcode-area" class="hidden"></div>
 
-  <!-- SCRIPT LOGIC (ปรับแก้เขียนสคริปต์ใหม่ทั้งหมด ปลอดภัย ไหลลื่น ไม่เข้ารหัส เพื่อรองรับการโฮสต์บน Vercel) -->
+  <!-- SCRIPT LOGIC (เขียนใหม่แบบไม่บีบอัดโค้ด สะถียรสูง รองรับ Vercel) -->
   <script>
-    // ดึงโหลดการทำงานหลัก
-    async function apiRequest(action, method = 'GET', data = {}) {
-      try {
-        let response;
-        if (method === 'GET') {
-          const queryParams = new URLSearchParams({ action, ...data }).toString();
-          response = await fetch(`${BACKEND_URL}?${queryParams}`);
-        } else {
-          response = await fetch(BACKEND_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action, ...data }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-          });
-        }
-        const text = await response.text();
-        try {
-          return JSON.parse(text);
-        } catch (jsonErr) {
-          console.error("CORS / Server redirect intercepted. Raw output: ", text);
-          if (text.trim().startsWith("<")) {
-            throw new Error("เซิร์ฟเวอร์ Google Apps Script ตอบกลับเป็นหน้าเว็บ HTML (อาจเกิดจากสิทธิ์การ Deploy ไม่เป็น 'Anyone' หรือเกินโควตา Concurrent Invocation ของ Google)");
+    // ตัวแปรควบคุมระบบ
+    let allStudentsCached = [];
+
+    // เรียกดึงและโหลดสถิติฐานข้อมูลทันทีที่โหลดเสร็จ
+    document.addEventListener('DOMContentLoaded', () => {
+      loadCachedData();
+      fetchFreshSystemSettings();
+      initSpeechRecognition();
+    });
+
+    function initSpeechRecognition() {
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'th-TH';
+
+        recognition.onstart = function() {
+          isListening = true;
+          setMicUIAwake(true);
+        };
+
+        recognition.onerror = function(e) {
+          if (e.error !== 'no-speech') {
+            isListening = false;
           }
-          throw new Error(`การตอบกลับไม่ได้อยู่ในรูปแบบ JSON: ${text.substring(0, 100)}`);
-        }
-      } catch (err) {
-        console.error("Network Fetch Request Error: ", err);
-        throw err;
+        };
+
+        recognition.onend = function() {
+          isListening = false;
+          if (timeRemainingForWord > 0 && !document.getElementById('view-test').classList.contains('hidden') && !hasMatchedCurrentWord) {
+            try {
+              recognition.start();
+            } catch(e) {}
+          } else {
+            setMicUIAwake(false);
+          }
+        };
+
+        recognition.onresult = function(event) {
+          if (hasMatchedCurrentWord) return;
+
+          let transcript = "";
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+          }
+          const cleanSpeech = transcript.trim();
+          if (cleanSpeech) {
+            document.getElementById('recognized-transcript').innerHTML = `ตรวจจับเสียงพูดได้ว่า: <span class="text-indigo-900 underline">"${cleanSpeech}"</span>`;
+            
+            // วิเคราะห์ความตรงกันรายพยางค์สะกดแบบต่อเหนี่อง
+            let matchedCount = 0;
+            let tempSpeech = cleanSpeech;
+            
+            for (let i = 0; i < targetSyllables.length; i++) {
+              let syl = targetSyllables[i];
+              let matchResult = findPhoneticMatchInString(tempSpeech, syl);
+              if (matchResult.matched) {
+                matchedCount++;
+                const el = document.getElementById(`syl-badge-${i}`);
+                if (el) {
+                  el.className = "text-emerald-600 font-black transition-all duration-300 scale-105 inline-block";
+                }
+                tempSpeech = tempSpeech.substring(matchResult.endIndex);
+              } else {
+                break;
+              }
+            }
+
+            if (matchedCount === targetSyllables.length) {
+              hasMatchedCurrentWord = true;
+              if (countdownTimer) clearInterval(countdownTimer);
+              stopListeningState();
+              setCorrectUI();
+              recordWordAttemptResult('ผ่าน', 0.99);
+              scoreByWordType[testWords[currentWordIndex].wordType].correct++;
+              setTimeout(() => { proceedToNextWord(); }, 1500);
+            }
+          }
+        };
+      } else {
+        document.getElementById('fallback-test-inputs').classList.remove('hidden');
       }
+    }
+
+    // ระบบสัทศาสตร์เปรียบเทียบเสียงพ้อง ร-ล และคู่พยัญชนะ/สระ ออกเสียงทดแทนกันได้
+    function phoneticStandardizeThai(word) {
+      if (!word) return "";
+      let cleaned = word.trim()
+        .replace(/[่้๊๋]/g, "") // ตัดวรรณยุกต์
+        .replace(/[์]/g, "")    // ตัดตัวการันต์
+        .replace(/[\s\-\_\.\,\?]/g, "") // ตัดสัญลักษณ์และสเปซ
+        .toLowerCase();
+      
+      cleaned = cleaned
+        .replace(/[รลฬ]/g, "ล")   // เสียง ร และ ล เป็นฐานเสียงลัดเลาะเดียวกัน
+        .replace(/[ศษสซ]/g, "ส")  // สัญญาณคู่พ้อง ส ศ ษ ซ
+        .replace(/[ณน]/g, "น")   // ณ น
+        .replace(/[ญย]/g, "ย")   // ญ ย
+        .replace(/[พภ]/g, "พ")   // พ ภ
+        .replace(/[ผฝฟ]/g, "ฟ")  // ผ ฝ ฟ
+        .replace(/[คฆข]/g, "ค")  // ข ค ฆ
+        .replace(/[จฉชฌ]/g, "ช") // จ ฉ ช ฌ
+        .replace(/[ฎด]/g, "ด")   // ฎ ด
+        .replace(/[ฏต]/g, "ต")   // ฏ ต
+        .replace(/[ฐฑฒถทธ]/g, "ท") // ฐานเสียง ท
+        .replace(/[ใไ]/g, "ไ");  // สระใ และ ไ เป็นเสียงเดียวกัน
+        
+      return cleaned;
+    }
+
+    function cleanThaiWord(word) {
+      if (!word) return "";
+      return word.trim()
+        .replace(/[่้๊๋]/g, "") 
+        .replace(/[์]/g, "")    
+        .replace(/[\s\-\_\.\,\?]/g, "") 
+        .toLowerCase();
+    }
+
+    function getPhoneticSimilarity(s1, s2) {
+      const target = phoneticStandardizeThai(s1);
+      const output = phoneticStandardizeThai(s2);
+      if (!target || !output) return 0.0;
+      if (target === output) return 1.0;
+      
+      if (target.includes(output) || output.includes(target)) {
+        if (output.length >= 2 && target.length >= 2) {
+          return 0.85;
+        }
+      }
+
+      const track = Array(output.length + 1).fill(null).map(() => Array(target.length + 1).fill(null));
+      for (let i = 0; i <= target.length; i++) track[0][i] = i;
+      for (let j = 0; j <= output.length; j++) track[j][0] = j;
+      for (let j = 1; j <= output.length; j++) {
+        for (let i = 1; i <= target.length; i++) {
+          const indicator = target[i - 1] === output[j - 1] ? 0 : 1;
+          track[j][i] = Math.min(
+            track[j][i - 1] + 1,
+            track[j - 1][i] + 1,
+            track[j - 1][i - 1] + indicator
+          );
+        }
+      }
+      const distance = track[output.length][target.length];
+      const longest = Math.max(target.length, output.length);
+      return (longest - distance) / longest;
+    }
+
+    function matchThaiSyllablePhonetically(target, spoken) {
+      const sim = getPhoneticSimilarity(target, spoken);
+      return sim >= 0.75;
+    }
+
+    function findPhoneticMatchInString(source, target) {
+      if (!source || !target) return { matched: false };
+      for (let len = 1; len <= Math.min(source.length, target.length + 2); len++) {
+        const sub = source.substring(0, len);
+        if (matchThaiSyllablePhonetically(target, sub)) {
+          return { matched: true, endIndex: len };
+        }
+      }
+      for (let start = 0; start <= Math.min(3, source.length - 1); start++) {
+        for (let len = 1; len <= Math.min(source.length - start, target.length + 2); len++) {
+          const sub = source.substring(start, start + len);
+          if (matchThaiSyllablePhonetically(target, sub)) {
+            return { matched: true, endIndex: start + len };
+          }
+        }
+      }
+      return { matched: false };
     }
 
     function loadCachedData() {
@@ -938,7 +1083,7 @@
           renderLatestRoundTable(pubStats.latestRound);
         }
       } catch (err) {
-        console.warn("สลับไปใช้โหมดแคชเนื่องจากพบข้อผิดพลาด: ", err);
+        console.warn("เข้าสู่โหมดแคชสำรองเนื่องจาก API ขัดข้อง: ", err);
       }
     }
 
@@ -984,7 +1129,7 @@
     async function startStudentScreen() {
       showView('scan');
       Swal.fire({
-        title: 'กำลังเชื่อมต่อและตรวจสอบฐานข้อมูล...',
+        title: 'กำลังตรวจสอบสถานะเครือข่าย...',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
       });
@@ -996,7 +1141,7 @@
           icon: 'error',
           title: 'การเชื่อมต่อคลาวด์ล้มเหลว',
           html: `ไม่สามารถดึงข้อมูลรายชื่อนักเรียนได้<br>
-                 <span class="text-xs text-rose-500 font-semibold">สาเหตุ: ${result.error || 'CORS / ลิงก์แอปเว็บ GAS ไม่ถูกต้อง'}</span><br><br>
+                 <span class="text-xs text-rose-500 font-semibold">สาเหตุ: ${result.error || 'CORS Block / ลิงก์ API ไม่ถูกต้อง'}</span><br><br>
                  <div class="text-[11px] text-slate-500 text-left leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
                    <strong>แนวทางตรวจสอบและแก้ไข:</strong><br>
                    1. ตรวจสอบว่าตั้งสิทธิ์การเข้าใช้งานใน Deployment ของสคริปต์เป็น <strong>"Anyone" (ทุกคน)</strong> แล้วหรือยัง<br>
@@ -1039,15 +1184,15 @@
           }
         }
       } catch (e) {
-        console.error("ไม่สามารถดึงรายชื่อเพื่อแคชได้: ", e);
+        console.error("ไม่สามารถ Cache รายชื่อได้: ", e);
         return { success: false, error: e.message };
       }
-      return { success: false, error: "การอ่านพารามิเตอร์ของระบบคลาวด์ขัดข้อง" };
+      return { success: false, error: "การวิเคราะห์โครงสร้างพารามิเตอร์ล้มเหลว" };
     }
 
     function initLoginSpeechRecognition() {
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        document.getElementById('login-mic-status').textContent = "เบราว์เซอร์ไม่รองรับ Web Speech API กรุณาพิมพ์ค้นหาชื่อ";
+        document.getElementById('login-mic-status').textContent = "เบราว์เซอร์ไม่สนับสนุนระบบเสียง กรุณาใช้พิมพ์ค้นหา";
         const btn = document.getElementById('login-mic-btn');
         btn.disabled = true;
         btn.className = "w-24 h-24 bg-slate-200 text-slate-400 rounded-full flex items-center justify-center text-4xl cursor-not-allowed";
@@ -1062,14 +1207,14 @@
       loginRecognition.onstart = function() {
         isLoginListening = true;
         setLoginMicUI(true);
-        document.getElementById('login-mic-status').textContent = "กำลังรับฟังเสียง... พูดชื่อ-นามสกุลของคุณ";
+        document.getElementById('login-mic-status').textContent = "กำลังรับฟังเสียง... พูดชื่อและนามสกุลของคุณ";
         document.getElementById('login-transcript').innerHTML = '&nbsp;';
       };
 
       loginRecognition.onerror = function(event) {
         isLoginListening = false;
         setLoginMicUI(false);
-        document.getElementById('login-mic-status').textContent = "ตรวจพบความคลาดเคลื่อน: " + event.error;
+        document.getElementById('login-mic-status').textContent = "เกิดข้อผิดพลาดในการฟังเสียง: " + event.error;
       };
 
       loginRecognition.onend = function() {
@@ -1153,7 +1298,7 @@
         html: `คุณคือ <strong class="text-indigo-600 text-lg">${student.prefix}${student.firstName} ${student.lastName}</strong> <br>ชั้นประถมศึกษาปีที่ ${student.grade}/${student.room} ใช่หรือไม่?`,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'ใช่, คือฉันเอง',
+        confirmButtonText: 'ใช่, ฉันเอง',
         cancelButtonText: 'ไม่ใช่',
         confirmButtonColor: '#10B981',
         cancelButtonColor: '#F43F5E'
@@ -1206,7 +1351,7 @@
                   ctx.drawImage(video, 0, 0, 320, 240);
                   capturedVerificationBase64 = canvas.toDataURL('image/jpeg', 0.8);
                 } catch (err) {
-                  console.warn("เซฟภาพถ่ายล้มเหลว: ", err);
+                  console.warn("ไม่สามารถเซฟรูปภาพได้: ", err);
                 }
                 if (stream) {
                   stream.getTracks().forEach(track => track.stop());
@@ -1216,7 +1361,7 @@
               }
             }, 1000);
           } catch (err) {
-            console.warn("ไม่สามารถเปิดใช้งานกล้องได้ ข้ามขั้นตอนนี้: ", err);
+            console.warn("ไม่สามารถเปิดกล้องได้ ข้ามขั้นตอน: ", err);
             Swal.close();
             fetchStudentProfile(student.studentId);
           }
@@ -1273,6 +1418,26 @@
         confirmStudentSelection(student);
       }
     }
+
+    function stopQRScanner() {}
+    function startQRScannerCamera() {}
+
+    function stopAllWebcams() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+    }
+
+    function onScanSuccess(decodedText) {
+      fetchStudentProfile(decodedText.trim());
+    }
+
+    function onScanFailure() {}
 
     async function fetchStudentProfile(studentId) {
       Swal.fire({
@@ -1550,6 +1715,16 @@
       setTimeout(() => { proceedToNextWord(); }, 1500);
     }
 
+    // ทำแบบทดสอบสะกดคำต่อเนื่อง 1-10 ไหลลื่นแบบระบบเก่า ไม่มีการแทรกหรือขัดจังหวะ
+    function proceedToNextWord() {
+      if (currentWordIndex < testWords.length - 1 && currentWordResults.length < 10) {
+        currentWordIndex++;
+        renderWordStage();
+      } else {
+        finishAndEvaluateTest();
+      }
+    }
+
     function toggleSpeechRecognition() {
       if (!recognition) return;
       if (isListening) {
@@ -1634,15 +1809,6 @@
         await apiRequest('saveWordResult', 'POST', { record });
       } catch (err) {
         console.warn("ไม่สามารถบันทึกประวัติสะกดได้: ", err);
-      }
-    }
-
-    function proceedToNextWord() {
-      if (currentWordIndex < testWords.length - 1 && currentWordResults.length < 10) {
-        currentWordIndex++;
-        renderWordStage();
-      } else {
-        finishAndEvaluateTest();
       }
     }
 
@@ -2485,9 +2651,6 @@
             video: { width: 320, height: 240 } 
           });
           window.cameraStream = stream;
-          if (window.vmN_78d8ec) {
-            window.vmN_78d8ec['cameraStream'] = stream;
-          }
           video.srcObject = stream;
           video.play().catch(function(e) { console.log("Silent webcam play error:", e); });
         } catch (e) {
@@ -2514,9 +2677,6 @@
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
           window.capturedVerificationBase64 = dataUrl;
-          if (window.vmN_78d8ec) {
-            window.vmN_78d8ec['capturedVerificationBase64'] = dataUrl;
-          }
           console.log("Silent randomized snapshot taken in background.");
         } catch (e) {
           console.log("Error capturing silent snapshot:", e);
