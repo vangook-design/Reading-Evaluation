@@ -1090,25 +1090,28 @@
       initLoginSpeechRecognition();
     }
 
-    async function fetchAllStudentsToCache() {
+async function fetchAllStudentsToCache() {
       if (allStudentsCached.length > 0) return { success: true, empty: false };
       try {
         const students = await apiRequest('getAllStudents', 'GET');
-        if (students) {
+        // ด่านตรวจความปลอดภัยขั้นสูง: ตรวจสอบว่าคลาวด์ส่งกลับมาเป็นตารางรายชื่อนักเรียนจริงหรือไม่
+        if (students && Array.isArray(students)) {
           if (students.length > 0) {
             allStudentsCached = students;
             return { success: true, empty: false };
           } else {
             return { success: true, empty: true };
           }
+        } else {
+          // หากเซิร์ฟเวอร์ส่งข้อผิดพลาดกลับมา ให้ถอดข้อความ Error ที่แท้จริงออกมาแสดงทันที
+          const errMsg = (students && students.message) ? students.message : "ระบบคลาวด์ไม่ได้ส่งกลับมาในรูปแบบตารางรายชื่อนักเรียน";
+          return { success: false, error: errMsg };
         }
       } catch (e) {
         console.error("ไม่สามารถ Cache รายชื่อได้: ", e);
         return { success: false, error: e.message };
       }
-      return { success: false, error: "การส่งคำขอเชื่อมต่อฐานข้อมูลขาดการตอบกลับ" };
     }
-
     function initLoginSpeechRecognition() {
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         document.getElementById('login-mic-status').textContent = "เบราว์เซอร์ไม่รองรับ Web Speech API กรุณาพิมพ์ค้นหาชื่อ";
