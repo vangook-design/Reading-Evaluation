@@ -48,7 +48,7 @@
 
   <script>
     // *** นำ Web App URL ที่ได้จากการ Deploy Google Apps Script มาใส่ลงตรงนี้ ***
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxuUkhvagEPZLCZ1aQcNBoUnYTQqgU-Cn5QmFMvjvYN8WJxwvuZ6zcozV0G-NS5t6-o/exec";
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzAXFzn_XwAd477SH20GArajcqfxxJx0i_XNb50EQJ7J70Z8ns92MYO9VP9tGAlwPrH/exec";
   </script>
 
   <!-- Navigation bar -->
@@ -103,7 +103,7 @@
         </div>
         <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-md shadow-indigo-100/40 hover:scale-102 transition duration-300">
           <div class="bg-violet-50 text-violet-600 w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2"><i class="fa-solid fa-chart-line text-xs"></i></div>
-          <p class="text-[9px] md:text-[10px] text-slate-400 font-extrabold uppercase tracking-wide">ประเมินสะสมทั้งหมด</p>
+          <p class="text-[9px] md:text-[10px] text-slate-400 font-extrabold uppercase tracking-wide">การประเมินสะสมทั้งหมด</p>
           <h3 id="home-stat-total" class="text-lg md:text-3xl font-black text-violet-600 mt-1">-</h3>
         </div>
       </div>
@@ -140,7 +140,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: หน้าล็อกอินยืนยันตัวตนด้วยเสียงพูด -->
+    <!-- VIEW 2: หน้าตรวจสิทธิ์ด้วยเสียงพูดชื่อ-นามสกุล 100% -->
     <section id="view-scan" class="view-section hidden py-6 animate-fadeIn no-print">
       <div class="max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-6 space-y-6">
         <div class="flex items-center space-x-3 border-b pb-4">
@@ -220,7 +220,7 @@
 
         <div class="lg:col-span-8 space-y-6 w-full font-sans">
           <div class="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-            <h4 class="font-bold text-xs text-indigo-900 uppercase tracking-wider mb-3 flex items-center"><i class="fa-solid fa-chart-line mr-1.5"></i> เส้นกราบสรุปพัฒนาการอ่านรายบุคคล</h4>
+            <h4 class="font-bold text-xs text-indigo-900 uppercase tracking-wider mb-3 flex items-center"><i class="fa-solid fa-chart-line mr-1.5"></i> เส้นกราฟสรุปพัฒนาการอ่านรายบุคคล</h4>
             <div class="h-48 w-full relative">
               <canvas id="studentProgressChart"></canvas>
             </div>
@@ -454,8 +454,9 @@
             </div>
           </div>
 
-          <!-- กราฟพัฒนาการแยกรายชั้นเรียน -->
+          <!-- กราฟพัฒนาการแยกรายชั้นเรียน & รายงานสรุปผลภาพรวม -->
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- ซ้าย: กราฟวิวัฒนาการแบบละเอียด -->
             <div class="lg:col-span-7 bg-white p-6 rounded-2xl custom-shadow border border-slate-100 font-sans">
               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                 <h3 class="font-bold text-xs text-slate-600 uppercase"><i class="fa-solid fa-chart-line text-indigo-600 mr-1.5"></i>วิวัฒนาการประเมินรายชั้นเรียนในแต่ละรอบ</h3>
@@ -476,6 +477,7 @@
               </div>
             </div>
 
+            <!-- ขวา: รายงานสรุปผลสัมฤทธิ์ของโรงเรียน -->
             <div class="lg:col-span-5 bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-2xl custom-shadow border border-slate-800 flex flex-col justify-between font-sans">
               <div class="space-y-3">
                 <span class="bg-indigo-500/30 text-indigo-300 text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">Executive Report Generator</span>
@@ -875,33 +877,96 @@
 
   <div id="print-qrcode-area" class="hidden"></div>
 
-  <!-- SCRIPT LOGIC (ระบบโค้ดมาตรฐาน 100% ไร้การเข้ารหัส ทำงานบน Vercel ได้อย่างเสถียร) -->
+  <!-- SCRIPT LOGIC (ระบบโค้ดมาตรฐานแบบไร้การเข้ารหัส มีความเสถียรและทนทานสูง) -->
   <script>
+    // การจัดการสถานะ
+    let masterGradeWords = []; 
+    let nextPoolIndex = 10;     
+    let unclearCount = 0;      
+    let currentStudent = null;
+    let testWords = [];
+    let currentWordIndex = 0;
+    let attemptsCount = 1;
+    let currentWordResults = [];
+    let scoreByWordType = {
+      'คำพื้นฐาน': { count: 0, correct: 0 },
+      'คำประสม': { count: 0, correct: 0 },
+      'คำควบกล้ำ': { count: 0, correct: 0 },
+      'คำที่มีตัวสะกด': { count: 0, correct: 0 },
+      'คำหลายพยางค์': { count: 0, correct: 0 }
+    };
+
+    let recognition = null;
+    let isListening = false;
+    let systemSettings = {
+      SystemName: 'ระบบคัดกรองการอ่านออกเสียงสะกดคำ ป.1-ป.6',
+      OrgName: 'กลุ่มการศึกษาประถมศึกษา',
+      ScoreExcellent: '8',
+      ScoreFair: '5'
+    };
+    
+    let cameraStream = null;
+    let html5QrcodeScanner = null;
+    let isAdminLoggedIn = false;
+    let capturedVerificationBase64 = null;
+    let countdownTimer = null;
+    let timeRemainingForWord = 15;
+    let studentProgressChartInstance = null;
+    let gradeDevelopmentChartInstance = null;
+    let lastFetchedStats = null;
+    let hasMatchedCurrentWord = false;
+    let currentSyllableIndex = 0;
+    let targetSyllables = [];
+    let gradeStatsChartInstance = null;
+    let ratioChartInstance = null;
+
+    // ส่วนการล็อกอินด้วยเสียงพูดชื่อ-นามสกุล
+    let loginRecognition = null;
+    let isLoginListening = false;
+    let allStudentsCached = [];
+
+    // เรียกเริ่มทำงานระบบคัดกรองเมื่อโหลดเสร็จสมบูรณ์
+    document.addEventListener('DOMContentLoaded', () => {
+      loadCachedData();
+      fetchFreshSystemSettings();
+      initSpeechRecognition();
+    });
+
+    // ฟังก์ชันเชื่อมต่อเซิร์ฟเวอร์แบบจำกัดเวลาตอบกลับป้องกันการค้างตลอดกาล (8-Second Abort Timeout)
     async function apiRequest(action, method = 'GET', data = {}) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // หากคลาวด์ไม่ส่งค่าใน 8 วินาทีให้ตัดเพื่อระบุสาเหตุข้อขัดข้องทันที
+
       try {
         let response;
         if (method === 'GET') {
           const queryParams = new URLSearchParams({ action, ...data }).toString();
-          response = await fetch(`${BACKEND_URL}?${queryParams}`);
+          response = await fetch(`${BACKEND_URL}?${queryParams}`, { signal: controller.signal });
         } else {
           response = await fetch(BACKEND_URL, {
             method: 'POST',
             body: JSON.stringify({ action, ...data }),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            signal: controller.signal
           });
         }
+        clearTimeout(timeoutId);
         const text = await response.text();
         try {
           return JSON.parse(text);
         } catch (jsonErr) {
           console.error("CORS / Server redirect intercepted. Raw output: ", text);
           if (text.trim().startsWith("<")) {
-            throw new Error("เซิร์ฟเวอร์ Google Apps Script ตอบกลับเป็นหน้าเว็บ HTML (ตรวจสอบสิทธิ์ Deployment เป็น 'Anyone' หรือเกิดจากการจำกัดโควตา Concurrent Invocation)");
+            throw new Error("เซิร์ฟเวอร์ Google Apps Script ส่งกลับเป็นหน้าเว็บ HTML (อาจเกิดจากสิทธิ์การ Deploy ไม่เป็น 'Anyone' หรือชีตต้องการการยืนยันสิทธิ์จากบัญชีผู้ใช้)");
           }
           throw new Error(`การตอบกลับไม่ได้อยู่ในรูปแบบ JSON: ${text.substring(0, 100)}`);
         }
       } catch (err) {
+        clearTimeout(timeoutId);
         console.error("Network Fetch Request Error: ", err);
+        if (err.name === 'AbortError') {
+          throw new Error("หมดเวลาเชื่อมต่อ (Timeout) ระบบคลาวด์ไม่ตอบสนองภายใน 8 วินาที (กรุณาตรวจสอบสิทธิ์ชีตปลายทาง)");
+        }
         throw err;
       }
     }
@@ -937,7 +1002,7 @@
           renderLatestRoundTable(pubStats.latestRound);
         }
       } catch (err) {
-        console.warn("สลับไปใช้โหมดแคชเนื่องจากเซิร์ฟเวอร์ล้าช้า: ", err);
+        console.warn("เข้าสู่โหมดแคชสำรองเนื่องจากเซิร์ฟเวอร์ล้าช้า: ", err);
       }
     }
 
@@ -995,11 +1060,11 @@
           icon: 'error',
           title: 'การเชื่อมต่อคลาวด์ล้มเหลว',
           html: `ไม่สามารถดึงข้อมูลรายชื่อนักเรียนได้<br>
-                 <span class="text-xs text-rose-500 font-semibold">สาเหตุ: ${result.error || 'CORS Block / ลิงก์ API ไม่ถูกต้อง'}</span><br><br>
+                 <span class="text-xs text-rose-500 font-semibold">สาเหตุ: ${result.error || 'CORS Block / ลิงก์ API ไม่ถูกต้อง / หมดเวลาเชื่อมต่อ'}</span><br><br>
                  <div class="text-[11px] text-slate-500 text-left leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
                    <strong>แนวทางตรวจสอบและแก้ไข:</strong><br>
                    1. ตรวจสอบว่าตั้งสิทธิ์การเข้าใช้งานใน Deployment ของสคริปต์เป็น <strong>"Anyone" (ทุกคน)</strong> แล้วหรือยัง<br>
-                   2. ตรวจสอบว่าได้กดปุ่ม <strong>Run</strong> ฟังก์ชัน <code>initDatabase</code> ในหน้าต่าง Apps Script เพื่อยืนยันสิทธิ์กับชีตปลายทางแล้วหรือยัง
+                   2. ตรวจสอบว่าได้กดปุ่ม <strong>Run (เรียกใช้งาน)</strong> ในฟังก์ชัน <code>initDatabase</code> ในหน้าต่าง Google Apps Script เพื่อเปิดสิทธิ์การใช้งานของแผ่นงานปลายทางเรียบร้อยแล้วหรือยัง
                  </div>`,
           confirmButtonColor: '#4f46e5'
         });
@@ -1041,7 +1106,7 @@
         console.error("ไม่สามารถ Cache รายชื่อได้: ", e);
         return { success: false, error: e.message };
       }
-      return { success: false, error: "การอ่านพารามิเตอร์ของระบบคลาวด์ขัดข้อง" };
+      return { success: false, error: "การส่งคำขอเชื่อมต่อฐานข้อมูลขาดการตอบกลับ" };
     }
 
     function initLoginSpeechRecognition() {
@@ -1272,6 +1337,26 @@
         confirmStudentSelection(student);
       }
     }
+
+    function stopQRScanner() {}
+    function startQRScannerCamera() {}
+
+    function stopAllWebcams() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+    }
+
+    function onScanSuccess(decodedText) {
+      fetchStudentProfile(decodedText.trim());
+    }
+
+    function onScanFailure() {}
 
     async function fetchStudentProfile(studentId) {
       Swal.fire({
@@ -1570,6 +1655,95 @@
       }
     }
 
+    // ระบบเปรียบเทียบเสียงพยัญชนะ ร และ ล และกลุ่มเสียงพ้องสำหรับเด็กประถม
+    function phoneticStandardizeThai(word) {
+      if (!word) return "";
+      let cleaned = word.trim()
+        .replace(/[่้๊๋]/g, "") // ตัดวรรณยุกต์
+        .replace(/[์]/g, "")    // ตัดตัวการันต์
+        .replace(/[\s\-\_\.\,\?]/g, "") // ตัดสัญลักษณ์และสเปซ
+        .toLowerCase();
+      
+      cleaned = cleaned
+        .replace(/[รลฬ]/g, "ล")   // เสียง ร และ ล เป็นฐานเสียงลัดเลาะเดียวกัน
+        .replace(/[ศษสซ]/g, "ส")  // สัญญาณคู่พ้อง ส ศ ษ ซ
+        .replace(/[ณน]/g, "น")   // ณ น
+        .replace(/[ญย]/g, "ย")   // ญ ย
+        .replace(/[พภ]/g, "พ")   // พ ภ
+        .replace(/[ผฝฟ]/g, "ฟ")  // ผ ฝ ฟ
+        .replace(/[คฆข]/g, "ค")  // ข ค ฆ
+        .replace(/[จฉชฌ]/g, "ช") // จ ฉ ช ฌ
+        .replace(/[ฎด]/g, "ด")   // ฎ ด
+        .replace(/[ฏต]/g, "ต")   // ฏ ต
+        .replace(/[ฐฑฒถทธ]/g, "ท") // ฐานเสียง ท
+        .replace(/[ใaiไ]/g, "ไ");  // สระใ และ ไ เป็นเสียงเดียวกัน
+        
+      return cleaned;
+    }
+
+    function cleanThaiWord(word) {
+      if (!word) return "";
+      return word.trim()
+        .replace(/[่้๊๋]/g, "") 
+        .replace(/[์]/g, "")    
+        .replace(/[\s\-\_\.\,\?]/g, "") 
+        .toLowerCase();
+    }
+
+    function getPhoneticSimilarity(s1, s2) {
+      const target = phoneticStandardizeThai(s1);
+      const output = phoneticStandardizeThai(s2);
+      if (!target || !output) return 0.0;
+      if (target === output) return 1.0;
+      
+      if (target.includes(output) || output.includes(target)) {
+        if (output.length >= 2 && target.length >= 2) {
+          return 0.85;
+        }
+      }
+
+      const track = Array(output.length + 1).fill(null).map(() => Array(target.length + 1).fill(null));
+      for (let i = 0; i <= target.length; i++) track[0][i] = i;
+      for (let j = 0; j <= output.length; j++) track[j][0] = j;
+      for (let j = 1; j <= output.length; j++) {
+        for (let i = 1; i <= target.length; i++) {
+          const indicator = target[i - 1] === output[j - 1] ? 0 : 1;
+          track[j][i] = Math.min(
+            track[j][i - 1] + 1,
+            track[j - 1][i] + 1,
+            track[j - 1][i - 1] + indicator
+          );
+        }
+      }
+      const distance = track[output.length][target.length];
+      const longest = Math.max(target.length, output.length);
+      return (longest - distance) / longest;
+    }
+
+    function matchThaiSyllablePhonetically(target, spoken) {
+      const sim = getPhoneticSimilarity(target, spoken);
+      return sim >= 0.75;
+    }
+
+    function findPhoneticMatchInString(source, target) {
+      if (!source || !target) return { matched: false };
+      for (let len = 1; len <= Math.min(source.length, target.length + 2); len++) {
+        const sub = source.substring(0, len);
+        if (matchThaiSyllablePhonetically(target, sub)) {
+          return { matched: true, endIndex: len };
+        }
+      }
+      for (let start = 0; start <= Math.min(3, source.length - 1); start++) {
+        for (let len = 1; len <= Math.min(source.length - start, target.length + 2); len++) {
+          const sub = source.substring(start, start + len);
+          if (matchThaiSyllablePhonetically(target, sub)) {
+            return { matched: true, endIndex: start + len };
+          }
+        }
+      }
+      return { matched: false };
+    }
+
     function stopListeningState() {
       if (recognition) recognition.stop();
       isListening = false;
@@ -1639,7 +1813,7 @@
         wordType: currentWordObj.wordType
       };
       currentWordResults.push(record);
-      // ปิดฟังก์ชันการเรียกบันทึกข้อมูล ReadingResults แยกรายคำ เพื่อจำกัดการขยายตัวของพื้นที่ชีตหลัก
+      // ย้ายระบบเก็บประวัติรายคำออกแบบถาวร เพื่อไม่ให้ฐานข้อมูลพังช้าลงในระยะยาว
     }
 
     function setCorrectUI() {
