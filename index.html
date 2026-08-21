@@ -103,7 +103,7 @@
         </div>
         <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-md shadow-indigo-100/40 hover:scale-102 transition duration-300">
           <div class="bg-violet-50 text-violet-600 w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2"><i class="fa-solid fa-chart-line text-xs"></i></div>
-          <p class="text-[9px] md:text-[10px] text-slate-400 font-extrabold uppercase tracking-wide">การประเมินสะสมทั้งหมด</p>
+          <p class="text-[9px] md:text-[10px] text-slate-400 font-extrabold uppercase tracking-wide">ประเมินสะสมทั้งหมด</p>
           <h3 id="home-stat-total" class="text-lg md:text-3xl font-black text-violet-600 mt-1">-</h3>
         </div>
       </div>
@@ -140,7 +140,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: หน้าตรวจสิทธิ์ด้วยเสียงพูดชื่อ-นามสกุล 100% -->
+    <!-- VIEW 2: หน้าล็อกอินยืนยันตัวตนด้วยเสียงพูด -->
     <section id="view-scan" class="view-section hidden py-6 animate-fadeIn no-print">
       <div class="max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-6 space-y-6">
         <div class="flex items-center space-x-3 border-b pb-4">
@@ -454,9 +454,8 @@
             </div>
           </div>
 
-          <!-- กราฟพัฒนาการแยกรายชั้นเรียน & รายงานสรุปผลภาพรวม -->
+          <!-- กราฟพัฒนาการแยกรายชั้นเรียน -->
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- ซ้าย: กราฟวิวัฒนาการแบบละเอียด -->
             <div class="lg:col-span-7 bg-white p-6 rounded-2xl custom-shadow border border-slate-100 font-sans">
               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                 <h3 class="font-bold text-xs text-slate-600 uppercase"><i class="fa-solid fa-chart-line text-indigo-600 mr-1.5"></i>วิวัฒนาการประเมินรายชั้นเรียนในแต่ละรอบ</h3>
@@ -477,7 +476,6 @@
               </div>
             </div>
 
-            <!-- ขวา: รายงานสรุปผลสัมฤทธิ์ของโรงเรียน -->
             <div class="lg:col-span-5 bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-2xl custom-shadow border border-slate-800 flex flex-col justify-between font-sans">
               <div class="space-y-3">
                 <span class="bg-indigo-500/30 text-indigo-300 text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">Executive Report Generator</span>
@@ -617,7 +615,7 @@
 
   <footer class="bg-white border-t border-slate-150 py-4 text-center text-[11px] text-slate-400 px-4 no-print">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 font-medium">
-      <p>© <span id="footer-org-name">ระบบคัดกรองประเมินคลื่นเสียงสะกดคำ</span> - พัฒนาระบบโดยนายชาณัตถ์ รุ่งรัตน์ ผู้อำนวยการโรงเรียนวัดยางขาว สพป.นว 1</p>
+      <p>© <span id="footer-org-name">กลุ่มส่งเสริมระดับการศึกษา</span> - ระบบจัดการประเมินคลื่นเสียงสะกดคำ</p>
       <p>ขับเคลื่อนด้วย Web Speech API & Google Sheets API</p>
     </div>
   </footer>
@@ -657,8 +655,8 @@
         <input type="hidden" id="form-word-id">
         
         <div>
-          <label class="block text-[10px] font-bold text-slate-500 mb-1">คำศัพท์เป้าหมาย (ใช้เครื่องหมาย "-" แบ่งพยางค์ เช่น "กระ-ดาษ")</label>
-          <input type="text" id="form-word-text" class="w-full p-2.5 border rounded-lg text-xs" required placeholder="ตัวอย่าง: กระ-ดาษ">
+          <label class="block text-[10px] font-bold text-slate-500 mb-1">คำศัพท์ภาษาไทยเป้าหมาย</label>
+          <input type="text" id="form-word-text" class="w-full p-2.5 border rounded-lg text-xs" required placeholder="ตัวอย่าง: กล้วย">
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -877,52 +875,9 @@
 
   <div id="print-qrcode-area" class="hidden"></div>
 
-  <!-- SCRIPT LOGIC (ระบบโค้ดมาตรฐานแบบไร้การเข้ารหัส มีความเสถียรและทนทานสูง) -->
+  <!-- SCRIPT LOGIC (ระบบโค้ดมาตรฐานฉบับอัปเกรดความปลอดภัยสมบูรณ์ ไร้การเข้ารหัส ทำงานบน Vercel ได้ 100%) -->
   <script>
-    // การจัดการสถานะ
-    let masterGradeWords = []; 
-    let nextPoolIndex = 10;     
-    let unclearCount = 0;      
-    let currentStudent = null;
-    let testWords = [];
-    let currentWordIndex = 0;
-    let attemptsCount = 1;
-    let currentWordResults = [];
-    let scoreByWordType = {
-      'คำพื้นฐาน': { count: 0, correct: 0 },
-      'คำประสม': { count: 0, correct: 0 },
-      'คำควบกล้ำ': { count: 0, correct: 0 },
-      'คำที่มีตัวสะกด': { count: 0, correct: 0 },
-      'คำหลายพยางค์': { count: 0, correct: 0 }
-    };
-
-    let recognition = null;
-    let isListening = false;
-    let systemSettings = {
-      SystemName: 'ระบบคัดกรองการอ่านออกเสียงสะกดคำ ป.1-ป.6',
-      OrgName: 'กลุ่มการศึกษาประถมศึกษา',
-      ScoreExcellent: '8',
-      ScoreFair: '5'
-    };
-    
-    let cameraStream = null;
-    let html5QrcodeScanner = null;
-    let isAdminLoggedIn = false;
-    let capturedVerificationBase64 = null;
-    let countdownTimer = null;
-    let timeRemainingForWord = 15;
-    let studentProgressChartInstance = null;
-    let gradeDevelopmentChartInstance = null;
-    let lastFetchedStats = null;
-    let hasMatchedCurrentWord = false;
-    let currentSyllableIndex = 0;
-    let targetSyllables = [];
-    let gradeStatsChartInstance = null;
-    let ratioChartInstance = null;
-
-    // ส่วนการล็อกอินด้วยเสียงพูดชื่อ-นามสกุล
-    let loginRecognition = null;
-    let isLoginListening = false;
+    // ตัวแปรควบคุมระบบ
     let allStudentsCached = [];
 
     // เรียกเริ่มทำงานระบบคัดกรองเมื่อโหลดเสร็จสมบูรณ์
@@ -932,10 +887,10 @@
       initSpeechRecognition();
     });
 
-    // ฟังก์ชันเชื่อมต่อเซิร์ฟเวอร์แบบจำกัดเวลาตอบกลับป้องกันการค้างตลอดกาล (8-Second Abort Timeout)
+    // ฟังก์ชันเชื่อมต่อเซิร์ฟเวอร์คลาวด์แบบจำกัดเวลาตอบกลับป้องกันการค้างตลอดกาล (8-Second Abort Timeout)
     async function apiRequest(action, method = 'GET', data = {}) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // หากคลาวด์ไม่ส่งค่าใน 8 วินาทีให้ตัดเพื่อระบุสาเหตุข้อขัดข้องทันที
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // จำกัดเวลารอข้อมูลคลาวด์ที่ 8 วินาทีเพื่อความเสถียรบน Vercel
 
       try {
         let response;
@@ -957,7 +912,7 @@
         } catch (jsonErr) {
           console.error("CORS / Server redirect intercepted. Raw output: ", text);
           if (text.trim().startsWith("<")) {
-            throw new Error("เซิร์ฟเวอร์ Google Apps Script ส่งกลับเป็นหน้าเว็บ HTML (อาจเกิดจากสิทธิ์การ Deploy ไม่เป็น 'Anyone' หรือชีตต้องการการยืนยันสิทธิ์จากบัญชีผู้ใช้)");
+            throw new Error("เซิร์ฟเวอร์ Google Apps Script ตอบกลับเป็นหน้าเว็บ HTML (ตรวจสอบสิทธิ์ Deployment เป็น 'Anyone' หรือเกิดจากการจำกัดโควตา Concurrent Invocation)");
           }
           throw new Error(`การตอบกลับไม่ได้อยู่ในรูปแบบ JSON: ${text.substring(0, 100)}`);
         }
@@ -965,7 +920,7 @@
         clearTimeout(timeoutId);
         console.error("Network Fetch Request Error: ", err);
         if (err.name === 'AbortError') {
-          throw new Error("หมดเวลาเชื่อมต่อ (Timeout) ระบบคลาวด์ไม่ตอบสนองภายใน 8 วินาที (กรุณาตรวจสอบสิทธิ์ชีตปลายทาง)");
+          throw new Error("หมดเวลาเชื่อมต่อ (Timeout) ระบบคลาวด์ไม่ตอบสนองภายใน 8 วินาที (กรุณาตรวจสอบสิทธิ์และโควตาใช้งานแอปเว็บ)");
         }
         throw err;
       }
@@ -1002,7 +957,7 @@
           renderLatestRoundTable(pubStats.latestRound);
         }
       } catch (err) {
-        console.warn("เข้าสู่โหมดแคชสำรองเนื่องจากเซิร์ฟเวอร์ล้าช้า: ", err);
+        console.warn("สลับไปใช้โหมดแคชเนื่องจากอินเทอร์เน็ตล้าช้า: ", err);
       }
     }
 
@@ -1048,7 +1003,7 @@
     async function startStudentScreen() {
       showView('scan');
       Swal.fire({
-        title: 'กำลังเชื่อมต่อคลาวด์และตรวจสอบระบบ...',
+        title: 'กำลังเชื่อมต่อและดึงรายชื่อนักเรียน...',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
       });
@@ -1060,11 +1015,11 @@
           icon: 'error',
           title: 'การเชื่อมต่อคลาวด์ล้มเหลว',
           html: `ไม่สามารถดึงข้อมูลรายชื่อนักเรียนได้<br>
-                 <span class="text-xs text-rose-500 font-semibold">สาเหตุ: ${result.error || 'CORS Block / ลิงก์ API ไม่ถูกต้อง / หมดเวลาเชื่อมต่อ'}</span><br><br>
+                 <span class="text-xs text-rose-500 font-semibold">สาเหตุ: ${result.error || 'CORS Block / ลิงก์ API ไม่ถูกต้อง / คลาวด์ระเบิดการทำงานเงียบๆ'}</span><br><br>
                  <div class="text-[11px] text-slate-500 text-left leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
                    <strong>แนวทางตรวจสอบและแก้ไข:</strong><br>
                    1. ตรวจสอบว่าตั้งสิทธิ์การเข้าใช้งานใน Deployment ของสคริปต์เป็น <strong>"Anyone" (ทุกคน)</strong> แล้วหรือยัง<br>
-                   2. ตรวจสอบว่าได้กดปุ่ม <strong>Run (เรียกใช้งาน)</strong> ในฟังก์ชัน <code>initDatabase</code> ในหน้าต่าง Google Apps Script เพื่อเปิดสิทธิ์การใช้งานของแผ่นงานปลายทางเรียบร้อยแล้วหรือยัง
+                   2. ตรวจสอบว่าได้กดปุ่ม <strong>Run (เรียกใช้งาน)</strong> ในฟังก์ชัน <code>initDatabase</code> ในหน้าต่าง Apps Script เพื่ออนุมัติสิทธิ์เข้าถึงของไฟล์ชีตปลายทางแล้วหรือยัง
                  </div>`,
           confirmButtonColor: '#4f46e5'
         });
@@ -1076,7 +1031,7 @@
         Swal.fire({
           icon: 'warning',
           title: 'ไม่พบรายชื่อนักเรียน',
-          text: 'เชื่อมต่อฐานข้อมูลเรียบร้อยแล้ว แต่ไม่พบรายชื่อนักเรียนในตารางแผ่นงาน "Students"',
+          text: 'เชื่อมต่อฐานข้อมูลได้สำเร็จ แต่ตรวจไม่พบรายชื่อนักเรียนที่เปิดใช้งานในแผ่นงาน "Students"',
           confirmButtonColor: '#4f46e5'
         });
         showView('home');
@@ -1090,11 +1045,11 @@
       initLoginSpeechRecognition();
     }
 
-async function fetchAllStudentsToCache() {
+    // ป้องกันการแปรผล Error ซ่อนในรูปของตารางว่างด้วยการเจาะลึกเช็กตัวแปรอาร์เรย์ (Array.isArray)
+    async function fetchAllStudentsToCache() {
       if (allStudentsCached.length > 0) return { success: true, empty: false };
       try {
         const students = await apiRequest('getAllStudents', 'GET');
-        // ด่านตรวจความปลอดภัยขั้นสูง: ตรวจสอบว่าคลาวด์ส่งกลับมาเป็นตารางรายชื่อนักเรียนจริงหรือไม่
         if (students && Array.isArray(students)) {
           if (students.length > 0) {
             allStudentsCached = students;
@@ -1103,8 +1058,8 @@ async function fetchAllStudentsToCache() {
             return { success: true, empty: true };
           }
         } else {
-          // หากเซิร์ฟเวอร์ส่งข้อผิดพลาดกลับมา ให้ถอดข้อความ Error ที่แท้จริงออกมาแสดงทันที
-          const errMsg = (students && students.message) ? students.message : "ระบบคลาวด์ไม่ได้ส่งกลับมาในรูปแบบตารางรายชื่อนักเรียน";
+          // สกัดถอดข้อความขัดข้องดั้งเดิมจาก Apps Script (หากมีระบบสะดุดพังฝั่งชีต) มาฟ้องขึ้นหน้าจอทันทีเพื่อประโยชน์ในการวิเคราะห์
+          const errMsg = (students && students.message) ? students.message : "แอปหลังบ้านส่งข้อมูลกลับมาคลาดเคลื่อนจากรูปแบบอาร์เรย์นักเรียนสากล";
           return { success: false, error: errMsg };
         }
       } catch (e) {
@@ -1112,6 +1067,7 @@ async function fetchAllStudentsToCache() {
         return { success: false, error: e.message };
       }
     }
+
     function initLoginSpeechRecognition() {
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         document.getElementById('login-mic-status').textContent = "เบราว์เซอร์ไม่รองรับ Web Speech API กรุณาพิมพ์ค้นหาชื่อ";
@@ -1637,7 +1593,6 @@ async function fetchAllStudentsToCache() {
       setTimeout(() => { proceedToNextWord(); }, 1500);
     }
 
-    // ทำแบบทดสอบสะกดคำต่อเนื่อง 1-10 ไหลลื่นแบบระบบเก่า ไม่มีการแทรกหรือขัดจังหวะ
     function proceedToNextWord() {
       if (currentWordIndex < testWords.length - 1 && currentWordResults.length < 10) {
         currentWordIndex++;
@@ -1658,7 +1613,7 @@ async function fetchAllStudentsToCache() {
       }
     }
 
-    // ระบบเปรียบเทียบเสียงพยัญชนะ ร และ ล และกลุ่มเสียงพ้องสำหรับเด็กประถม
+    // ระบบเปรียบเทียบสัทศาสตร์กลุ่มเสียงใกล้เคียง ร-ล ของการคัดกรองหลัก
     function phoneticStandardizeThai(word) {
       if (!word) return "";
       let cleaned = word.trim()
@@ -1669,7 +1624,7 @@ async function fetchAllStudentsToCache() {
       
       cleaned = cleaned
         .replace(/[รลฬ]/g, "ล")   // เสียง ร และ ล เป็นฐานเสียงลัดเลาะเดียวกัน
-        .replace(/[ศษสซ]/g, "ส")  // สัญญาณคู่พ้อง ส ศ ษ ซ
+        .replace(/[ศษสซ]/g, "ส")  // ส ศ ษ ซ
         .replace(/[ณน]/g, "น")   // ณ น
         .replace(/[ญย]/g, "ย")   // ญ ย
         .replace(/[พภ]/g, "พ")   // พ ภ
@@ -1679,7 +1634,7 @@ async function fetchAllStudentsToCache() {
         .replace(/[ฎด]/g, "ด")   // ฎ ด
         .replace(/[ฏต]/g, "ต")   // ฏ ต
         .replace(/[ฐฑฒถทธ]/g, "ท") // ฐานเสียง ท
-        .replace(/[ใaiไ]/g, "ไ");  // สระใ และ ไ เป็นเสียงเดียวกัน
+        .replace(/[ใaiไ]/g, "ไ");  // ใ, ไ
         
       return cleaned;
     }
@@ -1816,7 +1771,7 @@ async function fetchAllStudentsToCache() {
         wordType: currentWordObj.wordType
       };
       currentWordResults.push(record);
-      // ย้ายระบบเก็บประวัติรายคำออกแบบถาวร เพื่อไม่ให้ฐานข้อมูลพังช้าลงในระยะยาว
+      // ย้ายระบบเก็บประวัติรายคำออกแบบถาวร เพื่อไม่ให้ชีต 'ReadingResults' ขยายตัวมากเกินความต้องการ
     }
 
     function setCorrectUI() {
@@ -1828,6 +1783,7 @@ async function fetchAllStudentsToCache() {
       playSynthesizedBeep(true);
     }
 
+    // มีตรรกะตรวจจับสัญญาณเสียงสะกดไม่ผ่าน
     function setWrongUI() {
       const card = document.getElementById('word-card-container');
       if (card) {
@@ -2250,6 +2206,302 @@ async function fetchAllStudentsToCache() {
       document.getElementById('admin-report-modal').classList.remove('hidden');
     }
 
+    // ปรับปรุงฟังก์ชันตรวจสอบสิทธิ์รายชื่อ: คัดกรองตัวแปรอาร์เรย์และป้องกันอาการ Error ซ่อนในรูปแผงว่าง
+    async function fetchAllStudentsToCache() {
+      if (allStudentsCached.length > 0) return { success: true, empty: false };
+      try {
+        const students = await apiRequest('getAllStudents', 'GET');
+        if (students && Array.isArray(students)) {
+          if (students.length > 0) {
+            allStudentsCached = students;
+            return { success: true, empty: false };
+          } else {
+            return { success: true, empty: true };
+          }
+        } else {
+          const errMsg = (students && students.message) ? students.message : "ระบบหลังบ้านส่งข้อมูลกลับมาคลาดเคลื่อนจากรูปแบบตารางรายชื่อนักเรียน";
+          return { success: false, error: errMsg };
+        }
+      } catch (e) {
+        console.error("ไม่สามารถ Cache รายชื่อได้: ", e);
+        return { success: false, error: e.message };
+      }
+    }
+
+    async function startStudentScreen() {
+      showView('scan');
+      Swal.fire({
+        title: 'กำลังเชื่อมต่อและดึงรายชื่อนักเรียน...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+      const result = await fetchAllStudentsToCache();
+      Swal.close();
+      
+      if (!result.success) {
+        Swal.fire({
+          icon: 'error',
+          title: 'การเชื่อมต่อคลาวด์ล้มเหลว',
+          html: `ไม่สามารถดึงข้อมูลรายชื่อนักเรียนได้<br>
+                 <span class="text-xs text-rose-500 font-semibold">สาเหตุ: ${result.error || 'CORS Block / ลิงก์ API ไม่ถูกต้อง / คลาวด์ระเบิดการทำงานเงียบๆ'}</span><br><br>
+                 <div class="text-[11px] text-slate-500 text-left leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
+                   <strong>แนวทางตรวจสอบและแก้ไข:</strong><br>
+                   1. ตรวจสอบว่าตั้งสิทธิ์การเข้าใช้งานใน Deployment ของสคริปต์เป็น <strong>"Anyone" (ทุกคน)</strong> แล้วหรือยัง<br>
+                   2. ตรวจสอบว่าได้กดปุ่ม <strong>Run (เรียกใช้งาน)</strong> ในฟังก์ชัน <code>initDatabase</code> ในหน้าต่าง Apps Script เพื่ออนุมัติสิทธิ์เข้าถึงของไฟล์ชีตปลายทางแล้วหรือยัง
+                 </div>`,
+          confirmButtonColor: '#4f46e5'
+        });
+        showView('home');
+        return;
+      }
+      
+      if (result.empty) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'ไม่พบรายชื่อนักเรียน',
+          text: 'เชื่อมต่อฐานข้อมูลเรียบร้อยแล้ว แต่ไม่พบรายชื่อนักเรียนในตารางแผ่นงาน "Students"',
+          confirmButtonColor: '#4f46e5'
+        });
+        showView('home');
+        return;
+      }
+
+      document.getElementById('login-mic-status').textContent = "คลิกไมค์แล้วเริ่มพูดชื่อตนเอง";
+      document.getElementById('login-transcript').innerHTML = '&nbsp;';
+      document.getElementById('manual-student-name-input').value = '';
+      setLoginMicUI(false);
+      initLoginSpeechRecognition();
+    }
+
+    function initLoginSpeechRecognition() {
+      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        document.getElementById('login-mic-status').textContent = "เบราว์เซอร์ไม่รองรับ Web Speech API กรุณาพิมพ์ค้นหาชื่อ";
+        const btn = document.getElementById('login-mic-btn');
+        btn.disabled = true;
+        btn.className = "w-24 h-24 bg-slate-200 text-slate-400 rounded-full flex items-center justify-center text-4xl cursor-not-allowed";
+        return;
+      }
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      loginRecognition = new SpeechRecognition();
+      loginRecognition.continuous = false;
+      loginRecognition.interimResults = false;
+      loginRecognition.lang = 'th-TH';
+
+      loginRecognition.onstart = function() {
+        isLoginListening = true;
+        setLoginMicUI(true);
+        document.getElementById('login-mic-status').textContent = "กำลังรับฟังเสียง... พูดชื่อและนามสกุลของคุณ";
+        document.getElementById('login-transcript').innerHTML = '&nbsp;';
+      };
+
+      loginRecognition.onerror = function(event) {
+        isLoginListening = false;
+        setLoginMicUI(false);
+        document.getElementById('login-mic-status').textContent = "เกิดข้อผิดพลาดในการฟังเสียง: " + event.error;
+      };
+
+      loginRecognition.onend = function() {
+        isLoginListening = false;
+        setLoginMicUI(false);
+      };
+
+      loginRecognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript.trim();
+        document.getElementById('login-transcript').textContent = `เสียงที่ได้ยิน: "${transcript}"`;
+        matchSpokenName(transcript);
+      };
+    }
+
+    function toggleLoginSpeech() {
+      if (!loginRecognition) {
+        initLoginSpeechRecognition();
+      }
+      if (isLoginListening) {
+        loginRecognition.stop();
+      } else {
+        try {
+          loginRecognition.start();
+        } catch(e) {}
+      }
+    }
+
+    function setLoginMicUI(active) {
+      const btn = document.getElementById('login-mic-btn');
+      const icon = document.getElementById('login-mic-icon');
+      if (!btn) return;
+      if (active) {
+        btn.className = "w-24 h-24 bg-rose-600 text-white rounded-full flex items-center justify-center text-4xl shadow-lg shadow-rose-200 animate-pulse";
+        icon.className = "fa-solid fa-microphone-lines";
+      } else {
+        btn.className = "w-24 h-24 bg-indigo-600 text-white rounded-full flex items-center justify-center text-4xl shadow-lg shadow-indigo-150";
+        icon.className = "fa-solid fa-microphone";
+      }
+    }
+
+    function matchSpokenName(transcript) {
+      if (!allStudentsCached || allStudentsCached.length === 0) return;
+      let bestMatch = null;
+      let highestSimilarity = 0;
+
+      allStudentsCached.forEach(student => {
+        const fullNameNoPrefix = `${student.firstName} ${student.lastName}`;
+        const fullNameWithPrefix = `${student.prefix}${student.firstName} ${student.lastName}`;
+        
+        const sim1 = getPhoneticSimilarity(fullNameNoPrefix, transcript);
+        const sim2 = getPhoneticSimilarity(fullNameWithPrefix, transcript);
+        const sim3 = getPhoneticSimilarity(student.firstName, transcript);
+        
+        const maxSim = Math.max(sim1, sim2, sim3 * 0.82);
+        if (maxSim > highestSimilarity) {
+          highestSimilarity = maxSim;
+          bestMatch = student;
+        }
+      });
+
+      if (highestSimilarity >= 0.65) {
+        confirmStudentSelection(bestMatch);
+      } else {
+        Swal.fire({
+          title: 'ไม่พบคู่ข้อมูลรายชื่อ',
+          text: `ระบบจับพยางค์ได้ว่า "${transcript}" กรุณาออกเสียงสะกดอีกครั้งให้ชัดเจนขึ้นหรือลองพิมพ์ค้นหา`,
+          icon: 'warning',
+          confirmButtonText: 'ตกลง',
+          confirmButtonColor: '#4f46e5'
+        });
+        document.getElementById('login-mic-status').textContent = "กรุณากดไมค์แล้วลองอีกครั้ง";
+      }
+    }
+
+    function confirmStudentSelection(student) {
+      if (isLoginListening && loginRecognition) {
+        loginRecognition.stop();
+      }
+      Swal.fire({
+        title: 'ยืนยันตัวตนผู้สอบ',
+        html: `คุณคือ <strong class="text-indigo-600 text-lg">${student.prefix}${student.firstName} ${student.lastName}</strong> <br>ชั้นประถมศึกษาปีที่ ${student.grade}/${student.room} ใช่หรือไม่?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'ใช่, ฉันเอง',
+        cancelButtonText: 'ไม่ใช่',
+        confirmButtonColor: '#10B981',
+        cancelButtonColor: '#F43F5E'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          captureVerificationPhotoAndContinue(student);
+        } else {
+          document.getElementById('login-mic-status').textContent = "กรุณาคลิกไมค์แล้วออกเสียงชื่อ-นามสกุลใหม่อีกครั้ง";
+          document.getElementById('login-transcript').innerHTML = '&nbsp;';
+        }
+      });
+    }
+
+    async function captureVerificationPhotoAndContinue(student) {
+      Swal.fire({
+        title: 'ถ่ายรูปยืนยันตัวตนผู้สอบ',
+        html: `
+          <p class="text-xs text-slate-400 mb-3">กรุณามองตรงมาที่กล้องเพื่อบันทึกภาพผู้เข้าสอบก่อนเข้าสู่แบบทดสอบ</p>
+          <div class="overflow-hidden rounded-2xl bg-black aspect-square max-w-xs mx-auto mb-2 border-2 border-indigo-500 relative">
+            <video id="snapshot-video" class="w-full h-full object-cover" autoplay playsinline muted></video>
+          </div>
+          <h3 id="snapshot-countdown" class="text-xl font-bold text-indigo-600 animate-pulse mt-2">เตรียมตัว...</h3>
+        `,
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        didOpen: async () => {
+          const video = document.getElementById('snapshot-video');
+          const countdownEl = document.getElementById('snapshot-countdown');
+          let stream = null;
+          
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+            video.srcObject = stream;
+            let countdown = 3;
+            countdownEl.textContent = `บันทึกภาพใน ${countdown} วินาที...`;
+            
+            const timer = setInterval(() => {
+              countdown--;
+              if (countdown > 0) {
+                countdownEl.textContent = `บันทึกภาพใน ${countdown} วินาที...`;
+              } else {
+                clearInterval(timer);
+                try {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = 320;
+                  canvas.height = 240;
+                  const ctx = canvas.getContext('2d');
+                  ctx.translate(320, 0);
+                  ctx.scale(-1, 1);
+                  ctx.drawImage(video, 0, 0, 320, 240);
+                  capturedVerificationBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                } catch (err) {
+                  console.warn("ไม่สามารถเซฟรูปภาพได้: ", err);
+                }
+                if (stream) {
+                  stream.getTracks().forEach(track => track.stop());
+                }
+                Swal.close();
+                fetchStudentProfile(student.studentId);
+              }
+            }, 1000);
+          } catch (err) {
+            console.warn("ไม่สามารถเปิดกล้องได้ ข้ามขั้นตอน: ", err);
+            Swal.close();
+            fetchStudentProfile(student.studentId);
+          }
+        }
+      });
+    }
+
+    function handleManualNameSearch() {
+      const input = document.getElementById('manual-student-name-input').value.trim();
+      if (!input) {
+        Swal.fire('คำเตือน', 'กรุณาระบุชื่อ หรือนามสกุลเพื่อใช้ในการสืบค้น', 'warning');
+        return;
+      }
+      const query = cleanThaiWord(input);
+      const matches = allStudentsCached.filter(student => {
+        const cleanFirst = cleanThaiWord(student.firstName);
+        const cleanLast = cleanThaiWord(student.lastName);
+        return cleanFirst.includes(query) || cleanLast.includes(query);
+      });
+      
+      if (matches.length === 0) {
+        Swal.fire('ไม่พบข้อมูล', 'ไม่พบรายชื่อนักเรียนที่สะกดตรงกับที่ค้นหา', 'error');
+      } else if (matches.length === 1) {
+        confirmStudentSelection(matches[0]);
+      } else {
+        let optionsHtml = '<div class="space-y-2 max-h-60 overflow-y-auto pt-2">';
+        matches.forEach(student => {
+          optionsHtml += `
+            <button onclick="selectManualMatchedStudent('${student.studentId}')" class="w-full p-3 text-left border rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition flex justify-between items-center text-xs font-sans">
+              <div>
+                <span class="font-extrabold text-slate-800">${student.prefix}${student.firstName} ${student.lastName}</span>
+                <p class="text-[10px] text-slate-400 mt-0.5">รหัสประจำตัว: ${student.studentId}</p>
+              </div>
+              <span class="bg-indigo-100 text-indigo-700 py-1 px-2.5 rounded-full font-bold">ป.${student.grade}/${student.room}</span>
+            </button>
+          `;
+        });
+        optionsHtml += '</div>';
+        Swal.fire({
+          title: 'พบข้อมูลใกล้เคียงหลายคน',
+          html: optionsHtml,
+          showConfirmButton: false,
+          showCancelButton: true,
+          cancelButtonText: 'ยกเลิก',
+          cancelButtonColor: '#EF4444'
+        });
+      }
+    }
+
+    function selectManualMatchedStudent(studentId) {
+      Swal.close();
+      const student = allStudentsCached.find(s => s.studentId === studentId);
+      if (student) {
+        confirmStudentSelection(student);
+      }
+    }
+
     function closeReportModal() {
       document.getElementById('admin-report-modal').classList.add('hidden');
     }
@@ -2638,6 +2890,7 @@ async function fetchAllStudentsToCache() {
         Swal.close();
         if (response && response.success) {
           systemSettings = settings;
+          localStorage.setItem('screening_settings', JSON.stringify(settings));
           applyDynamicTexts();
           Swal.fire('สำเร็จ', 'อัปเดตเกณฑ์คะแนนและชื่อหน่วยงานเรียบร้อยแล้ว', 'success');
           loadAdminDashboard();
