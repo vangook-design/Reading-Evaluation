@@ -95,38 +95,89 @@
 
   <main class="flex-grow w-full h-screen flex flex-col items-center justify-center p-2 relative">
 
-    <!-- VIEW 1: หน้าหลัก / Landing Page -->
-    <section id="view-home" class="view-section flex flex-col items-center justify-center space-y-4 animate-fadeIn w-full max-w-lg glass-panel p-6 md:p-8 rounded-3xl">
-      <div class="text-center space-y-2">
-        <div class="bg-indigo-500 text-white w-16 h-16 md:w-20 md:h-20 rounded-3xl flex items-center justify-center mx-auto mb-2 shadow-xl shadow-indigo-200 transform rotate-3">
-          <i class="fa-solid fa-gamepad text-3xl md:text-4xl"></i>
+    <!-- VIEW 1: หน้าหลักสุด (รายงานสถิติการคัดกรองรายชั้นเรียน + แถบกดเข้าทดสอบ) -->
+    <section id="view-home" class="view-section flex flex-col w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn overflow-hidden">
+      <!-- ส่วนหัว Header และแถบเข้าทดสอบ -->
+      <div class="w-full bg-indigo-900 text-white p-4 flex flex-col sm:flex-row justify-between items-center gap-3 z-20 shadow-md">
+        <div class="flex items-center space-x-3">
+          <div class="bg-indigo-500 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md transform rotate-3">
+            <i class="fa-solid fa-gamepad text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-black game-font leading-none text-yellow-400">เกมผจญภัยการอ่าน</h2>
+            <p class="text-[10px] text-indigo-200 mt-0.5">รายงานสถิติการคัดกรองการอ่านออกเสียง ป.1-ป.6</p>
+          </div>
         </div>
-        <h2 class="text-3xl md:text-4xl font-black text-indigo-900 game-font text-balance leading-tight">
-          เกมผจญภัย<br>การอ่านออกเสียง
-        </h2>
-        <p class="text-xs text-indigo-600 font-bold bg-indigo-50 px-3 py-1 rounded-full inline-block">ด่านคัดกรองประเมิน 20 คำศัพท์ / 1 นาที</p>
-      </div>
-
-      <div class="w-full space-y-2">
-        <button onclick="startScan()" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold py-4 px-6 rounded-2xl transition transform hover:scale-105 active:scale-95 text-lg shadow-xl flex items-center justify-center space-x-3 game-font">
-          <i class="fa-solid fa-microphone text-2xl animate-pulse"></i>
-          <span>บอกชื่อเข้าเกมผู้กล้า</span>
-        </button>
-
-        <button onclick="showDashboard()" class="w-full bg-white border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-50 font-extrabold py-3 px-6 rounded-2xl transition transform hover:scale-105 active:scale-95 text-base shadow-md flex items-center justify-center space-x-2 game-font">
-          <i class="fa-solid fa-chart-column text-xl"></i>
-          <span>ดูผลการประเมินรายชั้นเรียน</span>
+        
+        <!-- แถบปุ่มกดเพื่อเปลี่ยนเส้นทางไปยังหน้า Login ทดสอบ -->
+        <button onclick="startScan()" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold py-2.5 px-6 rounded-2xl transition transform hover:scale-105 active:scale-95 text-sm shadow-lg flex items-center justify-center space-x-2 game-font">
+          <i class="fa-solid fa-microphone animate-pulse"></i>
+          <span>เข้าสู่การทดสอบ</span>
         </button>
       </div>
 
-      <!-- ส่วน Leaderboard (Hall of Fame) -->
-      <div class="w-full pt-3 border-t border-slate-200/60">
-        <div class="flex items-center space-x-2 mb-2 justify-center">
-          <i class="fa-solid fa-trophy text-yellow-500"></i>
-          <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wide">ทำเนียบผู้พิทักษ์คำศัพท์สูงสุด</h3>
+      <!-- ส่วนรายงานแสดงผลการคัดกรอง -->
+      <div class="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+        <!-- 1. แผนภูมิวิเคราะห์รายชั้น (ป.1 - ป.6) -->
+        <div>
+          <h3 class="font-bold text-slate-700 text-xs mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-square-poll-vertical text-indigo-500"></i>
+            <span>สัดส่วนผลการประเมินคัดกรองสะสมประถมศึกษาปีที่ 1-6</span>
+          </h3>
+          <div id="db-stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <!-- ข้อมูลแผนภูมิแท่งจะถูกเรนเดอร์โดย JavaScript -->
+          </div>
         </div>
-        <div id="leaderboard-container" class="flex overflow-x-auto gap-3 pb-1 hide-scrollbar snap-x">
-          <p class="text-xs text-slate-400 text-center w-full">กำลังโหลดข้อมูล...</p>
+
+        <!-- 2. ประวัติและรายละเอียดตารางบันทึกคะแนน -->
+        <div class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
+            <h3 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+              <i class="fa-solid fa-list-check text-indigo-500"></i>
+              <span>ประวัติรายงานผลบันทึกคะแนนรายบุคคล</span>
+            </h3>
+            <div class="flex space-x-2 w-full md:w-auto">
+              <select id="db-filter-grade" onchange="renderDashboardTable()" class="p-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">ทุกระดับชั้นเรียน</option>
+                <option value="1">ป.1</option>
+                <option value="2">ป.2</option>
+                <option value="3">ป.3</option>
+                <option value="4">ป.4</option>
+                <option value="5">ป.5</option>
+                <option value="6">ป.6</option>
+              </select>
+              <input type="text" id="db-search" oninput="renderDashboardTable()" placeholder="ค้นหารายชื่อ หรือรหัส..." class="p-2 border border-slate-200 rounded-xl text-xs flex-grow md:w-48 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+          <div class="overflow-x-auto max-h-60 rounded-xl border border-slate-100">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                  <th class="p-3">วันที่/เวลา</th>
+                  <th class="p-3">รหัสประจำตัว</th>
+                  <th class="p-3">ชื่อ-นามสกุล</th>
+                  <th class="p-3 text-center">ชั้น/ห้อง</th>
+                  <th class="p-3 text-center">คำที่ถูกต้อง</th>
+                  <th class="p-3 text-center">ระดับผลประเมิน</th>
+                  <th class="p-3 text-center">รูปถ่าย</th>
+                </tr>
+              </thead>
+              <tbody id="db-table-body" class="divide-y divide-slate-100">
+                <!-- ข้อมูลประวัติตารางคัดกรองจะป้อนเข้ามาที่นี่ -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. ทำเนียบนักเรียนสถิติสูงสุด -->
+        <div class="pt-3 border-t border-slate-200/60">
+          <div class="flex items-center space-x-2 mb-2 justify-center">
+            <i class="fa-solid fa-trophy text-yellow-500"></i>
+            <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wide">ทำเนียบผู้พิทักษ์คำศัพท์สูงสุด</h3>
+          </div>
+          <div id="leaderboard-container" class="flex overflow-x-auto gap-3 pb-1 hide-scrollbar snap-x justify-center">
+            <p class="text-xs text-slate-400 text-center w-full">กำลังโหลดทำเนียบข้อมูล...</p>
+          </div>
         </div>
       </div>
     </section>
@@ -193,7 +244,7 @@
       </button>
     </section>
 
-    <!-- VIEW 4: หน้า GAME PLAY (ปรับปรุงเป็นด่านคัดกรองหลัก: 1 นาที 20 คำ) -->
+    <!-- VIEW 4: หน้า GAME PLAY (จำกัด 1 นาที 20 คำ) -->
     <section id="view-game" class="view-section hidden w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
       <div class="w-full bg-indigo-900 text-white p-3 md:p-4 flex justify-between items-center z-20 shadow-md">
         <div class="flex flex-col">
@@ -213,7 +264,6 @@
       </div>
 
       <div class="flex-grow flex relative w-full h-full bg-white/40 overflow-hidden">
-        <!-- แถบด้านข้างระบุคะแนนสะสมเต็ม 20 -->
         <div class="w-16 md:w-24 border-r border-indigo-100 bg-white/60 flex flex-col items-center py-6 justify-between z-10 shadow-lg">
           <span class="text-xs font-bold text-slate-400">20 คำ</span>
           <div class="flex-grow my-2 relative">
@@ -259,71 +309,11 @@
       </div>
       <div class="w-full pt-4 space-y-3">
         <div id="save-status-container" class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center text-xs">
-          <!-- สัญญาณแสดงผลการทำบันทึกและระบบจะอัปโหลดอัตโนมัติ -->
+          <!-- สัญญาณแสดงผลบันทึกคะแนนเข้าเซิร์ฟเวอร์ -->
         </div>
         <button onclick="window.location.reload()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 rounded-2xl text-lg shadow-lg transition transform hover:scale-105 active:scale-95 game-font">
           <i class="fa-solid fa-house mr-2"></i> กลับสู่หน้าหลัก
         </button>
-      </div>
-    </section>
-
-    <!-- VIEW 6: แดชบอร์ดสรุปผลรายชั้นเรียน -->
-    <section id="view-dashboard" class="view-section hidden w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
-      <div class="w-full bg-indigo-900 text-white p-4 flex justify-between items-center z-20 shadow-md">
-        <h2 class="text-xl font-bold game-font flex items-center gap-2">
-          <i class="fa-solid fa-chart-line text-yellow-400"></i>
-          <span>รายงานสถิติการคัดกรองรายชั้นเรียน</span>
-        </h2>
-        <button onclick="cancelAndGoHome()" class="bg-indigo-700 hover:bg-indigo-600 px-4 py-2 rounded-xl text-xs font-bold transition">
-          <i class="fa-solid fa-house mr-1"></i> หน้าหลัก
-        </button>
-      </div>
-
-      <div class="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50/50">
-        <!-- แผนภูมิแบบแท่งจำลองจัดระเบียบตามระดับเกรด (ป.1 - ป.6) -->
-        <div>
-          <h3 class="font-bold text-slate-700 text-sm mb-2"><i class="fa-solid fa-square-poll-vertical mr-1"></i> สัดส่วนผลการประเมินประถมศึกษาปีที่ 1-6</h3>
-          <div id="db-stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <!-- จัดการสร้างและอัปเดตแท่งกราฟสถิติด้วย Javascript -->
-          </div>
-        </div>
-
-        <!-- รายละเอียดแบบตารางและการกรองค้นหารายบุคคล -->
-        <div class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
-          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
-            <h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-list-check mr-1"></i> ประวัติรายงานผลการบันทึกคัดกรอง</h3>
-            <div class="flex space-x-2 w-full md:w-auto">
-              <select id="db-filter-grade" onchange="renderDashboardTable()" class="p-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="">ชั้นประถมศึกษาปีทั้งหมด</option>
-                <option value="1">ป.1</option>
-                <option value="2">ป.2</option>
-                <option value="3">ป.3</option>
-                <option value="4">ป.4</option>
-                <option value="5">ป.5</option>
-                <option value="6">ป.6</option>
-              </select>
-              <input type="text" id="db-search" oninput="renderDashboardTable()" placeholder="พิมพ์ค้นหา ชื่อหรือรหัส..." class="p-2 border border-slate-200 rounded-xl text-xs flex-grow md:w-48 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-          </div>
-          <div class="overflow-x-auto max-h-80 rounded-xl border border-slate-100">
-            <table class="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
-                  <th class="p-3">วันที่/เวลา</th>
-                  <th class="p-3">รหัสประจำตัว</th>
-                  <th class="p-3">ชื่อ-นามสกุล</th>
-                  <th class="p-3 text-center">ชั้น/ห้อง</th>
-                  <th class="p-3 text-center">จำนวนคำที่ถูก</th>
-                  <th class="p-3 text-center">ระดับเกณฑ์</th>
-                  <th class="p-3 text-center">รูปถ่าย</th>
-                </tr>
-              </thead>
-              <tbody id="db-table-body" class="divide-y divide-slate-100">
-                <!-- ตารางข้อมูลสัญญากลางจะป้อนข้อมูลเข้าที่นี่ -->
-              </tbody>
-            </table>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -337,7 +327,7 @@
     // ==========================================
     // ตัวแปรระบบและค่าคงที่ (System & Constants)
     // ==========================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxnV9gtgbQ7ET7FTtXBBlWG_HfEFAoxxp3uMLN4lQ8ahFLlA2czeAW_e4EfZGDxf7tf/exec"; // *** เปลี่ยน URL ของตนเองตรงนี้ ***
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxnV9gtgbQ7ET7FTtXBBlWG_HfEFAoxxp3uMLN4lQ8ahFLlA2czeAW_e4EfZGDxf7tf/exec"; // *** เปลี่ยน URL API ของตนเองที่นี่ ***
     const SECRET_TOKEN = "READING_GAME_BY_CHANAT_2024"; 
 
     let currentStudent = null;
@@ -349,7 +339,7 @@
     let recognition = null;
     let isListening = false;
     let currentLevel = 1;
-    let maxLevel = 1; // จำกัดความกว้างแค่ ด่านที่ 1 ด่านเดียว
+    let maxLevel = 1; // จำกัดแค่ 1 ด่านเดี่ยว
     let gameTimer = null;
     let spawnTimer = null;
     let timeRemaining = 0;
@@ -366,9 +356,11 @@
     let allStudentsCached = [];
     let dashboardDataCache = [];
 
+    // เริ่มต้นโหลดเมื่อเปิดหน้าเว็บ
     window.addEventListener('load', () => { 
-      fetchLeaderboard(); 
       initSpeechRecognition(); 
+      fetchLeaderboard(); 
+      loadHomeDashboard(); // โหลดข้อมูลสถิติหน้าแรกสุดทันที
     });
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -425,6 +417,7 @@
     function cancelAndGoHome() {
       stopAllCameras();
       showView('home');
+      loadHomeDashboard(); // รีเฟรชหน้าหลักเมื่อย้อนกลับมา
     }
 
     // ==========================================
@@ -589,7 +582,7 @@
         }
         if (!hasData) container.innerHTML = '<p class="text-xs text-slate-400 text-center w-full">ยังไม่มีสถิติผู้เล่นในระบบ</p>';
       } catch (e) {
-        document.getElementById('leaderboard-container').innerHTML = '<p class="text-xs text-rose-400 text-center w-full">ไม่สามารถเชื่อมต่อฐานข้อมูลได้</p>';
+        document.getElementById('leaderboard-container').innerHTML = '<p class="text-xs text-rose-400 text-center w-full">ไม่สามารถเชื่อมต่อทำเนียบได้</p>';
       }
     }
 
@@ -792,7 +785,6 @@
           currentStudent = student;
           const words = await apiRequest('getWordsForGrade', { grade: student.grade });
           
-          // กำหนดรายการคำศัพท์หากไม่มีข้อมูล
           masterWords = (words && words.length > 0) ? words : [
             {word: "โรงเรียน"}, {word: "ดินสอ"}, {word: "กระดาษ"}, {word: "คุณครู"},
             {word: "ภาษาไทย"}, {word: "ความรู้"}, {word: "วิชา"}, {word: "หนังสือ"},
@@ -851,9 +843,9 @@
     // ==========================================
     function getLevelConfig() {
       return { 
-        timeLimit: 60, // จำกัดเวลา 1 นาที (60 วินาที)
-        fallSpeed: 8,  // วินาทีที่หล่นถึงพื้น
-        spawnRate: 2500 // สปอว์นทุก 2.5 วินาที เพื่อให้ครบ 20 คำภายใน 50 วินาที
+        timeLimit: 60, 
+        fallSpeed: 8,  
+        spawnRate: 2500 
       };
     }
 
@@ -941,7 +933,6 @@
       wordsSpawned++;
       let randomWord = "", attempts = 0;
       
-      // ล้างความจำคำศัพท์หากจำนวนคำศัพท์น้อยกว่าสปอว์นเพื่อให้สามารถสปอว์นซ้ำได้
       if (recentSpawnedWords.length >= masterWords.length) {
         recentSpawnedWords = [];
       }
@@ -1030,7 +1021,6 @@
     function updateProgressUI() {
       document.getElementById('ui-current-percent').textContent = `${correctCount}/${totalLevelWords} คำ`;
       
-      // สีของคะแนนระบุตาม 3 ระดับเกณฑ์
       if (correctCount >= 16) {
         document.getElementById('ui-current-percent').className = "text-lg font-black text-emerald-500";
       } else if (correctCount >= 10) {
@@ -1044,10 +1034,6 @@
       document.getElementById('player-avatar-tracker').style.bottom = `${fillHeight}%`;
     }
 
-    // ==========================================
-    // ประเมินผล 3 ระดับเกณฑ์จากจำนวน 20 คำศัพท์
-    // ดี (16-20 คำ), พอใช้ (10-15 คำ), ปรับปรุง (0-9 คำ)
-    // ==========================================
     function evaluateLevel() {
       showView('result');
       document.getElementById('result-target').textContent = `10 คำ (พอใช้)`;
@@ -1079,7 +1065,6 @@
       document.getElementById('result-score').className = scoreClass;
       document.getElementById('result-subtitle').textContent = subtitleText;
 
-      // จัดการทำการบันทึกข้อมูลคะแนนไปยังคลาวด์อัตโนมัติทันทีตามความต้องการ
       autoSaveResult(levelStr);
     }
 
@@ -1111,15 +1096,14 @@
         }
       } catch (err) {
         console.error("AutoSave Error: ", err);
-        statusContainer.innerHTML = `<span class="text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> เชื่อมต่อล้มเหลว (ข้อมูลจะได้รับการสำรองบนชีตระบบเก่าหากคีย์ถูกต้อง)</span>`;
+        statusContainer.innerHTML = `<span class="text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> เชื่อมต่อล้มเหลว (บันทึกเข้าระบบสำรองแล้วหากมีคีย์ตรงกัน)</span>`;
       }
     }
 
     // ==========================================
-    // รายงานสถิติตารางและรายงานแบบกลุ่มรายชั้น
+    // ดึงสถิติตารางและแผนภูมิแสดงผลบนหน้าแรกสุด
     // ==========================================
-    async function showDashboard() {
-      showView('dashboard');
+    async function loadHomeDashboard() {
       const body = document.getElementById('db-table-body');
       body.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 font-bold"><i class="fa-solid fa-spinner animate-spin mr-1"></i> กำลังประมวลผลวิเคราะห์กราฟและตารางข้อมูล...</td></tr>`;
       
@@ -1153,8 +1137,8 @@
         card.className = "bg-white p-3 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between";
         card.innerHTML = `
           <div class="flex justify-between items-center mb-2 border-b pb-1">
-            <span class="font-extrabold text-sm text-indigo-900 game-font">ป.${g}</span>
-            <span class="text-[10px] bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">ประเมินแล้ว ${total} คน</span>
+            <span class="font-extrabold text-xs text-indigo-900 game-font">ป.${g}</span>
+            <span class="text-[9px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-bold">ประเมินแล้ว ${total} คน</span>
           </div>
           <div class="space-y-2 text-[10px]">
             <div>
@@ -1162,7 +1146,7 @@
                 <span>ดี (16-20 คำ)</span>
                 <span>${good} คน (${goodPct}%)</span>
               </div>
-              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div class="bg-emerald-500 h-full rounded-full" style="width: ${goodPct}%"></div>
               </div>
             </div>
@@ -1171,7 +1155,7 @@
                 <span>พอใช้ (10-15 คำ)</span>
                 <span>${fair} คน (${fairPct}%)</span>
               </div>
-              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div class="bg-amber-400 h-full rounded-full" style="width: ${fairPct}%"></div>
               </div>
             </div>
@@ -1180,7 +1164,7 @@
                 <span>ปรับปรุง (0-9 คำ)</span>
                 <span>${improve} คน (${improvePct}%)</span>
               </div>
-              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div class="bg-rose-500 h-full rounded-full" style="width: ${improvePct}%"></div>
               </div>
             </div>
@@ -1211,7 +1195,6 @@
         return;
       }
       
-      // เรียงจากข้อมูลล่าสุดขึ้นก่อน
       filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
       
       filtered.forEach(item => {
