@@ -106,7 +106,6 @@
         </h2>
       </div>
 
-      <!-- ปุ่มเริ่มล็อกอินสะกดชื่อ -->
       <button onclick="startScan()" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-extrabold py-4 px-6 rounded-2xl transition transform hover:scale-105 active:scale-95 text-lg shadow-xl flex items-center justify-center space-x-3 game-font">
         <i class="fa-solid fa-microphone text-2xl animate-pulse"></i>
         <span>บอกชื่อเข้าเกมผู้กล้า</span>
@@ -124,7 +123,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: หน้าตรวจสิทธิ์ด้วยเสียงพูดชื่อ-นามสกุล -->
+    <!-- VIEW 2: หน้าล็อกอินยืนยันตัวตนด้วยเสียงพูด -->
     <section id="view-scan" class="view-section hidden w-full max-w-md glass-panel p-6 rounded-3xl animate-fadeIn flex flex-col items-center relative space-y-4">
       <button onclick="cancelAndGoHome()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-500 text-3xl transition z-10">
         <i class="fa-solid fa-circle-xmark"></i>
@@ -272,7 +271,7 @@
     // ==========================================
     // ตัวแปรระบบและค่าคงที่ (System & Constants)
     // ==========================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxnV9gtgbQ7ET7FTtXBBlWG_HfEFAoxxp3uMLN4lQ8ahFLlA2czeAW_e4EfZGDxf7tf/exec"; // *** วาง URL ลิงก์ API หลังบ้านแอปเว็บ ***
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxnV9gtgbQ7ET7FTtXBBlWG_HfEFAoxxp3uMLN4lQ8ahFLlA2czeAW_e4EfZGDxf7tf/exec"; // *** คัดลอก URL ของคุณครูมาวางตรงนี้ ***
     const SECRET_TOKEN = "READING_GAME_BY_CHANAT_2024"; 
 
     let currentStudent = null;
@@ -297,13 +296,13 @@
     let currentPercent = 0;
     let targetPercent = 50; 
 
-    // ตัวแปรสับเปลี่ยนสัญญาณเสียงสากลเดี่ยว ป้องกันปัญหาเบราว์เซอร์แย่งสิทธิ์ไมโครโฟน
+    // ตัวแปรสัญญาณเสียงเดียวสากล (Unified Speech Engine) ลดการแย่งสิทธิ์ไมโครโฟน
     let speechMode = "idle"; // "idle" | "login" | "game"
     let allStudentsCached = [];
 
     window.addEventListener('load', () => { 
       fetchLeaderboard(); 
-      initSpeechRecognition(); // ติดตั้งและเตรียมการทำงานตัวรับเสียงอเนกประสงค์ตั้งแต่โหลดหน้าจอเสร็จ
+      initSpeechRecognition(); // ลงทะเบียนตัวรับเสียงเพียงตัวเดียวตั้งแต่หน้าจอโหลดเสร็จ
     });
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -363,12 +362,12 @@
     }
 
     // ==========================================
-    // อัลกอริทึมเปรียบเทียบสัทศาสตร์กลุ่มเสียง الر/ล พ้องเสียงสะกดอัจฉริยะ
+    // อัลกอริทึม Phonetic รุ่นใหม่ (แก้ไขปัญหาสระและอักษรนำ)
     // ==========================================
     function normalizeThaiPhonetic(word) {
       if (!word) return "";
       let text = word.trim().replace(/[\s\-\_\.\,\?]/g, "").replace(/[ก-ฮ]์/g, "");
-      text = text.replace(/[่้๊๋]/g, "").replace(/ใ/g, "ai").replace(/ไ/g, "ai"); // แมป ใ และ ไ เป็นฐานเดียวกัน
+      text = text.replace(/[่้๊๋]/g, "").replace(/ใ/g, "ไ");
       text = text.replace(/ห([งญนมอียรลว])/g, "$1").replace(/อ(ย)/g, "$1");
       text = text.replace(/([ก-ฮ])([รล])([ะ-ูเ-ไโ])/g, "$1$3").replace(/([เ-ไโ])([ก-ฮ])([รล])/g, "$1$2");
       const phoneticsMap = {
@@ -402,8 +401,8 @@
     }
 
     // ==========================================
-    // ปรับปรุง: ไมโครโฟนสากลระบบเดี่ยว (Unified Speech Engine) 
-    // ช่วยดักจับและแก้ปัญหาแย่งใช้สิทธิ์กล้อง/ไมค์ระหว่างล็อกอินกับห้องเกมได้อย่างเด็ดขาด
+    // ตัวควบคุมสัญญาณเสียงเดียวสากล (Unified Speech Engine) 
+    // ดักจับและป้องกันปัญหาไมค์ล็อก / ปัญหาแย่งสิทธิ์ไมค์ระหว่างล็อกอินกับห้องเกมอย่างสมบูรณ์แบบ
     // ==========================================
     function initSpeechRecognition() {
       if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -446,7 +445,7 @@
           setLoginMicUI(false);
         } else if (speechMode === "game") {
           document.getElementById('mic-indicator').className = "w-4 h-4 rounded-full bg-rose-500";
-          // บังคับทำรอบรับสัญญานเสียงอัจฉริยะต่อเนื่องจนกว่าจะหมดเวลา
+          // หากอยู่ในโหมดห้องเกมและเวลาไม่หมด ให้รีสตาร์ทอัติโนมัติแบบเงียบ
           if (timeRemaining > 0 && !document.getElementById('view-game').classList.contains('hidden')) {
             try {
               recognition.start();
@@ -477,29 +476,13 @@
       };
     }
 
-    function toggleLoginSpeech() {
-      if (!recognition) {
-        initSpeechRecognition();
-      }
-      speechMode = "login";
-      if (isListening) {
-        recognition.stop();
-      } else {
-        try {
-          recognition.start();
-        } catch(e) {
-          console.error("สัญญานล็อกไมโครโฟนล้มเหลว:", e);
-        }
-      }
-    }
-
     // ==========================================
-    // API & Data Handling
+    // API & Data Handling (POST เคร่งครัดเพื่อ Vercel)
     // ==========================================
     async function apiRequest(action, data = {}) {
       const response = await fetch(BACKEND_URL, {
         method: 'POST',
-        body: JSON.stringify({ token: SECRET_TOKEN, action, ...data }), 
+        body: JSON.stringify({ token: SECRET_TOKEN, action, ...data }), // แนบ Token ในบอดี้เสมอตน
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
       });
       const text = await response.text();
@@ -513,15 +496,11 @@
     function showView(viewId) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
       document.getElementById(`view-${viewId}`).classList.remove('hidden');
-      if (viewId !== 'scan' && viewId !== 'test') {
-        stopAllWebcams();
-      }
     }
 
     async function fetchLeaderboard() {
       try {
-        const res = await fetch(`${BACKEND_URL}?action=getLeaderboard&token=${SECRET_TOKEN}`);
-        const topScorers = await res.json();
+        const topScorers = await apiRequest('getLeaderboard');
         const container = document.getElementById('leaderboard-container');
         container.innerHTML = '';
         let hasData = false;
@@ -551,7 +530,7 @@
     async function startScan() {
       showView('scan');
       Swal.fire({
-        title: 'กำลังเชื่อมต่อและตรวจสอบฐานข้อมูล...',
+        title: 'กำลังเชื่อมต่อและดึงสถิติรายชื่อจากระบบคลาวด์...',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
       });
@@ -583,8 +562,7 @@
     async function fetchAllStudentsToCache() {
       if (allStudentsCached.length > 0) return { success: true, empty: false };
       try {
-        const res = await fetch(`${BACKEND_URL}?action=getAllStudents&token=${SECRET_TOKEN}`);
-        const students = await res.json();
+        const students = await apiRequest('getAllStudents');
         if (students && Array.isArray(students)) {
           if (students.length > 0) {
             allStudentsCached = students;
@@ -599,6 +577,20 @@
       } catch (e) {
         console.error("ไม่สามารถ Cache รายชื่อได้: ", e);
         return { success: false, error: e.message };
+      }
+    }
+
+    function toggleLoginSpeech() {
+      if (!recognition) {
+        initSpeechRecognition();
+      }
+      speechMode = "login";
+      if (isListening) {
+        recognition.stop();
+      } else {
+        try {
+          recognition.start();
+        } catch(e) {}
       }
     }
 
@@ -726,10 +718,10 @@
     async function fetchStudentData(studentId) {
       Swal.fire({ title: 'กำลังโหลดข้อมูลนักผจญภัย...', didOpen: () => Swal.showLoading() });
       try {
-        const student = await fetch(`${BACKEND_URL}?action=getStudentInfo&studentId=${studentId}&token=${SECRET_TOKEN}`).then(res=>res.json());
+        const student = await apiRequest('getStudentInfo', { studentId });
         if (student && student.studentId) {
           currentStudent = student;
-          const words = await fetch(`${BACKEND_URL}?action=getWordsForGrade&grade=${student.grade}&token=${SECRET_TOKEN}`).then(res=>res.json());
+          const words = await apiRequest('getWordsForGrade', { grade: student.grade });
           masterWords = (words && words.length > 0) ? words : [{word: "ทดสอบ"}, {word: "เวลา"}];
           
           if (masterWords.length > 10) {
@@ -742,7 +734,7 @@
           Swal.close();
           Swal.fire('ไม่พบข้อมูล', 'รหัสผู้เรียนไม่ถูกต้อง หรือถูกปิดใช้งาน', 'error').then(() => startScan());
         }
-      } catch(e) { Swal.close(); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error'); }
+      } catch(e) { Swal.close(); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ระบบคลาวด์ได้', 'error').then(() => startScan()); }
     }
 
     function setupProfileScreen() {
@@ -961,7 +953,6 @@
       document.getElementById('player-avatar-tracker').style.bottom = `${fillHeight}%`;
     }
 
-    // ประเมินผล 3 กลุ่ม: ดี(8-10) พอใช้(5-7) ปรับปรุง(0-4)
     function evaluateLevel() {
       showView('result');
       document.getElementById('result-target').textContent = `5 คำ (พอใช้)`;
@@ -1028,7 +1019,7 @@
         name: `${currentStudent.prefix}${currentStudent.firstName} ${currentStudent.lastName}`, 
         grade: currentStudent.grade, 
         room: currentStudent.room, 
-        score: correctCount, // เก็บเป็นคะแนนดิบ 0-10 ตามข้อเสนอระบบใหม่
+        score: correctCount, 
         percent: avgPercent, 
         level: finalLevel, 
         scoresByType: {} 
