@@ -43,7 +43,7 @@
     #progress-tracker-container {
       position: relative;
       height: 100%;
-      width: 24px;
+      width: 44px; /* ปรับขนาดหลอดคะแนนให้กว้างขึ้นตามต้องการเพื่อการมองเห็นที่ชัดเจน */
       background: #e2e8f0;
       border-radius: 999px;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
@@ -198,7 +198,7 @@
       </button>
     </section>
 
-    <!-- VIEW 4: หน้า GAME PLAY (ปรับปรุงเป็นกระดานตารางคำศัพท์สุ่ม 10 คำ 1 นาที) -->
+    <!-- VIEW 4: หน้า GAME PLAY (ตาราง 10 คำ 1 นาที + ขยายแถบความคืบหน้าด้านข้าง) -->
     <section id="view-game" class="view-section hidden w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
       <div class="w-full bg-indigo-900 text-white p-3 md:p-4 flex justify-between items-center z-20 shadow-md">
         <div class="flex flex-col">
@@ -212,19 +212,19 @@
         </div>
 
         <div class="flex flex-col text-right">
-          <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider">เป้าหมายพอใช้</span>
+          <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider">เกณฑ์พอใช้</span>
           <span class="text-lg md:text-xl font-black game-font text-emerald-400 leading-none">≥ 5 คำ</span>
         </div>
       </div>
 
       <div class="flex-grow flex relative w-full h-full bg-white/40 overflow-hidden">
-        <!-- แถบด้านข้างระบุคะแนนสะสมเต็ม 10 -->
-        <div class="w-16 md:w-24 border-r border-indigo-100 bg-white/60 flex flex-col items-center py-6 justify-between z-10 shadow-lg">
+        <!-- แถบด้านข้างระบุคะแนนสะสมเต็ม 10 (ขยายความกว้างเพื่อเพิ่มพื้นที่แสดงผลภาพและแถบกราฟ) -->
+        <div class="w-24 md:w-32 border-r border-indigo-100 bg-white/60 flex flex-col items-center py-6 justify-between z-10 shadow-lg">
           <span class="text-xs font-bold text-slate-400">10 คำ</span>
           <div class="flex-grow my-2 relative">
             <div id="progress-tracker-container">
               <div id="progress-fill" style="height: 0%;"></div>
-              <img id="player-avatar-tracker" src="" class="w-10 h-10 md:w-14 md:h-14 rounded-full border-4 border-white object-cover hidden" style="bottom: 0%;">
+              <img id="player-avatar-tracker" src="" class="w-12 h-12 md:w-16 md:h-16 rounded-full border-4 border-white object-cover hidden" style="bottom: 0%;">
             </div>
           </div>
           <span class="text-xs font-bold text-slate-400">0 คำ</span>
@@ -237,7 +237,7 @@
         <!-- หน้าจอกระดานตารางคำศัพท์ 1 หน้าจอ สุ่ม 10 คำศัพท์ -->
         <div id="game-grid-container" class="flex-grow flex flex-col justify-between p-4 bg-white/10 overflow-y-auto">
           <div id="word-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-3 md:gap-4 my-auto">
-            <!-- ข้อมูลปุ่มตารางคำศัพท์จะถูกเรนเดอร์และสุ่มป้อนที่นี่โดย JavaScript -->
+            <!-- ข้อมูลตารางจะสุ่มป้อนที่นี่โดย JavaScript -->
           </div>
           
           <div class="w-full flex flex-col items-center bg-white/80 px-6 py-2.5 rounded-2xl backdrop-blur border border-indigo-100 shadow-lg mt-4">
@@ -299,7 +299,7 @@
       </div>
     </section>
 
-    <!-- VIEW 7: แดชบอร์ดของคุณครู (รายงานตารางข้อมูลประวัติ และปุ่มส่งออกรายงานพิมพ์ PDF) -->
+    <!-- VIEW 7: แดชบอร์ดของคุณครู (รายงานตารางประวัติ และพิมพ์รายงาน PDF) -->
     <section id="view-teacher-dashboard" class="view-section hidden w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
       <div class="w-full bg-indigo-900 text-white p-4 flex justify-between items-center z-20 shadow-md">
         <div class="flex items-center space-x-2">
@@ -630,7 +630,7 @@
     }
 
     // ==========================================
-    // ล็อกอินสะกดเสียงพูดผู้กล้า
+    // ล็อกอินสะกดเสียงพูดผู้กล้า (แก้ไขปัญหารายชื่อซ้ำ) [3]
     // ==========================================
     async function startScan() {
       showView('scan');
@@ -712,11 +712,12 @@
       }
     }
 
+    // แก้ไข 1: ค้นหาด้วยเสียง หากชื่อซ้ำกัน ระบบจะตรวจพบคะแนนใกล้เคียงและเปิดหน้าต่างให้เลือกเป็นรายบุคคล [3]
     function matchSpokenName(transcript) {
       if (!allStudentsCached || allStudentsCached.length === 0) return;
-      let bestMatch = null;
-      let highestSimilarity = 0;
-
+      
+      let candidates = [];
+      
       allStudentsCached.forEach(student => {
         const fullNameNoPrefix = `${student.firstName} ${student.lastName}`;
         const fullNameWithPrefix = `${student.prefix}${student.firstName} ${student.lastName}`;
@@ -726,15 +727,17 @@
         const sim3 = getPhoneticSimilarity(student.firstName, transcript);
         
         const maxSim = Math.max(sim1, sim2, sim3 * 0.82);
-        if (maxSim > highestSimilarity) {
-          highestSimilarity = maxSim;
-          bestMatch = student;
+        
+        // เก็บรายชื่อผู้สอบทุกคนที่มีความคล้ายคลึงเสียงสะกดใกล้เคียงเกณฑ์ขั้นต่ำ
+        if (maxSim >= 0.65) {
+          candidates.push({ student, score: maxSim });
         }
       });
 
-      if (highestSimilarity >= 0.65) {
-        confirmStudentSelection(bestMatch);
-      } else {
+      // จัดเรียงลำดับความแม่นยำของสัทศาสตร์จากมากไปน้อย
+      candidates.sort((a, b) => b.score - a.score);
+
+      if (candidates.length === 0) {
         Swal.fire({
           title: 'ไม่พบคู่ข้อมูลรายชื่อ',
           text: `ระบบจับเสียงพยางค์ได้ว่า "${transcript}" กรุณาพูดให้ชัดเจนขึ้นหรือลองพิมพ์ชื่อค้นหา`,
@@ -743,6 +746,46 @@
           confirmButtonColor: '#4f46e5'
         });
         document.getElementById('login-mic-status').textContent = "กรุณากดไมค์แล้วลองอีกครั้ง";
+        return;
+      }
+
+      // หากพบคู่ผู้สอบที่ออกเสียงใกล้เคียงกันมากกว่า 1 คน (หรือชื่อซ้ำกัน) ให้เปิดกล่องเลือกตัวเลือกทันที [3]
+      if (candidates.length > 1) {
+        speechMode = "idle";
+        if (isListening && recognition) {
+          recognition.stop();
+        }
+        
+        let optionsHtml = '<p class="text-xs text-slate-500 mb-3 text-center">ระบบตรวจพบรายชื่อผู้สอบที่ออกเสียงคล้ายกัน กรุณาเลือกตัวตนของคุณ:</p>';
+        optionsHtml += '<div class="space-y-2 max-h-60 overflow-y-auto pt-2">';
+        
+        // แสดงผลใกล้เคียงที่สุดสูงสุด 5 อันดับแรกเพื่อไม่ให้หน้าจอแออัด
+        const topCandidates = candidates.slice(0, 5);
+        topCandidates.forEach(cand => {
+          const student = cand.student;
+          optionsHtml += `
+            <button onclick="selectManualMatchedStudent('${student.studentId}')" class="w-full p-3 text-left border rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition flex justify-between items-center text-xs font-sans">
+              <div>
+                <span class="font-extrabold text-slate-800">${student.prefix}${student.firstName} ${student.lastName}</span>
+                <p class="text-[10px] text-slate-400 mt-0.5">รหัสประจำตัว: ${student.studentId}</p>
+              </div>
+              <span class="bg-indigo-100 text-indigo-700 py-1 px-2.5 rounded-full font-bold">ป.${student.grade}/${student.room}</span>
+            </button>
+          `;
+        });
+        optionsHtml += '</div>';
+        
+        Swal.fire({
+          title: 'ตรวจพบรายชื่อที่ใกล้เคียงกัน',
+          html: optionsHtml,
+          showConfirmButton: false,
+          showCancelButton: true,
+          cancelButtonText: 'ยกเลิก',
+          cancelButtonColor: '#EF4444'
+        });
+      } else {
+        // หากพบเพียงรายชื่อเดียวที่ตรงกัน ดำเนินขั้นตอนยืนยันคนเดียวทันที
+        confirmStudentSelection(candidates[0].student);
       }
     }
 
@@ -902,7 +945,6 @@
       document.getElementById('ui-level').textContent = `กระดานคัดกรอง`;
       document.getElementById('ui-timer').textContent = "1:00";
       
-      // ดึงสุ่มคำศัพท์ตามระดับชั้น 10 คำมาวางในตารางกระดาน
       let wordsToUse = [...masterWords];
       for (let i = wordsToUse.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -983,17 +1025,26 @@
       activeGridWords = [];
     }
 
+    // แก้ไข 2: หาคู่คำที่ออกเสียงใกล้เคียงแล้วเลือกคำที่มีระดับคะแนนความถูกต้องสูงที่สุดเพียงคำเดียวต่อเสียงอ่านหนึ่งครั้ง [3]
     function checkSpokenWords(spokenTranscript) {
+      let bestMatch = null;
+      let highestSimilarity = 0;
+
       for (let i = 0; i < activeGridWords.length; i++) {
         const wObj = activeGridWords[i];
         if (!wObj.correct) {
-          // ใช้สัญญาสัทศาสตร์เปรียบเทียบระดับความเข้ากัน
           const sim = getPhoneticSimilarity(wObj.word, spokenTranscript);
-          if (sim >= 0.70) { 
-            handleWordCorrect(wObj); 
-            break; 
+          // เลือกคำที่มีความเหมือนสูงสุดในกรณีที่มีพยางค์คล้ายคลึงกันสะสยมบนหน้าจอ
+          if (sim >= 0.70 && sim > highestSimilarity) { 
+            highestSimilarity = sim;
+            bestMatch = wObj;
           }
         }
+      }
+
+      // หากมีผลลัพธ์คำที่แม่นยำที่สุดให้ระบบเช็คเป็นคำตอบถูกต้องเพียงคำเดียวเท่านั้น
+      if (bestMatch) {
+        handleWordCorrect(bestMatch);
       }
     }
 
