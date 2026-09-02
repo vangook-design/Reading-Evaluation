@@ -630,7 +630,7 @@
     }
 
     // ==========================================
-    // ล็อกอินสะกดเสียงพูดผู้กล้า (แก้ไขปัญหารายชื่อซ้ำ) [3]
+    // ล็อกอินสะกดเสียงพูดผู้กล้า (แก้ไขปัญหารายชื่อซ้ำ)
     // ==========================================
     async function startScan() {
       showView('scan');
@@ -855,11 +855,15 @@
       }
     }
 
+    // แก้ไขจุดที่ 1 และ 2 แบบละเอียด: แปลงค่า studentId เป็น String เพื่อเทียบข้อมูล และไม่ต้องใช้ Swal.close() ซ้ำซ้อนก่อน confirm เพื่อให้แสดงกล่องยืนยันต่อเนื่องได้ทันที
     function selectManualMatchedStudent(studentId) {
-      Swal.close();
-      const student = allStudentsCached.find(s => s.studentId === studentId);
+      // ค้นหารายชื่อนักเรียนในแคชโดยแปลงประเภทข้อมูลของทั้งคู่เป็น String และทำการตัดช่องว่าง เพื่อความแม่นยำในการเปรียบเทียบ
+      const student = allStudentsCached.find(s => s.studentId.toString().trim() === studentId.toString().trim());
       if (student) {
+        // เมื่อเรียก confirmStudentSelection ตัว SweetAlert2 จะแสดงกล่องใหม่ขึ้นมาแทนกล่องตัวเลือกเดิมทันทีโดยไม่มีการปิดกะทันหัน
         confirmStudentSelection(student);
+      } else {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลประวัตินักเรียนในฐานข้อมูลแคชหลัก', 'error');
       }
     }
 
