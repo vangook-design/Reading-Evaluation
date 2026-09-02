@@ -15,7 +15,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบคัดกรองการอ่าน</title>
+  <title>เกมผจญภัยการอ่าน (พัฒนาโดย: นายชาณัตถ์ รุ่งรัตน์)</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
@@ -32,28 +32,6 @@
       overflow-x: hidden;
     }
     .game-font { font-family: 'Mali', cursive; }
-    
-    .falling-word {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      transition: top linear;
-      will-change: top;
-      animation: swing 3s ease-in-out infinite alternate;
-    }
-    @keyframes swing {
-      0% { margin-left: -15px; transform: translateX(-50%) rotate(-3deg); }
-      100% { margin-left: 15px; transform: translateX(-50%) rotate(3deg); }
-    }
-
-    .word-explode {
-      animation: popOut 0.3s forwards;
-    }
-    @keyframes popOut {
-      0% { transform: translateX(-50%) scale(1); opacity: 1; }
-      50% { transform: translateX(-50%) scale(1.5); opacity: 0.8; filter: brightness(1.5); }
-      100% { transform: translateX(-50%) scale(0); opacity: 0; }
-    }
 
     .glass-panel {
       background: rgba(255, 255, 255, 0.85);
@@ -104,19 +82,17 @@
             <i class="fa-solid fa-gamepad text-xl"></i>
           </div>
           <div>
-            <h2 class="text-lg font-black game-font leading-none text-yellow-400">ระบบคัดกรองการอ่าน โรงเรียนวัดยางขาว สพป.นว1</h2>
+            <h2 class="text-lg font-black game-font leading-none text-yellow-400">เกมผจญภัยการอ่าน</h2>
             <p class="text-[10px] text-indigo-200 mt-0.5">ระบบสรุปผลวิเคราะห์การคัดกรองการอ่านสะกดคำ ป.1-ป.6 [1] [2]</p>
           </div>
         </div>
         
         <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
-          <!-- ปุ่มล็อกอินของคุณครู -->
           <button onclick="showTeacherLogin()" class="bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center gap-1 transition">
             <i class="fa-solid fa-user-shield"></i>
             <span>ระบบสำหรับครู</span>
           </button>
-          <!-- ปุ่มเปลี่ยนเส้นทางไปยังหน้าทดสอบคัดกรอง -->
-          <button onclick="startScan()" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold py-2 px-5 rounded-xl transition transform hover:scale-105 active:scale-95 text-xs shadow-lg flex items-center justify-center space-x-1.5 game-font">
+          <button onclick="startScan()" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold py-2.5 px-5 rounded-xl transition transform hover:scale-105 active:scale-95 text-xs shadow-lg flex items-center justify-center space-x-1.5 game-font">
             <i class="fa-solid fa-microphone animate-pulse"></i>
             <span>เข้าสู่การทดสอบ</span>
           </button>
@@ -136,7 +112,7 @@
           </div>
         </div>
 
-        <!-- 2. กราฟเปรียบเทียบพัฒนาการแต่ละรอบการประเมิน (แทนตารางเดิม) -->
+        <!-- 2. กราฟเปรียบเทียบพัฒนาการแต่ละรอบการประเมิน -->
         <div class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
           <h3 class="font-bold text-slate-700 text-xs mb-3 flex items-center gap-1.5">
             <i class="fa-solid fa-chart-line text-indigo-500"></i>
@@ -151,7 +127,7 @@
         <div class="pt-3 border-t border-slate-200/60">
           <div class="flex items-center space-x-2 mb-2 justify-center">
             <i class="fa-solid fa-trophy text-yellow-500"></i>
-            <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wide">ทำเนียบผู้พิชิตคำศัพท์สูงสุด</h3>
+            <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wide">ทำเนียบผู้พิทักษ์คำศัพท์สูงสุด</h3>
           </div>
           <div id="leaderboard-container" class="flex overflow-x-auto gap-3 pb-1 hide-scrollbar snap-x justify-center">
             <p class="text-xs text-slate-400 text-center w-full">กำลังโหลดทำเนียบข้อมูล...</p>
@@ -167,11 +143,11 @@
       </button>
 
       <div class="w-full flex items-center justify-center border-b pb-4 mb-2">
-        <h2 class="text-xl font-bold text-slate-800 game-font">บอกชื่อผู้ทดสอบ</h2>
+        <h2 class="text-xl font-bold text-slate-800 game-font">บอกชื่อผู้กล้า!</h2>
       </div>
       
       <p class="text-xs text-slate-500 text-center leading-relaxed">
-        กรุณากดปุ่มไมโครโฟนด้านล่าง แล้วพูด <strong class="text-indigo-600">"ชื่อ และ นามสกุล"</strong> ของผู้เข้าทดสอบอย่างชัดเจน
+        กรุณากรอกหรือกดปุ่มไมโครโฟนด้านล่าง แล้วพูด <strong class="text-indigo-600">"ชื่อ และ นามสกุล"</strong> ของผู้เข้าทดสอบอย่างชัดเจน
       </p>
 
       <div class="flex flex-col items-center justify-center space-y-3 py-4">
@@ -222,7 +198,7 @@
       </button>
     </section>
 
-    <!-- VIEW 4: หน้า GAME PLAY (จำกัด 1 นาที 20 คำ) -->
+    <!-- VIEW 4: หน้า GAME PLAY (ปรับปรุงเป็นกระดานตารางคำศัพท์สุ่ม 10 คำ 1 นาที) -->
     <section id="view-game" class="view-section hidden w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
       <div class="w-full bg-indigo-900 text-white p-3 md:p-4 flex justify-between items-center z-20 shadow-md">
         <div class="flex flex-col">
@@ -236,14 +212,15 @@
         </div>
 
         <div class="flex flex-col text-right">
-          <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider">เกณฑ์พอใช้</span>
-          <span class="text-lg md:text-xl font-black game-font text-emerald-400 leading-none">≥ 10 คำ</span>
+          <span class="text-xs text-indigo-300 font-bold uppercase tracking-wider">เป้าหมายพอใช้</span>
+          <span class="text-lg md:text-xl font-black game-font text-emerald-400 leading-none">≥ 5 คำ</span>
         </div>
       </div>
 
       <div class="flex-grow flex relative w-full h-full bg-white/40 overflow-hidden">
+        <!-- แถบด้านข้างระบุคะแนนสะสมเต็ม 10 -->
         <div class="w-16 md:w-24 border-r border-indigo-100 bg-white/60 flex flex-col items-center py-6 justify-between z-10 shadow-lg">
-          <span class="text-xs font-bold text-slate-400">20 คำ</span>
+          <span class="text-xs font-bold text-slate-400">10 คำ</span>
           <div class="flex-grow my-2 relative">
             <div id="progress-tracker-container">
               <div id="progress-fill" style="height: 0%;"></div>
@@ -253,15 +230,20 @@
           <span class="text-xs font-bold text-slate-400">0 คำ</span>
           <div class="mt-4 text-center">
             <span class="block text-[10px] text-slate-400 font-bold">ความคืบหน้า</span>
-            <span id="ui-current-percent" class="text-lg font-black text-indigo-600">0/20 คำ</span>
+            <span id="ui-current-percent" class="text-lg font-black text-indigo-600">0/10 คำ</span>
           </div>
         </div>
 
-        <div id="game-arena" class="flex-grow relative overflow-hidden">
-          <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center bg-white/80 px-6 py-2 rounded-3xl backdrop-blur border border-indigo-100 shadow-xl">
+        <!-- หน้าจอกระดานตารางคำศัพท์ 1 หน้าจอ สุ่ม 10 คำศัพท์ -->
+        <div id="game-grid-container" class="flex-grow flex flex-col justify-between p-4 bg-white/10 overflow-y-auto">
+          <div id="word-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-3 md:gap-4 my-auto">
+            <!-- ข้อมูลปุ่มตารางคำศัพท์จะถูกเรนเดอร์และสุ่มป้อนที่นี่โดย JavaScript -->
+          </div>
+          
+          <div class="w-full flex flex-col items-center bg-white/80 px-6 py-2.5 rounded-2xl backdrop-blur border border-indigo-100 shadow-lg mt-4">
             <div class="flex items-center space-x-3">
               <div id="mic-indicator" class="w-4 h-4 rounded-full bg-rose-500 animate-pulse"></div>
-              <p id="speech-transcript" class="text-lg font-bold text-indigo-900 game-font tracking-wide">พูดคำศัพท์ที่กำลังร่วง...</p>
+              <p id="speech-transcript" class="text-base md:text-lg font-bold text-indigo-900 game-font tracking-wide">กำลังเข้าคิวเชื่อมต่อระบบการรับฟังเสียง...</p>
             </div>
           </div>
         </div>
@@ -278,11 +260,11 @@
       <div class="grid grid-cols-2 gap-4 w-full">
         <div class="bg-white/60 p-4 rounded-2xl border border-white">
           <p class="text-xs text-slate-400 font-bold uppercase">เป้าหมายพอใช้</p>
-          <p class="text-2xl font-black text-slate-700" id="result-target">10 คำ (50%)</p>
+          <p class="text-2xl font-black text-slate-700" id="result-target">5 คำ (50%)</p>
         </div>
         <div class="bg-white/60 p-4 rounded-2xl border border-white">
           <p class="text-xs text-slate-400 font-bold uppercase">บันทึกคะแนนสะสม</p>
-          <p class="text-2xl font-black text-indigo-600" id="result-score">0/20 คำ</p>
+          <p class="text-2xl font-black text-indigo-600" id="result-score">0/10 คำ</p>
         </div>
       </div>
       <div class="w-full pt-4 space-y-3">
@@ -317,7 +299,7 @@
       </div>
     </section>
 
-    <!-- VIEW 7: แดชบอร์ดของคุณครู (ย้ายตารางข้อมูลประวัติ และปุ่มพิมพ์รายงาน PDF มาไว้ที่นี่) -->
+    <!-- VIEW 7: แดชบอร์ดของคุณครู (รายงานตารางข้อมูลประวัติ และปุ่มส่งออกรายงานพิมพ์ PDF) -->
     <section id="view-teacher-dashboard" class="view-section hidden w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
       <div class="w-full bg-indigo-900 text-white p-4 flex justify-between items-center z-20 shadow-md">
         <div class="flex items-center space-x-2">
@@ -378,9 +360,9 @@
 
   </main>
 
- <footer class="fixed bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-indigo-900/40 font-semibold p-1 bg-white/30 rounded-full backdrop-blur-sm">
-    พัฒนาโดย: นายชาณัตถ์ รุ่งรัตน์ ผู้อำนวยการโรงเรียนวัดยางขาว
-</footer>
+  <footer class="fixed bottom-1 left-2 text-[10px] text-indigo-900/40 font-semibold p-1 bg-white/30 rounded-full backdrop-blur-sm">
+    พัฒนาโดย: นายชาณัตถ์ รุ่งรัตน์
+  </footer>
 
   <script>
     // ==========================================
@@ -403,13 +385,16 @@
     let spawnTimer = null;
     let timeRemaining = 0;
     
-    // ตั้งค่าเป้าหมาย: คัดกรอง 20 ข้อ กำหนดเวลา 1 นาที
+    // ตั้งค่าเป้าหมาย: คัดกรอง 10 ข้อ กำหนดเวลา 1 นาที
     let correctCount = 0;
     let wordsProcessed = 0;
     let wordsSpawned = 0;
-    const totalLevelWords = 20; 
+    const totalLevelWords = 10; 
     let currentPercent = 0;
     let targetPercent = 50; 
+
+    // รายการจำกัดคำบนกระดานตารางคัดกรอง
+    let activeGridWords = [];
 
     let speechMode = "idle"; // "idle" | "login" | "game"
     let allStudentsCached = [];
@@ -897,13 +882,11 @@
     }
     
     // ==========================================
-    // กติกาปล่อย 20 คำ 1 นาที (ด่านเดียวจบ)
+    // กติกาประเมินคัดกรอง 10 คำ 1 นาทีบนกระดานตาราง
     // ==========================================
     function getLevelConfig() {
       return { 
-        timeLimit: 60, 
-        fallSpeed: 8,  
-        spawnRate: 2500 
+        timeLimit: 60 
       };
     }
 
@@ -914,28 +897,56 @@
       correctCount = 0;
       wordsProcessed = 0;
       wordsSpawned = 0;
-      activeWordsOnScreen = []; 
-      recentSpawnedWords = [];
+      activeGridWords = [];
 
-      document.getElementById('ui-level').textContent = `ด่านคัดกรอง`;
-      document.getElementById('game-arena').innerHTML = '<div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center bg-white/90 px-6 py-2 rounded-3xl backdrop-blur shadow-xl border border-indigo-100"><div class="flex items-center space-x-3"><div id="mic-indicator" class="w-4 h-4 rounded-full bg-rose-500 animate-pulse"></div><p id="speech-transcript" class="text-sm md:text-lg font-bold text-indigo-900 game-font">เตรียมพร้อม...</p></div></div>';
+      document.getElementById('ui-level').textContent = `กระดานคัดกรอง`;
+      document.getElementById('ui-timer').textContent = "1:00";
       
+      // ดึงสุ่มคำศัพท์ตามระดับชั้น 10 คำมาวางในตารางกระดาน
+      let wordsToUse = [...masterWords];
+      for (let i = wordsToUse.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [wordsToUse[i], wordsToUse[j]] = [wordsToUse[j], wordsToUse[i]];
+      }
+      
+      const selectedWords = wordsToUse.slice(0, 10);
+      const gridContainer = document.getElementById('word-grid');
+      gridContainer.innerHTML = '';
+
+      selectedWords.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.id = `word-card-${index}`;
+        card.className = "flex flex-col items-center justify-center p-4 h-24 md:h-28 bg-white border-2 border-indigo-200 hover:border-indigo-400 rounded-2xl shadow-sm transition transform duration-200 text-center cursor-default";
+        card.innerHTML = `
+          <span class="text-[10px] text-indigo-300 font-bold block mb-1 font-sans">คำที่ ${index + 1}</span>
+          <span class="text-base md:text-xl font-black text-indigo-950 game-font">${item.word}</span>
+        `;
+        gridContainer.appendChild(card);
+
+        activeGridWords.push({
+          word: item.word,
+          index: index,
+          correct: false,
+          element: card
+        });
+      });
+
       updateProgressUI(); 
       updateTimerUI(); 
       showView('game');
 
       Swal.fire({ 
-        title: `เข้าสู่ด่านประเมินสะกดคำ`, 
-        text: `ทดสอบอ่านสะกดคำศัพท์ทั้งหมด 20 คำ ภายใน 1 นาที โดยใช้ระดับเกณฑ์ 3 ระดับ (ดี, พอใช้, ปรับปรุง)`, 
+        title: `เข้าสู่กระดานคัดกรอง`, 
+        text: `อ่านสะกดคำศัพท์บนหน้าจอตารางให้ได้มากที่สุดภายใน 1 นาที โดยคัดกรองจำกัดสุ่ม 10 คำศัพท์`, 
         timer: 3000, 
         timerProgressBar: true, 
         showConfirmButton: false, 
         allowOutsideClick: false 
       })
-      .then(() => startGameplayLoop(config));
+      .then(() => startGameplayLoop());
     }
 
-    function startGameplayLoop(config) {
+    function startGameplayLoop() {
       speechMode = "game";
       document.getElementById('mic-indicator').className = "w-4 h-4 rounded-full bg-rose-500";
       
@@ -945,12 +956,12 @@
       
       if (isListening) {
         document.getElementById('mic-indicator').className = "w-4 h-4 rounded-full bg-emerald-500 animate-pulse";
-        document.getElementById('speech-transcript').textContent = "เริ่มพูดสะกดคำศัพท์ได้เลย...";
+        document.getElementById('speech-transcript').textContent = "ระบบเริ่มรับฟังเสียง... อ่านออกเสียงสะกดคำในกระดานได้เลย";
       } else {
         try {
           recognition.start();
         } catch(e) {
-          console.error("ไมค์จับความแม่นยำเกิดข้อขัดข้อง: ", e);
+          console.error("ระบบไมโครโฟนล้มเหลว: ", e);
         }
       }
 
@@ -961,109 +972,50 @@
           evaluateLevel(); 
         }
       }, 1000);
-
-      spawnWordObj(config.fallSpeed); 
-
-      spawnTimer = setInterval(() => {
-        if (wordsSpawned < totalLevelWords) {
-          spawnWordObj(config.fallSpeed);
-        } else {
-          clearInterval(spawnTimer);
-        }
-      }, config.spawnRate);
     }
 
     function stopGameplay() {
       clearInterval(gameTimer); 
-      clearInterval(spawnTimer);
       speechMode = "idle";
       if (isListening && recognition) {
         recognition.stop();
       }
-      activeWordsOnScreen.forEach(obj => { if(obj.element.parentNode) obj.element.parentNode.removeChild(obj.element); });
-      activeWordsOnScreen = [];
+      activeGridWords = [];
     }
 
-    function spawnWordObj(fallSeconds) {
-      if (wordsSpawned >= totalLevelWords) return;
-      if (masterWords.length === 0) return;
-
-      wordsSpawned++;
-      let randomWord = "", attempts = 0;
-      
-      if (recentSpawnedWords.length >= masterWords.length) {
-        recentSpawnedWords = [];
-      }
-
-      do {
-        randomWord = masterWords[Math.floor(Math.random() * masterWords.length)].word;
-        attempts++;
-      } while (recentSpawnedWords.includes(randomWord) && attempts < 10);
-      
-      recentSpawnedWords.push(randomWord);
-      const maxCooldownSize = Math.min(Math.floor(masterWords.length / 2), 5);
-      if (recentSpawnedWords.length > maxCooldownSize) recentSpawnedWords.shift();
-
-      const wordEl = document.createElement('div');
-      wordEl.className = "falling-word bg-white border-2 border-indigo-400 text-indigo-900 font-extrabold text-2xl md:text-3xl py-3 px-6 rounded-2xl shadow-lg game-font cursor-default";
-      wordEl.textContent = randomWord;
-      const leftPos = 20 + Math.random() * 60; 
-      wordEl.style.left = `${leftPos}%`; wordEl.style.top = `-10%`; wordEl.style.transitionDuration = `${fallSeconds}s`;
-      document.getElementById('game-arena').appendChild(wordEl);
-      
-      const wordObj = { text: randomWord, element: wordEl, spawnTime: Date.now() };
-      activeWordsOnScreen.push(wordObj);
-      setTimeout(() => { if(wordEl.parentNode) wordEl.style.top = `110%`; }, 50);
-      
-      wordEl.addEventListener('transitionend', (e) => {
-        if(e.propertyName === 'top' && wordEl.parentNode) {
-          wordEl.parentNode.removeChild(wordEl); 
-          removeWordFromActive(wordObj); 
-          handleWordMissed();
-        }
-      });
-    }
-
-    function removeWordFromActive(wordObj) { activeWordsOnScreen = activeWordsOnScreen.filter(w => w !== wordObj); }
-    
     function checkSpokenWords(spokenTranscript) {
-      for(let i=0; i<activeWordsOnScreen.length; i++) {
-        const wObj = activeWordsOnScreen[i];
-        if (getPhoneticSimilarity(wObj.text, spokenTranscript) >= 0.70) { handleWordCorrect(wObj); break; }
+      for (let i = 0; i < activeGridWords.length; i++) {
+        const wObj = activeGridWords[i];
+        if (!wObj.correct) {
+          // ใช้สัญญาสัทศาสตร์เปรียบเทียบระดับความเข้ากัน
+          const sim = getPhoneticSimilarity(wObj.word, spokenTranscript);
+          if (sim >= 0.70) { 
+            handleWordCorrect(wObj); 
+            break; 
+          }
+        }
       }
     }
 
+    // เมื่อสะกดเสียงถูกต้อง ช่องคำศัพท์นั้นจะถูกปิดทับด้วยแถบสีเขียว
     function handleWordCorrect(wObj) {
       playSound('correct');
-      const el = wObj.element; el.style.transition = 'none'; el.classList.add('word-explode', 'bg-emerald-400', 'text-white', 'border-emerald-500');
-      removeWordFromActive(wObj);
-      setTimeout(() => { if(el.parentNode) el.parentNode.removeChild(el); }, 300);
-      
+      wObj.correct = true;
+
+      const card = wObj.element;
+      card.className = "flex flex-col items-center justify-center p-4 h-24 md:h-28 bg-emerald-500 border-2 border-emerald-600 text-white rounded-2xl shadow-md transition transform scale-105 duration-300 text-center cursor-default";
+      card.innerHTML = `
+        <span class="text-[10px] text-emerald-200 font-bold block mb-1 font-sans">คำที่ ${wObj.index + 1}</span>
+        <span class="text-base md:text-xl font-black game-font"><i class="fa-solid fa-circle-check mr-1 animate-bounce"></i> ${wObj.word}</span>
+      `;
+
       correctCount++;
-      wordsProcessed++;
-      currentPercent = Math.round((correctCount / totalLevelWords) * 100);
       updateProgressUI();
 
-      if (wordsProcessed === totalLevelWords) {
+      // หากสะกดได้ถูกต้องครบถ้วนทั้ง 10 คำแล้ว จะสรุปทันทีโดยไม่ต้องรอเวลาหมด
+      if (correctCount === 10) {
         setTimeout(() => {
-          stopGameplay(); 
-          evaluateLevel();
-        }, 800);
-      }
-    }
-
-    function handleWordMissed() {
-      playSound('drop'); 
-      wordsProcessed++;
-      currentPercent = Math.round((correctCount / totalLevelWords) * 100);
-      
-      document.getElementById('game-arena').classList.add('bg-rose-100/50');
-      setTimeout(() => document.getElementById('game-arena').classList.remove('bg-rose-100/50'), 200);
-      updateProgressUI();
-
-      if (wordsProcessed === totalLevelWords) {
-        setTimeout(() => {
-          stopGameplay(); 
+          stopGameplay();
           evaluateLevel();
         }, 800);
       }
@@ -1077,25 +1029,29 @@
     }
 
     function updateProgressUI() {
-      document.getElementById('ui-current-percent').textContent = `${correctCount}/${totalLevelWords} คำ`;
+      document.getElementById('ui-current-percent').textContent = `${correctCount}/10 คำ`;
       
-      if (correctCount >= 16) {
+      if (correctCount >= 8) {
         document.getElementById('ui-current-percent').className = "text-lg font-black text-emerald-500";
-      } else if (correctCount >= 10) {
+      } else if (correctCount >= 5) {
         document.getElementById('ui-current-percent').className = "text-lg font-black text-amber-500";
       } else {
         document.getElementById('ui-current-percent').className = "text-lg font-black text-rose-500";
       }
       
-      const fillHeight = (correctCount / totalLevelWords) * 100;
+      const fillHeight = (correctCount / 10) * 100;
       document.getElementById('progress-fill').style.height = `${fillHeight}%`;
       document.getElementById('player-avatar-tracker').style.bottom = `${fillHeight}%`;
     }
 
+    // ==========================================
+    // ประเมินผล 3 ระดับเกณฑ์เฉลี่ยจาก 10 คำศัพท์
+    // ดี (8-10 คำ), พอใช้ (5-7 คำ), ปรับปรุง (0-4 คำ)
+    // ==========================================
     function evaluateLevel() {
       showView('result');
-      document.getElementById('result-target').textContent = `10 คำ (พอใช้)`;
-      document.getElementById('result-score').textContent = `${correctCount}/20 คำ`;
+      document.getElementById('result-target').textContent = `5 คำ (พอใช้)`;
+      document.getElementById('result-score').textContent = `${correctCount}/10 คำ`;
       
       let levelStr = "ปรับปรุง";
       let levelClass = "text-4xl font-black game-font text-rose-500";
@@ -1103,13 +1059,13 @@
       let iconHtml = '<i class="fa-solid fa-face-sad-tear text-rose-400"></i>';
       let subtitleText = "สู้ๆ นะผู้กล้า ค่อยๆ ฝึกสะกดคำเพิ่มเติมเพื่อผลลัพธ์ที่ดีขึ้น";
 
-      if (correctCount >= 16) {
+      if (correctCount >= 8) {
         levelStr = "ดี";
         levelClass = "text-4xl font-black game-font text-emerald-500";
         scoreClass = "text-2xl font-black text-emerald-500";
         iconHtml = '<i class="fa-solid fa-crown text-yellow-400 drop-shadow-lg animate-bounce"></i>';
         subtitleText = "สุดยอดนักสะกดคำศัพท์! ความเข้าใจสัทศาสตร์ยอดเยี่ยม";
-      } else if (correctCount >= 10) {
+      } else if (correctCount >= 5) {
         levelStr = "พอใช้";
         levelClass = "text-4xl font-black game-font text-amber-500";
         scoreClass = "text-2xl font-black text-amber-500";
@@ -1166,7 +1122,7 @@
         const data = await apiRequest('getSummaryResults');
         dashboardDataCache = data || [];
         renderDashboardStats();
-        renderRoundsProgressChart(); // โหลดกราฟแสดงพัฒนาการรายรอบที่คัดกรองเข้ามาแทนตาราง
+        renderRoundsProgressChart(); 
       } catch (e) {
         console.error(e);
         document.getElementById('rounds-progress-container').innerHTML = `<p class="text-xs text-rose-500 text-center font-bold py-4"><i class="fa-solid fa-circle-xmark mr-1"></i> ไม่สามารถดึงรายงานพัฒนาการได้: ${e.message}</p>`;
@@ -1199,7 +1155,7 @@
           <div class="space-y-2 text-[10px]">
             <div>
               <div class="flex justify-between font-bold mb-0.5 text-emerald-600">
-                <span>ดี (16-20 คำ)</span>
+                <span>ดี (8-10 คำ)</span>
                 <span>${good} คน (${goodPct}%)</span>
               </div>
               <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
@@ -1208,7 +1164,7 @@
             </div>
             <div>
               <div class="flex justify-between font-bold mb-0.5 text-amber-500">
-                <span>พอใช้ (10-15 คำ)</span>
+                <span>พอใช้ (5-7 คำ)</span>
                 <span>${fair} คน (${fairPct}%)</span>
               </div>
               <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
@@ -1217,7 +1173,7 @@
             </div>
             <div>
               <div class="flex justify-between font-bold mb-0.5 text-rose-500">
-                <span>ปรับปรุง (0-9 คำ)</span>
+                <span>ปรับปรุง (0-4 คำ)</span>
                 <span>${improve} คน (${improvePct}%)</span>
               </div>
               <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
@@ -1243,7 +1199,6 @@
         return;
       }
 
-      // จัดกลุ่มผลลัพธ์รายรอบ (Rounds) เพื่อแสดงพัฒนาการ
       const roundsMap = {};
       dashboardDataCache.forEach(item => {
         const r = item.round || 1;
@@ -1273,11 +1228,10 @@
           </div>
           <div class="flex-grow space-y-1">
             <div class="flex justify-between text-[10px] font-bold mb-1">
-              <span class="text-emerald-600">ดี (16-20 คำ): ${goodPct}%</span>
-              <span class="text-amber-500">พอใช้ (10-15 คำ): ${fairPct}%</span>
-              <span class="text-rose-500">ปรับปรุง (0-9 คำ): ${improvePct}%</span>
+              <span class="text-emerald-600">ดี (8-10 คำ): ${goodPct}%</span>
+              <span class="text-amber-500">พอใช้ (5-7 คำ): ${fairPct}%</span>
+              <span class="text-rose-500">ปรับปรุง (0-4 คำ): ${improvePct}%</span>
             </div>
-            <!-- ความคืบหน้ากราฟไล่ระดับสามสีเชิงเปรียบเทียบ -->
             <div class="w-full bg-slate-200 h-4 rounded-full overflow-hidden flex">
               <div class="bg-emerald-500 h-full transition-all duration-500" style="width: ${goodPct}%" title="ดี: ${goodPct}%"></div>
               <div class="bg-amber-400 h-full transition-all duration-500" style="width: ${fairPct}%" title="พอใช้: ${fairPct}%"></div>
@@ -1368,7 +1322,7 @@
           <td class="p-3 font-mono font-bold text-slate-600">${item.studentId}</td>
           <td class="p-3 font-semibold text-slate-800">${item.name}</td>
           <td class="p-3 text-center font-bold text-slate-600">ป.${item.grade}/${item.room}</td>
-          <td class="p-3 text-center font-black text-indigo-700 font-sans">${item.score}/20</td>
+          <td class="p-3 text-center font-black text-indigo-700 font-sans">${item.score}/10</td>
           <td class="p-3 text-center"><span class="px-2.5 py-1 rounded-full text-[10px] ${badgeClass}">${item.level}</span></td>
           <td class="p-3 text-center font-bold text-slate-600">รอบที่ ${item.round || 1}</td>
           <td class="p-3 text-center">
@@ -1382,7 +1336,7 @@
     }
 
     // ==========================================
-    // อัลกอริทึมประกอบและพิมพ์ใบรายงานผลเป็น PDF
+    // อัลกอริทึมประกอบและพิมพ์ใบรายงานผลเป็น PDF (เฉลี่ยเกณฑ์เต็ม 10 คะแนน)
     // ==========================================
     function printStudentReport(item) {
       const dateObj = new Date(item.date);
@@ -1436,16 +1390,16 @@
               <div class="row-item"><span class="label">รอบการประเมิน:</span> รอบที่ ${item.round || 1}</div>
               <div>
                 <div class="score-badge ${item.level === 'ดี' ? '' : (item.level === 'พอใช้' ? 'score-yellow' : 'score-red')}">
-                  เกณฑ์ผลสัมฤทธิ์: ${item.level} (${item.score}/20 คำ)
+                  เกณฑ์ผลสัมฤทธิ์: ${item.level} (${item.score}/10 คำ)
                 </div>
               </div>
             </div>
           </div>
           <div style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 13px; color: #555;">
-            <strong>เกณฑ์อ้างอิงการวัดผลสะสยมการประเมิน:</strong><br>
-            - ระดับ <strong>ดี</strong> (คะแนน 16 - 20) หมายถึง มีความเข้าใจโครงสร้างสัทศาสตร์และการอ่านสะกดคำในเกณฑ์ดีเยี่ยม<br>
-            - ระดับ <strong>พอใช้</strong> (คะแนน 10 - 15) หมายถึง ผ่านเกณฑ์มาตรฐานขั้นต่ำในการประเมินเบื้องต้น<br>
-            - ระดับ <strong>ปรับปรุง</strong> (คะแนน 0 - 9) หมายถึง ควรได้รับการกระตุ้นส่งเสริมและติดตามทักษะเพื่อการพัฒนาต่อเนื่อง
+            <strong>เกณฑ์อ้างอิงการวัดผลสะสมการประเมินกระดานคำศัพท์ (เต็ม 10 คะแนน):</strong><br>
+            - ระดับ <strong>ดี</strong> (คะแนน 8 - 10) หมายถึง มีความเข้าใจโครงสร้างสัทศาสตร์และการอ่านสะกดคำในเกณฑ์ดีเยี่ยม<br>
+            - ระดับ <strong>พอใช้</strong> (คะแนน 5 - 7) หมายถึง ผ่านเกณฑ์มาตรฐานขั้นต่ำในการประเมินเบื้องต้น<br>
+            - ระดับ <strong>ปรับปรุง</strong> (คะแนน 0 - 4) หมายถึง ควรได้รับการกระตุ้นส่งเสริมและติดตามทักษะเพื่อการพัฒนาต่อเนื่อง
           </div>
           <div class="footer-sig">
             <div class="sig-box">
