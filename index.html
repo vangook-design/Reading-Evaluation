@@ -23,7 +23,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- Chart.js สำหรับแสดงกราฟเส้นและกราฟแท่งพัฒนาการรอบประเมิน -->
+  <!-- Chart.js สำหรับแสดงกราฟเส้นรายงานพัฒนาการรอบประเมิน -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -75,9 +75,9 @@
 
   <main class="flex-grow w-full h-screen flex flex-col items-center justify-center p-2 relative">
 
-    <!-- VIEW 1: หน้าหลักสุด (รายงานสถิติรายชั้น + กราฟพัฒนาการคะแนนเฉลี่ยแต่ละรอบ + ทำเนียบ) -->
+    <!-- VIEW 1: หน้าหลักสุด (รายงานสถานะรอบคัดกรองรายชั้น + กราฟเส้นคะแนนเฉลี่ย + สถิติผู้ใช้งาน) -->
     <section id="view-home" class="view-section flex flex-col w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn overflow-hidden">
-      <!-- ส่วนหัว Header และปุ่มทางเลือก -->
+      <!-- ส่วนหัว Header, สถิติผู้ใช้งาน และปุ่มทางเลือก -->
       <div class="w-full bg-indigo-900 text-white p-4 flex flex-col sm:flex-row justify-between items-center gap-3 z-20 shadow-md">
         <div class="flex items-center space-x-3">
           <div class="bg-indigo-500 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md transform rotate-3">
@@ -90,11 +90,17 @@
         </div>
         
         <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
-          <button onclick="showTeacherLogin()" class="bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center gap-1 transition">
+          <!-- การนับสถิติผู้ใช้งานสะสม -->
+          <div class="hidden sm:flex items-center space-x-1.5 bg-indigo-800/80 px-3 py-1.5 rounded-xl border border-indigo-700 text-xs text-indigo-200 shadow-inner">
+            <i class="fa-solid fa-users text-amber-400 animate-pulse"></i>
+            <span class="text-[11px]">ผู้ใช้งาน: <strong id="header-visitor-count" class="text-yellow-300 font-mono font-black">0</strong></span>
+          </div>
+
+          <button onclick="showTeacherLogin()" class="bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 px-3.5 rounded-xl text-xs flex items-center gap-1 transition">
             <i class="fa-solid fa-user-shield"></i>
             <span>ระบบสำหรับครู</span>
           </button>
-          <button onclick="startScan()" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold py-2.5 px-5 rounded-xl transition transform hover:scale-105 active:scale-95 text-xs shadow-lg flex items-center justify-center space-x-1.5 game-font">
+          <button onclick="startScan()" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold py-2 px-4 rounded-xl transition transform hover:scale-105 active:scale-95 text-xs shadow-lg flex items-center justify-center space-x-1.5 game-font">
             <i class="fa-solid fa-microphone animate-pulse"></i>
             <span>เข้าสู่การทดสอบ</span>
           </button>
@@ -104,23 +110,35 @@
       <!-- ส่วนรายงานแสดงผลบนหน้าแรก -->
       <div class="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50/50">
         
-        <!-- 1. กราฟเปรียบเทียบพัฒนาการผลการอ่านเฉลี่ย ป.1 - ป.6 ตามรอบการคัดกรอง -->
+        <!-- 1. สถานะความคืบหน้าการคัดกรองรอบปัจจุบัน จำแนกรายชั้น ป.1 - ป.6 -->
+        <div class="bg-white rounded-2xl border border-indigo-100 p-4 shadow-sm">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 border-b border-slate-100 pb-2">
+            <div>
+              <h3 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+                <i class="fa-solid fa-users-viewfinder text-indigo-600"></i>
+                <span>สถานะการคัดกรองจำแนกรายชั้นเรียน (<span id="home-round-badge" class="text-indigo-600 font-extrabold">รอบที่ 1</span>)</span>
+              </h3>
+              <p class="text-[10px] text-slate-400 mt-0.5">จำนวนนักเรียนทั้งหมด คัดกรองแล้ว และคงเหลือในรอบปัจจุบัน</p>
+            </div>
+            <div id="home-round-total-badge" class="text-[11px] font-bold text-slate-600 bg-indigo-50 px-3 py-1 rounded-xl border border-indigo-100">
+              ภาพรวม: กำลังประมวลผล...
+            </div>
+          </div>
+
+          <div id="grade-round-status-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            <!-- การ์ดสถานะรายชั้น ป.1 - ป.6 จะเรนเดอร์โดย JavaScript -->
+          </div>
+        </div>
+
+        <!-- 2. กราฟเส้นเปรียบเทียบพัฒนาการผลการอ่านเฉลี่ย ป.1 - ป.6 ตามรอบการคัดกรอง -->
         <div class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
             <div>
               <h3 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
                 <i class="fa-solid fa-chart-line text-indigo-500"></i>
-                <span>กราฟพัฒนาการผลการอ่านเฉลี่ย ระดับชั้น ป.1-6 ตามรอบการคัดกรอง</span>
+                <span>กราฟเส้นรายงานพัฒนาการผลการอ่านเฉลี่ย ระดับชั้น ป.1-6 ตามรอบการคัดกรอง</span>
               </h3>
               <p class="text-[10px] text-slate-400 mt-0.5">คะแนนการอ่านเฉลี่ย (เต็ม 10 คำ) จำแนกตามระดับชั้นในแต่ละรอบประเมิน</p>
-            </div>
-            <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl text-[10px] self-end sm:self-auto">
-              <button id="btn-chart-line" onclick="switchChartType('line')" class="px-2.5 py-1 rounded-lg font-bold bg-white text-indigo-600 shadow-sm transition">
-                <i class="fa-solid fa-chart-line mr-1"></i> กราฟเส้น
-              </button>
-              <button id="btn-chart-bar" onclick="switchChartType('bar')" class="px-2.5 py-1 rounded-lg font-bold text-slate-500 hover:text-slate-800 transition">
-                <i class="fa-solid fa-chart-simple mr-1"></i> กราฟแท่ง
-              </button>
             </div>
           </div>
 
@@ -128,13 +146,12 @@
             <canvas id="rounds-chart-canvas"></canvas>
           </div>
 
-          <!-- การ์ดสรุปคะแนนเฉลี่ยระดับชั้น -->
           <div id="rounds-avg-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mt-4 pt-3 border-t border-slate-100">
-            <!-- ข้อมูลสรุปคะแนนเฉลี่ยรายชั้นจะแสดงที่นี่ -->
+            <!-- การ์ดคะแนนเฉลี่ยรอบล่าสุด -->
           </div>
         </div>
 
-        <!-- 2. แผนภูมิวิเคราะห์ความสอดคล้องรายชั้น (ป.1 - ป.6) -->
+        <!-- 3. แผนภูมิวิเคราะห์ความสอดคล้องรายชั้นสะสม (ป.1 - ป.6) -->
         <div>
           <h3 class="font-bold text-slate-700 text-xs mb-2 flex items-center gap-1.5">
             <i class="fa-solid fa-square-poll-vertical text-indigo-500"></i>
@@ -145,7 +162,7 @@
           </div>
         </div>
 
-        <!-- 3. ทำเนียบนักเรียนสถิติสูงสุด -->
+        <!-- 4. ทำเนียบนักเรียนสถิติสูงสุด -->
         <div class="pt-3 border-t border-slate-200/60">
           <div class="flex items-center space-x-2 mb-2 justify-center">
             <i class="fa-solid fa-trophy text-yellow-500"></i>
@@ -169,7 +186,7 @@
       </div>
       
       <p class="text-xs text-slate-500 text-center leading-relaxed">
-        กรุณากรอกหรือกดปุ่มไมโครโฟนด้านล่าง แล้วพูด <strong class="text-indigo-600">"ชื่อ และ นามสกุล"</strong> ของผู้เข้าทดสอบอย่างชัดเจน
+        กรุณากรอกหรือกดปุ่มไมโครโฟนด้านล่าง แล้วพูด <strong class="text-indigo-600">"ชื่อ และ นามสกุล"</strong> ของตนเองอย่างชัดเจน
       </p>
 
       <div class="flex flex-col items-center justify-center space-y-3 py-4">
@@ -257,9 +274,7 @@
         </div>
 
         <div id="game-grid-container" class="flex-grow flex flex-col justify-between p-4 bg-white/10 overflow-y-auto">
-          <div id="word-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-3 md:gap-4 my-auto">
-            <!-- การ์ดคำศัพท์ 10 คำจะถูกเรนเดอร์ที่นี่ -->
-          </div>
+          <div id="word-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-3 md:gap-4 my-auto"></div>
           
           <div class="w-full flex flex-col items-center bg-white/80 px-6 py-2.5 rounded-2xl backdrop-blur border border-indigo-100 shadow-lg mt-4">
             <div class="flex items-center space-x-3">
@@ -304,7 +319,7 @@
 
       <div class="text-center space-y-1 w-full border-b pb-3">
         <h2 class="text-xl font-bold text-slate-800 game-font"><i class="fa-solid fa-lock text-indigo-500 mr-1"></i>เข้าสู่ระบบคุณครู</h2>
-        <p class="text-[10px] text-slate-400">กรุณากรอกอีเมลครูที่ลงทะเบียนในระบบเพื่อตรวจสอบประวัติและพิมพ์ PDF</p>
+        <p class="text-[10px] text-slate-400">กรุณากรอกอีเมลครูที่ลงทะเบียนในระบบเพื่อตรวจสอบประวัติและติดตามรายชื่อ</p>
       </div>
 
       <div class="w-full space-y-3 py-2">
@@ -318,14 +333,14 @@
       </div>
     </section>
 
-    <!-- VIEW 7: แดชบอร์ดของคุณครู (รายงานตารางประวัติรายบุคคล และพิมพ์รายงาน PDF) -->
+    <!-- VIEW 7: แดชบอร์ดของคุณครู (สลับดูประวัติผลการคัดกรอง / รายชื่อนักเรียนที่ยังไม่ได้คัดกรอง) -->
     <section id="view-teacher-dashboard" class="view-section hidden w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
       <div class="w-full bg-indigo-900 text-white p-4 flex justify-between items-center z-20 shadow-md">
         <div class="flex items-center space-x-2">
           <i class="fa-solid fa-user-shield text-yellow-400"></i>
           <div>
             <h2 class="text-sm font-bold game-font leading-none" id="teacher-welcome-text">ระบบคุณครู</h2>
-            <p class="text-[9px] text-indigo-300 mt-1">พื้นที่ประมวลผล รายงานตัวชี้วัดรายบุคคลและพิมพ์ใบรายงาน PDF</p>
+            <p class="text-[9px] text-indigo-300 mt-1">พื้นที่ประมวลผล ติดตามนักเรียนที่ยังไม่ได้คัดกรอง และพิมพ์รายงาน</p>
           </div>
         </div>
         <button onclick="logoutTeacher()" class="bg-rose-700 hover:bg-rose-600 px-3 py-1.5 rounded-xl text-[10px] font-bold transition">
@@ -333,8 +348,22 @@
         </button>
       </div>
 
-      <div class="flex-grow overflow-y-auto p-4 bg-slate-50/50">
-        <div class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
+      <div class="flex-grow overflow-y-auto p-4 bg-slate-50/50 space-y-3">
+        <!-- แท็บสลับหน้าระหว่าง รายงานผล vs รายชื่อที่ยังไม่ได้คัดกรอง -->
+        <div class="flex space-x-2 bg-slate-200/70 p-1.5 rounded-2xl w-fit">
+          <button id="tab-btn-history" onclick="switchTeacherTab('history')" class="px-4 py-2 rounded-xl text-xs font-bold transition bg-white text-indigo-700 shadow-sm flex items-center gap-1.5">
+            <i class="fa-solid fa-list-check"></i>
+            <span>ประวัติการคัดกรองแล้ว</span>
+          </button>
+          <button id="tab-btn-unscreened" onclick="switchTeacherTab('unscreened')" class="px-4 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-user-clock text-rose-500"></i>
+            <span>นักเรียนที่ยังไม่ได้คัดกรองรอบนี้</span>
+            <span id="teacher-unscreened-badge" class="bg-rose-500 text-white text-[9px] px-2 py-0.5 rounded-full font-black ml-1">0</span>
+          </button>
+        </div>
+
+        <!-- 1. แผงตารางประวัติผลการคัดกรอง (เดิม) -->
+        <div id="teacher-panel-history" class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
             <h3 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
               <i class="fa-solid fa-file-invoice text-indigo-500"></i>
@@ -353,7 +382,7 @@
               <input type="text" id="teacher-search" oninput="renderTeacherTable()" placeholder="ค้นหา ชื่อ หรือรหัส..." class="p-2 border border-slate-200 rounded-xl text-[10px] flex-grow md:w-48 focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
           </div>
-          <div class="overflow-x-auto max-h-[55vh] rounded-xl border border-slate-100">
+          <div class="overflow-x-auto max-h-[50vh] rounded-xl border border-slate-100">
             <table class="w-full text-left border-collapse text-xs">
               <thead>
                 <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
@@ -371,13 +400,58 @@
             </table>
           </div>
         </div>
+
+        <!-- 2. แผงตารางรายชื่อนักเรียนที่ยังไม่ได้คัดกรองในรอบปัจจุบัน (เพิ่มเติม) -->
+        <div id="teacher-panel-unscreened" class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm hidden">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
+            <div>
+              <h3 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                <span>รายชื่อนักเรียนที่ <strong class="text-rose-600 underline">ยังไม่ได้ทำการคัดกรอง</strong> ในรอบปัจจุบัน (<span id="unscreened-current-round-text" class="text-indigo-600 font-bold">รอบที่ 1</span>)</span>
+              </h3>
+              <p class="text-[10px] text-slate-400 mt-0.5">นักเรียนต้องคัดกรองครบทุกคน ระบบจึงจะนับเป็นรอบใหม่โดยอัตโนมัติ</p>
+            </div>
+            <div class="flex items-center space-x-2 w-full md:w-auto">
+              <select id="unscreened-filter-grade" onchange="renderUnscreenedTable()" class="p-2 border border-slate-200 rounded-xl text-[10px] focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">ทุกระดับชั้นเรียน</option>
+                <option value="1">ป.1</option>
+                <option value="2">ป.2</option>
+                <option value="3">ป.3</option>
+                <option value="4">ป.4</option>
+                <option value="5">ป.5</option>
+                <option value="6">ป.6</option>
+              </select>
+              <input type="text" id="unscreened-search" oninput="renderUnscreenedTable()" placeholder="ค้นหา ชื่อ หรือรหัส..." class="p-2 border border-slate-200 rounded-xl text-[10px] flex-grow md:w-48 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <button onclick="printUnscreenedList()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 px-3 rounded-xl text-[10px] flex items-center gap-1 transition whitespace-nowrap">
+                <i class="fa-solid fa-print"></i> พิมพ์รายชื่อติดตาม
+              </button>
+            </div>
+          </div>
+          <div class="overflow-x-auto max-h-[50vh] rounded-xl border border-slate-100">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-amber-50/50 text-amber-900 font-bold border-b border-amber-100">
+                  <th class="p-3 text-center w-12">ลำดับ</th>
+                  <th class="p-3">รหัสประจำตัว</th>
+                  <th class="p-3">ชื่อ-นามสกุล</th>
+                  <th class="p-3 text-center">ระดับชั้น/ห้อง</th>
+                  <th class="p-3 text-center">รอบที่ต้องคัดกรอง</th>
+                  <th class="p-3 text-center">สถานะ</th>
+                </tr>
+              </thead>
+              <tbody id="unscreened-table-body" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
   </main>
 
-  <footer class="fixed bottom-1 left-2 text-[10px] text-indigo-900/40 font-semibold p-1 bg-white/30 rounded-full backdrop-blur-sm">
-    พัฒนาโดย: นายชาณัตถ์ รุ่งรัตน์
+  <footer class="fixed bottom-1 left-2 text-[10px] text-indigo-900/70 font-semibold p-1.5 bg-white/70 backdrop-blur-md rounded-full shadow-sm flex items-center space-x-2">
+    <span>พัฒนาโดย: นายชาณัตถ์ รุ่งรัตน์</span>
+    <span class="text-slate-300">|</span>
+    <span><i class="fa-solid fa-eye text-indigo-500 mr-1"></i>สถิติเข้าใช้งาน: <strong id="footer-visitor-count" class="text-indigo-600 font-bold">0</strong> ครั้ง</span>
   </footer>
 
   <script>
@@ -401,13 +475,13 @@
     const totalLevelWords = 10; 
     let activeGridWords = [];
 
-    let speechMode = "idle"; // "idle" | "login" | "game"
+    let speechMode = "idle";
     let allStudentsCached = [];
     let dashboardDataCache = [];
+    let roundStatusDataCache = null; // แคชข้อมูลรอบและสถิตินักเรียนรายชั้น
     
-    // ตัวแปรสำหรับ Chart.js
     let roundsChartInstance = null;
-    let currentChartType = 'line'; // 'line' หรือ 'bar'
+    let teacherActiveTab = 'history'; // 'history' | 'unscreened'
 
     window.addEventListener('load', () => { 
       initSpeechRecognition(); 
@@ -808,7 +882,6 @@
       }
     }
 
-    // ฟังก์ชันดึงข้อมูลนักเรียนพร้อมระบบตรวจสอบเงื่อนไขรอบการคัดกรอง
     async function fetchStudentData(studentId) {
       Swal.fire({ title: 'กำลังโหลดข้อมูลนักผจญภัย...', didOpen: () => Swal.showLoading() });
       try {
@@ -1108,95 +1181,105 @@
     }
 
     // ==========================================
-    // ดึงสถิติและเรนเดอร์แดชบอร์ดหน้าแรก
+    // ดึงสถิติ, นับผู้ใช้งาน และเรนเดอร์แดชบอร์ดหน้าแรก
     // ==========================================
     async function loadHomeDashboard() {
       try {
-        const data = await apiRequest('getSummaryResults');
-        dashboardDataCache = data || [];
-        renderDashboardStats();
-        renderRoundsProgressChart(); 
+        // ดึงสถิติผลการคัดกรอง, สถานะรอบปัจจุบัน และนับผู้ใช้งานพร้อมกัน
+        const [summaryData, roundStatus, visitData] = await Promise.all([
+          apiRequest('getSummaryResults'),
+          apiRequest('getRoundStatus'),
+          apiRequest('recordVisit')
+        ]);
+
+        dashboardDataCache = summaryData || [];
+        roundStatusDataCache = roundStatus || null;
+
+        // อัปเดตสถิติผู้ใช้งานสะสม
+        if (visitData && visitData.count !== undefined) {
+          updateVisitorCounter(visitData.count);
+        } else if (roundStatus && roundStatus.visitorCount !== undefined) {
+          updateVisitorCounter(roundStatus.visitorCount);
+        }
+
+        renderGradeRoundStatusCards(); // 1. เรนเดอร์การ์ดสถานะรายชั้นรอบปัจจุบัน
+        renderRoundsLineChart();       // 2. เรนเดอร์กราฟเส้นพัฒนาการคะแนนเฉลี่ย
+        renderDashboardStats();        // 3. เรนเดอร์แผนภูมิสัดส่วนสะสม
       } catch (e) {
-        console.error(e);
+        console.error("Dashboard Load Error: ", e);
         document.getElementById('chart-container-box').innerHTML = `<p class="text-xs text-rose-500 text-center font-bold py-4">ไม่สามารถดึงข้อมูลสถิติได้: ${e.message}</p>`;
       }
     }
 
-    function renderDashboardStats() {
-      const statsContainer = document.getElementById('db-stats-grid');
-      if(!statsContainer) return;
-      statsContainer.innerHTML = '';
-      
-      for (let g = 1; g <= 6; g++) {
-        const gradeData = dashboardDataCache.filter(item => parseInt(item.grade) === g);
-        const total = gradeData.length;
-        const good = gradeData.filter(item => item.level === 'ดี').length;
-        const fair = gradeData.filter(item => item.level === 'พอใช้').length;
-        const improve = gradeData.filter(item => item.level === 'ปรับปรุง').length;
-        
-        const goodPct = total > 0 ? Math.round((good / total) * 100) : 0;
-        const fairPct = total > 0 ? Math.round((fair / total) * 100) : 0;
-        const improvePct = total > 0 ? Math.round((improve / total) * 100) : 0;
-        
+    function updateVisitorCounter(count) {
+      const headerElem = document.getElementById('header-visitor-count');
+      const footerElem = document.getElementById('footer-visitor-count');
+      if (headerElem) headerElem.textContent = Number(count).toLocaleString();
+      if (footerElem) footerElem.textContent = Number(count).toLocaleString();
+    }
+
+    // ==========================================
+    // แจ้งสถานะนักเรียนรายชั้นในรอบปัจจุบัน (ป.1 - ป.6)
+    // ==========================================
+    function renderGradeRoundStatusCards() {
+      const container = document.getElementById('grade-round-status-grid');
+      const roundBadge = document.getElementById('home-round-badge');
+      const totalBadge = document.getElementById('home-round-total-badge');
+      if (!container || !roundStatusDataCache) return;
+
+      const currentRound = roundStatusDataCache.currentRound || 1;
+      if (roundBadge) roundBadge.textContent = `รอบที่ ${currentRound}`;
+      if (totalBadge) {
+        totalBadge.innerHTML = `ภาพรวมรอบที่ ${currentRound}: คัดกรองแล้ว <strong class="text-emerald-600">${roundStatusDataCache.screenedCount}</strong> / ${roundStatusDataCache.totalStudents} คน (<span class="text-rose-500 font-bold">เหลืออีก ${roundStatusDataCache.remainingCount} คน</span>)`;
+      }
+
+      container.innerHTML = '';
+      const gradePalette = [
+        { grade: 1, label: 'ป.1', color: 'border-pink-300 text-pink-700 bg-pink-50' },
+        { grade: 2, label: 'ป.2', color: 'border-orange-300 text-orange-700 bg-orange-50' },
+        { grade: 3, label: 'ป.3', color: 'border-amber-300 text-amber-700 bg-amber-50' },
+        { grade: 4, label: 'ป.4', color: 'border-emerald-300 text-emerald-700 bg-emerald-50' },
+        { grade: 5, label: 'ป.5', color: 'border-cyan-300 text-cyan-700 bg-cyan-50' },
+        { grade: 6, label: 'ป.6', color: 'border-indigo-300 text-indigo-700 bg-indigo-50' }
+      ];
+
+      gradePalette.forEach(gInfo => {
+        const stats = (roundStatusDataCache.gradeStats && roundStatusDataCache.gradeStats[gInfo.grade]) 
+                      ? roundStatusDataCache.gradeStats[gInfo.grade] 
+                      : { total: 0, screened: 0, remaining: 0, percent: 0 };
+
         const card = document.createElement('div');
-        card.className = "bg-white p-3 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between";
+        card.className = "bg-white p-3 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between";
         card.innerHTML = `
-          <div class="flex justify-between items-center mb-2 border-b pb-1">
-            <span class="font-extrabold text-xs text-indigo-900 game-font">ป.${g}</span>
-            <span class="text-[9px] bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">ประเมินแล้ว ${total} ครั้ง</span>
+          <div class="flex justify-between items-center mb-1.5 border-b pb-1">
+            <span class="font-extrabold text-xs game-font ${gInfo.color.split(' ')[1]}">ชั้น ${gInfo.label}</span>
+            <span class="text-[9px] font-bold text-slate-500">รวม ${stats.total} คน</span>
           </div>
-          <div class="space-y-2 text-[10px]">
-            <div>
-              <div class="flex justify-between font-bold mb-0.5 text-emerald-600">
-                <span>ดี (8-10 คำ)</span>
-                <span>${good} คน (${goodPct}% )</span>
-              </div>
-              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-emerald-500 h-full rounded-full" style="width: ${goodPct}%"></div>
-              </div>
+          <div class="space-y-1 text-[10px]">
+            <div class="flex justify-between text-slate-600">
+              <span>คัดกรองแล้ว:</span>
+              <strong class="text-emerald-600 font-bold">${stats.screened} คน</strong>
             </div>
-            <div>
-              <div class="flex justify-between font-bold mb-0.5 text-amber-500">
-                <span>พอใช้ (5-7 คำ)</span>
-                <span>${fair} คน (${fairPct}%)</span>
-              </div>
-              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-amber-400 h-full rounded-full" style="width: ${fairPct}%"></div>
-              </div>
+            <div class="flex justify-between text-slate-600">
+              <span>คงเหลือ:</span>
+              <strong class="${stats.remaining > 0 ? 'text-rose-500 font-bold' : 'text-slate-400'}">${stats.remaining} คน</strong>
             </div>
-            <div>
-              <div class="flex justify-between font-bold mb-0.5 text-rose-500">
-                <span>ปรับปรุง (0-4 คำ)</span>
-                <span>${improve} คน (${improvePct}%)</span>
-              </div>
-              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-rose-500 h-full rounded-full" style="width: ${improvePct}%"></div>
-              </div>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
+              <div class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: ${stats.percent}%"></div>
+            </div>
+            <div class="text-right text-[8px] text-slate-400 font-bold mt-0.5">
+              ${stats.percent}% ${stats.remaining === 0 && stats.total > 0 ? '<span class="text-emerald-500 font-extrabold">(ครบ 100%)</span>' : ''}
             </div>
           </div>
         `;
-        statsContainer.appendChild(card);
-      }
+        container.appendChild(card);
+      });
     }
 
     // ==========================================
-    // กราฟแท่ง/กราฟเส้น คะแนนเฉลี่ย ป.1-ป.6 ตามรอบประเมิน (Chart.js)
+    // กราฟเส้นพัฒนาการคะแนนเฉลี่ย ป.1-ป.6 ตามรอบ (Chart.js Line Chart Only)
     // ==========================================
-    function switchChartType(type) {
-      currentChartType = type;
-      const btnLine = document.getElementById('btn-chart-line');
-      const btnBar = document.getElementById('btn-chart-bar');
-      if (type === 'line') {
-        btnLine.className = "px-2.5 py-1 rounded-lg font-bold bg-white text-indigo-600 shadow-sm transition";
-        btnBar.className = "px-2.5 py-1 rounded-lg font-bold text-slate-500 hover:text-slate-800 transition";
-      } else {
-        btnBar.className = "px-2.5 py-1 rounded-lg font-bold bg-white text-indigo-600 shadow-sm transition";
-        btnLine.className = "px-2.5 py-1 rounded-lg font-bold text-slate-500 hover:text-slate-800 transition";
-      }
-      renderRoundsProgressChart();
-    }
-
-    function renderRoundsProgressChart() {
+    function renderRoundsLineChart() {
       const canvas = document.getElementById('rounds-chart-canvas');
       if (!canvas) return;
 
@@ -1205,7 +1288,6 @@
         return;
       }
 
-      // 1. รวบรวมรอบการประเมินที่มีข้อมูล
       const roundsSet = new Set();
       dashboardDataCache.forEach(item => {
         roundsSet.add(parseInt(item.round || 1));
@@ -1215,17 +1297,15 @@
 
       const labels = sortedRounds.map(r => `รอบที่ ${r}`);
 
-      // ชุดสีประจำระดับชั้น ป.1 - ป.6
       const gradePalette = [
-        { grade: 1, label: 'ป.1', color: '#ec4899', bgColor: 'rgba(236, 72, 153, 0.2)' },
-        { grade: 2, label: 'ป.2', color: '#f97316', bgColor: 'rgba(249, 115, 22, 0.2)' },
-        { grade: 3, label: 'ป.3', color: '#eab308', bgColor: 'rgba(234, 179, 8, 0.2)' },
-        { grade: 4, label: 'ป.4', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.2)' },
-        { grade: 5, label: 'ป.5', color: '#06b6d4', bgColor: 'rgba(6, 182, 212, 0.2)' },
-        { grade: 6, label: 'ป.6', color: '#6366f1', bgColor: 'rgba(99, 102, 241, 0.2)' }
+        { grade: 1, label: 'ป.1', color: '#ec4899' },
+        { grade: 2, label: 'ป.2', color: '#f97316' },
+        { grade: 3, label: 'ป.3', color: '#eab308' },
+        { grade: 4, label: 'ป.4', color: '#10b981' },
+        { grade: 5, label: 'ป.5', color: '#06b6d4' },
+        { grade: 6, label: 'ป.6', color: '#6366f1' }
       ];
 
-      // 2. คำนวณคะแนนเฉลี่ยของแต่ละระดับชั้นในแต่ละรอบ (เต็ม 10 คำ)
       const datasets = gradePalette.map(gInfo => {
         const dataPoints = sortedRounds.map(r => {
           const matched = dashboardDataCache.filter(item => parseInt(item.round || 1) === r && parseInt(item.grade) === gInfo.grade);
@@ -1238,8 +1318,8 @@
           label: gInfo.label,
           data: dataPoints,
           borderColor: gInfo.color,
-          backgroundColor: currentChartType === 'line' ? gInfo.color : gInfo.color,
-          tension: 0.3,
+          backgroundColor: gInfo.color,
+          tension: 0.35,
           fill: false,
           pointRadius: 5,
           pointHoverRadius: 7,
@@ -1247,14 +1327,13 @@
         };
       });
 
-      // 3. วาดกราฟด้วย Chart.js
       if (roundsChartInstance) {
         roundsChartInstance.destroy();
       }
 
       const ctx = canvas.getContext('2d');
       roundsChartInstance = new Chart(ctx, {
-        type: currentChartType,
+        type: 'line', // กำหนดเป็นกราฟเส้นอย่างเดียว
         data: {
           labels: labels,
           datasets: datasets
@@ -1270,7 +1349,7 @@
             legend: {
               position: 'top',
               labels: {
-                boxWidth: 12,
+                boxWidth: 14,
                 font: { family: "'Sarabun', 'Mali', sans-serif", size: 11, weight: 'bold' }
               }
             },
@@ -1305,7 +1384,6 @@
         }
       });
 
-      // 4. แสดงการ์ดสรุปคะแนนเฉลี่ยรอบล่าสุด
       renderRoundsAverageSummary(sortedRounds[sortedRounds.length - 1], gradePalette);
     }
 
@@ -1334,8 +1412,65 @@
       });
     }
 
+    function renderDashboardStats() {
+      const statsContainer = document.getElementById('db-stats-grid');
+      if(!statsContainer) return;
+      statsContainer.innerHTML = '';
+      
+      for (let g = 1; g <= 6; g++) {
+        const gradeData = dashboardDataCache.filter(item => parseInt(item.grade) === g);
+        const total = gradeData.length;
+        const good = gradeData.filter(item => item.level === 'ดี').length;
+        const fair = gradeData.filter(item => item.level === 'พอใช้').length;
+        const improve = gradeData.filter(item => item.level === 'ปรับปรุง').length;
+        
+        const goodPct = total > 0 ? Math.round((good / total) * 100) : 0;
+        const fairPct = total > 0 ? Math.round((fair / total) * 100) : 0;
+        const improvePct = total > 0 ? Math.round((improve / total) * 100) : 0;
+        
+        const card = document.createElement('div');
+        card.className = "bg-white p-3 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between";
+        card.innerHTML = `
+          <div class="flex justify-between items-center mb-2 border-b pb-1">
+            <span class="font-extrabold text-xs text-indigo-900 game-font">ป.${g}</span>
+            <span class="text-[9px] bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">ประเมินแล้ว ${total} ครั้ง</span>
+          </div>
+          <div class="space-y-2 text-[10px]">
+            <div>
+              <div class="flex justify-between font-bold mb-0.5 text-emerald-600">
+                <span>ดี (8-10 คำ)</span>
+                <span>${good} คน (${goodPct}%)</span>
+              </div>
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-emerald-500 h-full rounded-full" style="width: ${goodPct}%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between font-bold mb-0.5 text-amber-500">
+                <span>พอใช้ (5-7 คำ)</span>
+                <span>${fair} คน (${fairPct}%)</span>
+              </div>
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-amber-400 h-full rounded-full" style="width: ${fairPct}%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between font-bold mb-0.5 text-rose-500">
+                <span>ปรับปรุง (0-4 คำ)</span>
+                <span>${improve} คน (${improvePct}%)</span>
+              </div>
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-rose-500 h-full rounded-full" style="width: ${improvePct}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+        statsContainer.appendChild(card);
+      }
+    }
+
     // ==========================================
-    // ระบบสำหรับครูและพิมพ์รายงานผล PDF
+    // ระบบสำหรับครู (ประวัติผลการคัดกรอง / รายชื่อนักเรียนที่ยังไม่ได้คัดกรอง)
     // ==========================================
     function showTeacherLogin() {
       showView('teacher-login');
@@ -1355,7 +1490,13 @@
         if (response && response.success) {
           document.getElementById('teacher-welcome-text').textContent = `ยินดีต้อนรับ: ${response.teacherName}`;
           showView('teacher-dashboard');
-          renderTeacherTable();
+          
+          // โหลดข้อมูลล่าสุดเข้าระบบครู
+          if (!roundStatusDataCache) {
+            roundStatusDataCache = await apiRequest('getRoundStatus');
+          }
+          switchTeacherTab('history');
+          updateTeacherUnscreenedBadge();
         } else {
           Swal.fire('สิทธิ์ถูกปฏิเสธ', response.message || 'ไม่พบสิทธิ์ผู้สอน', 'error');
         }
@@ -1368,6 +1509,37 @@
     function logoutTeacher() {
       showView('home');
       loadHomeDashboard();
+    }
+
+    function switchTeacherTab(tab) {
+      teacherActiveTab = tab;
+      const btnHistory = document.getElementById('tab-btn-history');
+      const btnUnscreened = document.getElementById('tab-btn-unscreened');
+      const panelHistory = document.getElementById('teacher-panel-history');
+      const panelUnscreened = document.getElementById('teacher-panel-unscreened');
+
+      if (tab === 'history') {
+        btnHistory.className = "px-4 py-2 rounded-xl text-xs font-bold transition bg-white text-indigo-700 shadow-sm flex items-center gap-1.5";
+        btnUnscreened.className = "px-4 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-800 flex items-center gap-1.5";
+        panelHistory.classList.remove('hidden');
+        panelUnscreened.classList.add('hidden');
+        renderTeacherTable();
+      } else {
+        btnUnscreened.className = "px-4 py-2 rounded-xl text-xs font-bold transition bg-white text-rose-600 shadow-sm flex items-center gap-1.5";
+        btnHistory.className = "px-4 py-2 rounded-xl text-xs font-bold transition text-slate-600 hover:text-slate-800 flex items-center gap-1.5";
+        panelUnscreened.classList.remove('hidden');
+        panelHistory.classList.add('hidden');
+        renderUnscreenedTable();
+      }
+    }
+
+    function updateTeacherUnscreenedBadge() {
+      if (!roundStatusDataCache) return;
+      const count = roundStatusDataCache.remainingCount || 0;
+      const badge = document.getElementById('teacher-unscreened-badge');
+      if (badge) badge.textContent = count;
+      const roundText = document.getElementById('unscreened-current-round-text');
+      if (roundText) roundText.textContent = `รอบที่ ${roundStatusDataCache.currentRound || 1}`;
     }
 
     function renderTeacherTable() {
@@ -1416,6 +1588,121 @@
         `;
         body.appendChild(tr);
       });
+    }
+
+    // ==========================================
+    // ตารางแสดงรายชื่อนักเรียนที่ยังไม่ได้คัดกรองในรอบปัจจุบัน
+    // ==========================================
+    function renderUnscreenedTable() {
+      const body = document.getElementById('unscreened-table-body');
+      const searchVal = cleanThaiWord(document.getElementById('unscreened-search').value.trim());
+      const gradeFilter = document.getElementById('unscreened-filter-grade').value;
+      if (!body) return;
+      body.innerHTML = '';
+
+      if (!roundStatusDataCache || !roundStatusDataCache.unscreenedStudents) {
+        body.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 font-bold">กำลังเชื่อมต่อข้อมูลนักเรียนคงเหลือ...</td></tr>`;
+        return;
+      }
+
+      let list = roundStatusDataCache.unscreenedStudents || [];
+      if (gradeFilter) list = list.filter(item => item.grade.toString() === gradeFilter);
+      if (searchVal) {
+        list = list.filter(item => {
+          const fullName = `${item.prefix}${item.firstName} ${item.lastName}`;
+          return cleanThaiWord(fullName).includes(searchVal) || item.studentId.toString().includes(searchVal);
+        });
+      }
+
+      if (list.length === 0) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-8 text-center">
+              <div class="text-emerald-600 font-black text-sm mb-1"><i class="fa-solid fa-circle-check text-2xl mb-1 block"></i>ยอดเยี่ยมมาก! ไม่มีนักเรียนคงค้างการคัดกรอง</div>
+              <p class="text-[11px] text-slate-400 font-bold">นักเรียนทุกคนในระดับชั้นที่เลือก ได้รับการคัดกรองครบ 100% เรียบร้อยแล้ว</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const currentRound = roundStatusDataCache.currentRound || 1;
+      list.forEach((student, index) => {
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-100 hover:bg-amber-50/30 transition";
+        tr.innerHTML = `
+          <td class="p-3 text-center text-slate-400 font-mono text-[11px]">${index + 1}</td>
+          <td class="p-3 font-mono font-bold text-slate-700">${student.studentId}</td>
+          <td class="p-3 font-semibold text-slate-800">${student.prefix}${student.firstName} ${student.lastName}</td>
+          <td class="p-3 text-center font-bold text-slate-600">ป.${student.grade}/${student.room}</td>
+          <td class="p-3 text-center font-bold text-indigo-700 font-sans">รอบที่ ${currentRound}</td>
+          <td class="p-3 text-center">
+            <span class="bg-rose-100 text-rose-700 font-extrabold px-2.5 py-1 rounded-full text-[10px]">
+              <i class="fa-solid fa-clock mr-1"></i>ยังไม่คัดกรอง
+            </span>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function printUnscreenedList() {
+      if (!roundStatusDataCache || !roundStatusDataCache.unscreenedStudents) return;
+      const gradeFilter = document.getElementById('unscreened-filter-grade').value;
+      let list = roundStatusDataCache.unscreenedStudents;
+      if (gradeFilter) list = list.filter(item => item.grade.toString() === gradeFilter);
+
+      const printWindow = window.open('', '_blank');
+      let rowsHtml = '';
+      list.forEach((s, idx) => {
+        rowsHtml += `
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${idx + 1}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${s.studentId}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${s.prefix}${s.firstName} ${s.lastName}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">ป.${s.grade}/${s.room}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center; color: red;">ยังไม่ได้คัดกรอง</td>
+          </tr>
+        `;
+      });
+
+      printWindow.document.write(`
+        <html>
+        <head>
+          <title>รายชื่อนักเรียนที่ยังไม่ได้ทำการคัดกรอง - รอบที่ ${roundStatusDataCache.currentRound}</title>
+          <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+          <style>
+            body { font-family: 'Sarabun', sans-serif; padding: 30px; font-size: 13px; }
+            h2 { text-align: center; margin-bottom: 5px; }
+            p { text-align: center; margin-top: 0; color: #666; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            th { border: 1px solid #bbb; padding: 8px; background-color: #f2f2f2; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <h2>ใบรายชื่อนักเรียนที่ยังไม่ได้ทำการคัดกรองการอ่าน</h2>
+          <p>การคัดกรองรอบที่ ${roundStatusDataCache.currentRound} | ทั้งหมด ${list.length} คน ${gradeFilter ? `(ระดับชั้น ป.${gradeFilter})` : ''}</p>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 50px;">ลำดับ</th>
+                <th style="width: 120px;">รหัสประจำตัว</th>
+                <th>ชื่อ-นามสกุล</th>
+                <th style="width: 80px;">ชั้น/ห้อง</th>
+                <th style="width: 120px;">สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() { window.print(); }
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
     }
 
     function printStudentReport(item) {
