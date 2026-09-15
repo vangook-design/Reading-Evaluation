@@ -2,7 +2,7 @@
 <html lang="th" class="light">
 <!-- 
   =============================================================
-  ระบบเกมการอ่านออกเสียงภาษาไทย ป.1-ป.6 และอัลกอริทึมจับคู่สัทศาสตร์ 
+  ระบบคัดกรองการอ่านออกเสียงภาษาไทยด้วยอัลกอริทึมจับคู่สัทศาสตร์ Thai-PMA
   (Thai Phonetic Matching Algorithm for Education)
   
   ผู้พัฒนา: นายชาณัตถ์ รุ่งรัตน์
@@ -15,7 +15,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เกมผจญภัยการอ่าน (พัฒนาโดย: นายชาณัตถ์ รุ่งรัตน์)</title>
+  <title>ระบบคัดกรองการอ่านออกเสียงภาษาไทยด้วยอัลกอริทึมจับคู่สัทศาสตร์ Thai-PMA</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
@@ -84,12 +84,18 @@
             <i class="fa-solid fa-gamepad text-xl"></i>
           </div>
           <div>
-            <h2 class="text-lg font-black game-font leading-none text-yellow-400">เกมผจญภัยการอ่าน</h2>
+            <h2 class="text-base sm:text-lg font-black game-font leading-tight text-yellow-400">ระบบคัดกรองการอ่านออกเสียงภาษาไทยด้วยอัลกอริทึมจับคู่สัทศาสตร์ Thai-PMA</h2>
             <p class="text-[10px] text-indigo-200 mt-0.5">ระบบสรุปผลวิเคราะห์การคัดกรองการอ่านสะกดคำ ป.1-ป.6</p>
           </div>
         </div>
         
         <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+          <!-- ปุ่มรีเฟรชข้อมูลเรียลไทม์ -->
+          <button onclick="loadHomeDashboard()" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-200 hover:text-white px-2.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-inner" title="อัปเดตข้อมูลล่าสุด">
+            <i id="refresh-spinner" class="fa-solid fa-arrows-rotate"></i>
+            <span class="hidden sm:inline">รีเฟรช</span>
+          </button>
+
           <!-- การนับสถิติผู้ใช้งานสะสม -->
           <div class="hidden sm:flex items-center space-x-1.5 bg-indigo-800/80 px-3 py-1.5 rounded-xl border border-indigo-700 text-xs text-indigo-200 shadow-inner">
             <i class="fa-solid fa-users text-amber-400 animate-pulse"></i>
@@ -162,16 +168,6 @@
           </div>
         </div>
 
-        <!-- 4. ทำเนียบนักเรียนสถิติสูงสุด -->
-        <div class="pt-3 border-t border-slate-200/60">
-          <div class="flex items-center space-x-2 mb-2 justify-center">
-            <i class="fa-solid fa-trophy text-yellow-500"></i>
-            <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wide">ทำเนียบผู้พิทักษ์คำศัพท์สูงสุด</h3>
-          </div>
-          <div id="leaderboard-container" class="flex overflow-x-auto gap-3 pb-1 hide-scrollbar snap-x justify-center">
-            <p class="text-xs text-slate-400 text-center w-full">กำลังโหลดทำเนียบข้อมูล...</p>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -483,9 +479,30 @@
     let roundsChartInstance = null;
     let teacherActiveTab = 'history';
 
+    // Helper: แปลงระดับชั้นเป็นตัวเลข 1-6 ไม่ว่าชีตจะเขียน "ป.1" หรือ "1"
+    function cleanGradeNumber(val) {
+      if (val === null || val === undefined) return 0;
+      const match = val.toString().replace(/\D/g, '');
+      return match ? parseInt(match, 10) : 0;
+    }
+
+    // Helper: ล้างรหัสนักเรียนตัดช่องว่างและเครื่องหมายฝนทอง
+    function cleanStudentId(val) {
+      if (val === null || val === undefined) return "";
+      return val.toString().replace(/'/g, '').trim();
+    }
+
     window.addEventListener('load', () => { 
       initSpeechRecognition(); 
       loadHomeDashboard(); // ดึงข้อมูลทุกอย่างรอบเดียวจบ
+
+      // ระบบ Auto-Polling ดึงข้อมูลล่าสุดทุก 20 วินาทีแบบเรียลไทม์
+      setInterval(() => {
+        const homeView = document.getElementById('view-home');
+        if (homeView && !homeView.classList.contains('hidden')) {
+          loadHomeDashboard(true);
+        }
+      }, 20000);
     });
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -653,7 +670,7 @@
             await new Promise(res => setTimeout(res, 1000));
             return await apiRequest(action, data, retries - 1);
           }
-          throw new Error("ระบบคลาวด์ Google มีปริมาณคำขอหนาแน่นชั่วคราว กรุณารองรับใหม่อีกครั้ง");
+          throw new Error("ระบบคลาวด์ Google กำลังประมวลผลคำขอหนาแน่น กรุณาลองใหม่อีกครั้ง");
         }
         
         const resData = JSON.parse(text);
@@ -678,9 +695,11 @@
     // =======================================================
     // โหลดหน้าแรกครั้งเดียว รวบรวมทุกข้อมูล (แก้ปัญหาความหน่วงและ Error)
     // =======================================================
-    async function loadHomeDashboard() {
+    async function loadHomeDashboard(isSilent = false) {
+      const spinner = document.getElementById('refresh-spinner');
+      if (spinner && !isSilent) spinner.classList.add('fa-spin');
+
       try {
-        // ยิง Request เดียวได้ทั้งผลสะสม, สถานะรอบปัจจุบัน, ทำเนียบ และยอดผู้เข้าชม
         const res = await apiRequest('getInitialHomeData');
 
         if (res && res.success) {
@@ -692,16 +711,17 @@
           renderGradeRoundStatusCards(); // 1. สถานะรอบคัดกรองรายชั้น ป.1-6
           renderRoundsLineChart();       // 2. กราฟเส้นพัฒนาการคะแนนเฉลี่ย
           renderDashboardStats();        // 3. แผนภูมิแท่งสัดส่วนสะสม
-          renderLeaderboardUI(res.leaderboard); // 4. ทำเนียบสถิติสูงสุด
         } else {
           throw new Error(res.message || "โครงสร้างข้อมูลตอบกลับไม่ถูกต้อง");
         }
       } catch (e) {
         console.error("Dashboard Load Error: ", e);
         const box = document.getElementById('chart-container-box');
-        if (box) {
+        if (box && !isSilent) {
           box.innerHTML = `<p class="text-xs text-rose-500 text-center font-bold py-16"><i class="fa-solid fa-circle-exclamation mr-1"></i>ไม่สามารถดึงข้อมูลสถิติได้: ${e.message}</p>`;
         }
+      } finally {
+        if (spinner && !isSilent) spinner.classList.remove('fa-spin');
       }
     }
 
@@ -710,30 +730,6 @@
       const footerElem = document.getElementById('footer-visitor-count');
       if (headerElem) headerElem.textContent = Number(count).toLocaleString();
       if (footerElem) footerElem.textContent = Number(count).toLocaleString();
-    }
-
-    function renderLeaderboardUI(topScorers) {
-      const container = document.getElementById('leaderboard-container');
-      if (!container) return;
-      container.innerHTML = '';
-      let hasData = false;
-      if (topScorers) {
-        for (let grade = 1; grade <= 6; grade++) {
-          if (topScorers[grade]) {
-            hasData = true;
-            const s = topScorers[grade];
-            const shortName = s.name.split(' ')[0];
-            const card = document.createElement('div');
-            card.className = "min-w-[100px] flex-shrink-0 bg-white border border-indigo-100 rounded-xl p-2 text-center shadow-sm snap-center";
-            card.innerHTML = `<span class="block text-[10px] font-bold text-indigo-400 bg-indigo-50 rounded-full mb-1">ป.${grade}</span>
-              <img src="${s.photoUrl || 'https://via.placeholder.com/150/e0e7ff/4f46e5?text=P'}" class="w-10 h-10 mx-auto rounded-full object-cover border-2 border-yellow-400 mb-1">
-              <p class="text-[10px] font-black text-slate-700 truncate w-full" title="${s.name}">${shortName}</p>
-              <p class="text-xs font-bold text-emerald-500">${s.percent}%</p>`;
-            container.appendChild(card);
-          }
-        }
-      }
-      if (!hasData) container.innerHTML = '<p class="text-xs text-slate-400 text-center w-full">ยังไม่มีสถิติผู้เล่นในระบบ</p>';
     }
 
     // ==========================================
@@ -748,7 +744,7 @@
       const currentRound = roundStatusDataCache.currentRound || 1;
       if (roundBadge) roundBadge.textContent = `รอบที่ ${currentRound}`;
       if (totalBadge) {
-        totalBadge.innerHTML = `ภาพรวมรอบที่ ${currentRound}: คัดกรองแล้ว <strong class="text-emerald-600">${roundStatusDataCache.screenedCount}</strong> / ${roundStatusDataCache.totalStudents} คน (<span class="text-rose-500 font-bold">เหลืออีก ${roundStatusDataCache.remainingCount} คน</span>)`;
+        totalBadge.innerHTML = `ภาพรวมรอบที่ ${currentRound}: คัดกรองแล้ว <strong class="text-emerald-600 font-bold">${roundStatusDataCache.screenedCount}</strong> / ${roundStatusDataCache.totalStudents} คน (<span class="text-rose-500 font-bold">เหลืออีก ${roundStatusDataCache.remainingCount} คน</span>)`;
       }
 
       container.innerHTML = '';
@@ -808,7 +804,7 @@
 
       const roundsSet = new Set();
       dashboardDataCache.forEach(item => {
-        roundsSet.add(parseInt(item.round || 1));
+        roundsSet.add(parseInt(item.round || 1, 10));
       });
       const sortedRounds = Array.from(roundsSet).sort((a, b) => a - b);
       if (sortedRounds.length === 0) sortedRounds.push(1);
@@ -826,7 +822,8 @@
 
       const datasets = gradePalette.map(gInfo => {
         const dataPoints = sortedRounds.map(r => {
-          const matched = dashboardDataCache.filter(item => parseInt(item.round || 1) === r && parseInt(item.grade) === gInfo.grade);
+          // ใช้ cleanGradeNumber เพื่อจับคู่เกรดได้ถูกต้องเสมอ
+          const matched = dashboardDataCache.filter(item => parseInt(item.round || 1, 10) === r && cleanGradeNumber(item.grade) === gInfo.grade);
           if (matched.length === 0) return null;
           const sumScore = matched.reduce((acc, curr) => acc + (parseFloat(curr.score) || 0), 0);
           return Math.round((sumScore / matched.length) * 10) / 10;
@@ -911,7 +908,7 @@
       summaryContainer.innerHTML = '';
 
       gradePalette.forEach(gInfo => {
-        const matched = dashboardDataCache.filter(item => parseInt(item.round || 1) === latestRound && parseInt(item.grade) === gInfo.grade);
+        const matched = dashboardDataCache.filter(item => parseInt(item.round || 1, 10) === latestRound && cleanGradeNumber(item.grade) === gInfo.grade);
         let avgStr = "-";
         let count = matched.length;
         if (count > 0) {
@@ -936,7 +933,7 @@
       statsContainer.innerHTML = '';
       
       for (let g = 1; g <= 6; g++) {
-        const gradeData = dashboardDataCache.filter(item => parseInt(item.grade) === g);
+        const gradeData = dashboardDataCache.filter(item => cleanGradeNumber(item.grade) === g);
         const total = gradeData.length;
         const good = gradeData.filter(item => item.level === 'ดี').length;
         const fair = gradeData.filter(item => item.level === 'พอใช้').length;
@@ -1100,7 +1097,7 @@
                 <span class="font-extrabold text-slate-800">${student.prefix}${student.firstName} ${student.lastName}</span>
                 <p class="text-[10px] text-slate-400 mt-0.5">รหัสประจำตัว: ${student.studentId}</p>
               </div>
-              <span class="bg-indigo-100 text-indigo-700 py-1 px-2.5 rounded-full font-bold">ป.${student.grade}/${student.room}</span>
+              <span class="bg-indigo-100 text-indigo-700 py-1 px-2.5 rounded-full font-bold">ป.${cleanGradeNumber(student.grade)}/${student.room}</span>
             </button>`;
         });
         optionsHtml += '</div>';
@@ -1122,7 +1119,7 @@
       if (isListening && recognition) recognition.stop();
       Swal.fire({
         title: 'ยืนยันตัวตนผู้สอบ',
-        html: `คุณคือ <strong class="text-indigo-600 text-lg">${student.prefix}${student.firstName} ${student.lastName}</strong> <br>ชั้นประถมศึกษาปีที่ ${student.grade}/${student.room} ใช่หรือไม่?`,
+        html: `คุณคือ <strong class="text-indigo-600 text-lg">${student.prefix}${student.firstName} ${student.lastName}</strong> <br>ชั้นประถมศึกษาปีที่ ${cleanGradeNumber(student.grade)}/${student.room} ใช่หรือไม่?`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: 'ใช่, ฉันเอง',
@@ -1165,7 +1162,7 @@
                 <span class="font-extrabold text-slate-800">${student.prefix}${student.firstName} ${student.lastName}</span>
                 <p class="text-[10px] text-slate-400 mt-0.5">รหัสประจำตัว: ${student.studentId}</p>
               </div>
-              <span class="bg-indigo-100 text-indigo-700 py-1 px-2.5 rounded-full font-bold">ป.${student.grade}/${student.room}</span>
+              <span class="bg-indigo-100 text-indigo-700 py-1 px-2.5 rounded-full font-bold">ป.${cleanGradeNumber(student.grade)}/${student.room}</span>
             </button>`;
         });
         optionsHtml += '</div>';
@@ -1181,7 +1178,7 @@
     }
 
     function selectManualMatchedStudent(studentId) {
-      const student = allStudentsCached.find(s => s.studentId.toString().trim() === studentId.toString().trim());
+      const student = allStudentsCached.find(s => cleanStudentId(s.studentId) === cleanStudentId(studentId));
       if (student) {
         confirmStudentSelection(student);
       } else {
@@ -1200,14 +1197,12 @@
       });
       
       try {
-        // ยิงครั้งเดียว ได้ทั้งสิทธิ์การสอบ, ข้อมูลนักเรียน และคำศัพท์ประจำชั้น
         const res = await apiRequest('prepareStudentGame', { studentId });
         Swal.close();
 
         if (res && res.success) {
           const student = res.student;
           
-          // ตรวจสอบสถานะการคัดกรองในรอบปัจจุบัน
           if (res.alreadyScreened) {
             Swal.fire({
               icon: 'warning',
@@ -1246,7 +1241,7 @@
 
     function setupProfileScreen() {
       document.getElementById('player-name').textContent = `${currentStudent.prefix}${currentStudent.firstName} ${currentStudent.lastName}`;
-      document.getElementById('player-grade-room').textContent = `ป.${currentStudent.grade} ห้อง ${currentStudent.room}`;
+      document.getElementById('player-grade-room').textContent = `ป.${cleanGradeNumber(currentStudent.grade)} ห้อง ${currentStudent.room}`;
       
       const roundNum = currentStudent.roundInfo ? currentStudent.roundInfo.currentRound : 1;
       document.getElementById('player-round-badge').textContent = `การคัดกรองรอบที่ ${roundNum}`;
@@ -1470,7 +1465,7 @@
       const summary = {
         studentId: currentStudent.studentId, 
         name: `${currentStudent.prefix}${currentStudent.firstName} ${currentStudent.lastName}`, 
-        grade: currentStudent.grade, 
+        grade: cleanGradeNumber(currentStudent.grade), 
         room: currentStudent.room, 
         score: correctCount, 
         percent: avgPercent, 
@@ -1571,9 +1566,9 @@
       body.innerHTML = '';
       
       let filtered = dashboardDataCache;
-      if (gradeFilter) filtered = filtered.filter(item => item.grade.toString() === gradeFilter);
+      if (gradeFilter) filtered = filtered.filter(item => cleanGradeNumber(item.grade).toString() === gradeFilter);
       if (searchVal) {
-        filtered = filtered.filter(item => cleanThaiWord(item.name).includes(searchVal) || item.studentId.toString().includes(searchVal));
+        filtered = filtered.filter(item => cleanThaiWord(item.name).includes(searchVal) || cleanStudentId(item.studentId).includes(searchVal));
       }
       
       if (filtered.length === 0) {
@@ -1596,9 +1591,9 @@
         tr.className = "border-b border-slate-100 hover:bg-slate-50 transition";
         tr.innerHTML = `
           <td class="p-3 whitespace-nowrap text-slate-500 font-sans">${formattedDate}</td>
-          <td class="p-3 font-mono font-bold text-slate-600">${item.studentId}</td>
+          <td class="p-3 font-mono font-bold text-slate-600">${cleanStudentId(item.studentId)}</td>
           <td class="p-3 font-semibold text-slate-800">${item.name}</td>
-          <td class="p-3 text-center font-bold text-slate-600">ป.${item.grade}/${item.room}</td>
+          <td class="p-3 text-center font-bold text-slate-600">ป.${cleanGradeNumber(item.grade)}/${item.room}</td>
           <td class="p-3 text-center font-black text-indigo-700 font-sans">${item.score}/10</td>
           <td class="p-3 text-center"><span class="px-2.5 py-1 rounded-full text-[10px] ${badgeClass}">${item.level}</span></td>
           <td class="p-3 text-center font-bold text-slate-600">รอบที่ ${item.round || 1}</td>
@@ -1625,11 +1620,11 @@
       }
 
       let list = roundStatusDataCache.unscreenedStudents || [];
-      if (gradeFilter) list = list.filter(item => item.grade.toString() === gradeFilter);
+      if (gradeFilter) list = list.filter(item => cleanGradeNumber(item.grade).toString() === gradeFilter);
       if (searchVal) {
         list = list.filter(item => {
           const fullName = `${item.prefix}${item.firstName} ${item.lastName}`;
-          return cleanThaiWord(fullName).includes(searchVal) || item.studentId.toString().includes(searchVal);
+          return cleanThaiWord(fullName).includes(searchVal) || cleanStudentId(item.studentId).includes(searchVal);
         });
       }
 
@@ -1651,9 +1646,9 @@
         tr.className = "border-b border-slate-100 hover:bg-amber-50/30 transition";
         tr.innerHTML = `
           <td class="p-3 text-center text-slate-400 font-mono text-[11px]">${index + 1}</td>
-          <td class="p-3 font-mono font-bold text-slate-700">${student.studentId}</td>
+          <td class="p-3 font-mono font-bold text-slate-700">${cleanStudentId(student.studentId)}</td>
           <td class="p-3 font-semibold text-slate-800">${student.prefix}${student.firstName} ${student.lastName}</td>
-          <td class="p-3 text-center font-bold text-slate-600">ป.${student.grade}/${student.room}</td>
+          <td class="p-3 text-center font-bold text-slate-600">ป.${cleanGradeNumber(student.grade)}/${student.room}</td>
           <td class="p-3 text-center font-bold text-indigo-700 font-sans">รอบที่ ${currentRound}</td>
           <td class="p-3 text-center">
             <span class="bg-rose-100 text-rose-700 font-extrabold px-2.5 py-1 rounded-full text-[10px]">
@@ -1669,7 +1664,7 @@
       if (!roundStatusDataCache || !roundStatusDataCache.unscreenedStudents) return;
       const gradeFilter = document.getElementById('unscreened-filter-grade').value;
       let list = roundStatusDataCache.unscreenedStudents;
-      if (gradeFilter) list = list.filter(item => item.grade.toString() === gradeFilter);
+      if (gradeFilter) list = list.filter(item => cleanGradeNumber(item.grade).toString() === gradeFilter);
 
       const printWindow = window.open('', '_blank');
       let rowsHtml = '';
@@ -1677,9 +1672,9 @@
         rowsHtml += `
           <tr>
             <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${idx + 1}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${s.studentId}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${cleanStudentId(s.studentId)}</td>
             <td style="border: 1px solid #ddd; padding: 8px;">${s.prefix}${s.firstName} ${s.lastName}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">ป.${s.grade}/${s.room}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">ป.${cleanGradeNumber(s.grade)}/${s.room}</td>
             <td style="border: 1px solid #ddd; padding: 8px; text-align: center; color: red;">ยังไม่ได้คัดกรอง</td>
           </tr>
         `;
@@ -1699,7 +1694,7 @@
           </style>
         </head>
         <body>
-          <h2>ใบรายชื่อนักเรียนที่ยังไม่ได้ทำการคัดกรองการอ่าน</h2>
+          <h2>ใบรายชื่อนักเรียนที่ยังไม่ได้ทำการคัดกรองการอ่าน (Thai-PMA)</h2>
           <p>การคัดกรองรอบที่ ${roundStatusDataCache.currentRound} | ทั้งหมด ${list.length} คน ${gradeFilter ? `(ระดับชั้น ป.${gradeFilter})` : ''}</p>
           <table>
             <thead>
@@ -1738,8 +1733,8 @@
           <style>
             body { font-family: 'Sarabun', sans-serif; padding: 40px; color: #333; line-height: 1.6; }
             .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; }
-            .title { font-size: 24px; font-weight: bold; color: #1e1b4b; margin: 0; }
-            .subtitle { font-size: 14px; color: #4f46e5; margin-top: 5px; }
+            .title { font-size: 22px; font-weight: bold; color: #1e1b4b; margin: 0; }
+            .subtitle { font-size: 13px; color: #4f46e5; margin-top: 5px; }
             .content-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; margin-bottom: 40px; }
             .photo-container { text-align: center; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; }
             .photo { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 3px solid #e0e7ff; }
@@ -1761,7 +1756,7 @@
         <body>
           <div class="header">
             <div class="title">ใบรายงานผลการคัดกรองการอ่านออกเสียงภาษาไทย</div>
-            <div class="subtitle">ระบบเกมการอ่านออกเสียงภาษาไทย ป.1-ป.6 และอัลกอริทึมจับคู่สัทศาสตร์</div>
+            <div class="subtitle">ระบบคัดกรองการอ่านออกเสียงภาษาไทยด้วยอัลกอริทึมจับคู่สัทศาสตร์ Thai-PMA</div>
           </div>
           <div class="content-grid">
             <div class="photo-container">
@@ -1769,9 +1764,9 @@
               <div>รูปถ่ายผู้รับการคัดกรอง</div>
             </div>
             <div class="details">
-              <div class="row-item"><span class="label">รหัสประจำตัว:</span> ${item.studentId}</div>
+              <div class="row-item"><span class="label">รหัสประจำตัว:</span> ${cleanStudentId(item.studentId)}</div>
               <div class="row-item"><span class="label">ชื่อ-นามสกุล:</span> ${item.name}</div>
-              <div class="row-item"><span class="label">ระดับชั้นเรียน:</span> ประถมศึกษาปีที่ ${item.grade}/${item.room}</div>
+              <div class="row-item"><span class="label">ระดับชั้นเรียน:</span> ประถมศึกษาปีที่ ${cleanGradeNumber(item.grade)}/${item.room}</div>
               <div class="row-item"><span class="label">วันที่คัดกรอง:</span> ${formattedDate}</div>
               <div class="row-item"><span class="label">รอบการประเมิน:</span> รอบที่ ${item.round || 1}</div>
               <div>
