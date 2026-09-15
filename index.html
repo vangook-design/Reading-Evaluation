@@ -23,7 +23,6 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- Chart.js สำหรับแสดงกราฟเส้นรายงานพัฒนาการรอบประเมิน -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -75,9 +74,8 @@
 
   <main class="flex-grow w-full h-screen flex flex-col items-center justify-center p-2 relative">
 
-    <!-- VIEW 1: หน้าหลักสุด (รายงานสถานะรอบคัดกรองรายชั้น + กราฟเส้นพัฒนาการคะแนนเฉลี่ยที่สวยงาม + สถิติผู้ใช้งาน) -->
+    <!-- VIEW 1: หน้าหลักสุด -->
     <section id="view-home" class="view-section flex flex-col w-full max-w-5xl h-[92vh] glass-panel rounded-3xl animate-fadeIn overflow-hidden">
-      <!-- ส่วนหัว Header, สถิติผู้ใช้งาน และปุ่มทางเลือก -->
       <div class="w-full bg-indigo-900 text-white p-4 flex flex-col sm:flex-row justify-between items-center gap-3 z-20 shadow-md">
         <div class="flex items-center space-x-3">
           <div class="bg-indigo-500 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md transform rotate-3">
@@ -90,13 +88,11 @@
         </div>
         
         <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
-          <!-- ปุ่มรีเฟรชข้อมูลเรียลไทม์ -->
           <button onclick="loadHomeDashboard()" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-200 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-inner" title="อัปเดตข้อมูลล่าสุด">
             <i id="refresh-spinner" class="fa-solid fa-arrows-rotate"></i>
             <span class="hidden sm:inline">รีเฟรช</span>
           </button>
 
-          <!-- การนับสถิติผู้ใช้งานสะสม -->
           <div class="hidden sm:flex items-center space-x-1.5 bg-indigo-800/80 px-3 py-2 rounded-xl border border-indigo-700 text-xs text-indigo-200 shadow-inner">
             <i class="fa-solid fa-users text-amber-400 animate-pulse"></i>
             <span class="text-[11px]">ผู้ใช้งาน: <strong id="header-visitor-count" class="text-yellow-300 font-mono font-black">0</strong></span>
@@ -113,10 +109,8 @@
         </div>
       </div>
 
-      <!-- ส่วนรายงานแสดงผลบนหน้าแรก -->
       <div class="flex-grow overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/50">
-        
-        <!-- 1. สถานะความคืบหน้าการคัดกรองรอบปัจจุบัน จำแนกรายชั้น ป.1 - ป.6 -->
+        <!-- 1. สถานะความคืบหน้าการคัดกรองรอบปัจจุบัน -->
         <div class="bg-white rounded-3xl border border-indigo-100 p-4 md:p-5 shadow-sm">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3.5 border-b border-slate-100 pb-2.5">
             <div>
@@ -131,12 +125,10 @@
             </div>
           </div>
 
-          <div id="grade-round-status-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <!-- การ์ดสถานะรายชั้น ป.1 - ป.6 จะเรนเดอร์โดย JavaScript -->
-          </div>
+          <div id="grade-round-status-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
         </div>
 
-        <!-- 2. กราฟเส้นเปรียบเทียบพัฒนาการผลการอ่านเฉลี่ย ป.1 - ป.6 ตามรอบการคัดกรอง -->
+        <!-- 2. กราฟเส้นเปรียบเทียบพัฒนาการผลการอ่านเฉลี่ย -->
         <div class="bg-white rounded-3xl border border-slate-200/70 p-4 md:p-6 shadow-sm flex flex-col justify-between">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
             <div>
@@ -155,12 +147,8 @@
             <canvas id="rounds-chart-canvas"></canvas>
           </div>
 
-          <!-- การ์ดสรุปคะแนนเฉลี่ยรอบล่าสุดจำแนกรายชั้น ป.1 - ป.6 -->
-          <div id="rounds-avg-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mt-4 pt-3.5 border-t border-slate-100">
-            <!-- การ์ดคะแนนเฉลี่ยรอบล่าสุด -->
-          </div>
+          <div id="rounds-avg-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mt-4 pt-3.5 border-t border-slate-100"></div>
         </div>
-
       </div>
     </section>
 
@@ -227,7 +215,7 @@
       </button>
     </section>
 
-    <!-- VIEW 4: หน้า GAME PLAY (ตาราง 10 คำ 1 นาที พร้อมสุ่มบันทึกเสียงตรวจสอบ) -->
+    <!-- VIEW 4: หน้า GAME PLAY -->
     <section id="view-game" class="view-section hidden w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
       <div class="w-full bg-indigo-900 text-white p-3 md:p-4 flex justify-between items-center z-20 shadow-md">
         <div class="flex flex-col">
@@ -322,7 +310,7 @@
       </div>
     </section>
 
-    <!-- VIEW 7: แดชบอร์ดของคุณครู (สลับดูประวัติผลการคัดกรอง / รายชื่อนักเรียนที่ยังไม่ได้คัดกรอง / ฟังเสียงสุ่มบันทึก) -->
+    <!-- VIEW 7: แดชบอร์ดของคุณครู -->
     <section id="view-teacher-dashboard" class="view-section hidden w-full max-w-5xl h-[92vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
       <div class="w-full bg-indigo-900 text-white p-4 flex justify-between items-center z-20 shadow-md">
         <div class="flex items-center space-x-2">
@@ -350,7 +338,6 @@
           </button>
         </div>
 
-        <!-- 1. แผงตารางประวัติผลการคัดกรอง -->
         <div id="teacher-panel-history" class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
             <h3 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
@@ -390,7 +377,6 @@
           </div>
         </div>
 
-        <!-- 2. แผงตารางรายชื่อนักเรียนที่ยังไม่ได้คัดกรองในรอบปัจจุบัน -->
         <div id="teacher-panel-unscreened" class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm hidden">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
             <div>
@@ -444,9 +430,6 @@
   </footer>
 
   <script>
-    // ==========================================
-    // ตัวแปรระบบและค่าคงที่ (System & Constants)
-    // ==========================================
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxnV9gtgbQ7ET7FTtXBBlWG_HfEFAoxxp3uMLN4lQ8ahFLlA2czeAW_e4EfZGDxf7tf/exec"; 
     const SECRET_TOKEN = "READING_GAME_BY_CHANAT_2024"; 
 
@@ -455,7 +438,6 @@
     let cameraStream = null;
     let capturedPhotoBase64 = null;
     
-    // ระบบสุ่มบันทึกเสียงสั้น (Audio Identity Verification)
     let audioStream = null;
     let audioRecorder = null;
     let audioChunks = [];
@@ -496,13 +478,15 @@
       initSpeechRecognition(); 
       loadHomeDashboard();
 
-      // ระบบ Auto-Polling ดึงข้อมูลอัปเดตอัตโนมัติทุก 20 วินาที
+      // ปรับ Polling เป็น 60 วินาที และจะทำงานเฉพาะเมื่อหน้าจอไม่ถูกย่อหรือซ่อนอยู่
       setInterval(() => {
-        const homeView = document.getElementById('view-home');
-        if (homeView && !homeView.classList.contains('hidden')) {
-          loadHomeDashboard(true);
+        if (!document.hidden) {
+          const homeView = document.getElementById('view-home');
+          if (homeView && !homeView.classList.contains('hidden')) {
+            loadHomeDashboard(true);
+          }
         }
-      }, 20000);
+      }, 60000);
     });
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -556,6 +540,9 @@
       loadHomeDashboard(); 
     }
 
+    // ==========================================
+    // อัลกอริทึมจับคู่สัทศาสตร์ Thai-PMA
+    // ==========================================
     function normalizeThaiPhonetic(word) {
       if (!word) return "";
       let text = word.trim().replace(/[\s\-\_\.\,\?]/g, "").replace(/[ก-ฮ]์/g, "");
@@ -659,9 +646,6 @@
       };
     }
 
-    // =======================================================
-    // ระบบสุ่มบันทึกเสียงสั้น (Audio Identity Verification Snippet)
-    // =======================================================
     function startShortAudioCapture(stream, durationMs = 3800) {
       if (!stream || isRecordingAudioSnippet || hasRecordedAudioSnippet) return;
       try {
@@ -670,9 +654,7 @@
         audioChunks = [];
 
         let options = { mimeType: 'audio/webm' };
-        if (!MediaRecorder.isTypeSupported('audio/webm')) {
-          options = {};
-        }
+        if (!MediaRecorder.isTypeSupported('audio/webm')) options = {};
 
         audioRecorder = new MediaRecorder(stream, options);
         audioRecorder.ondataavailable = (e) => {
@@ -701,9 +683,6 @@
       }
     }
 
-    // =======================================================
-    // API Request พร้อมระบบ Auto-Retry และป้องกัน HTML Crash
-    // =======================================================
     async function apiRequest(action, data = {}, retries = 2) {
       try {
         const response = await fetch(BACKEND_URL, {
@@ -713,7 +692,6 @@
         });
         
         const text = await response.text();
-        
         if (text.trim().startsWith("<")) {
           if (retries > 0) {
             await new Promise(res => setTimeout(res, 1000));
@@ -741,9 +719,6 @@
       document.getElementById(`view-${viewId}`).classList.remove('hidden');
     }
 
-    // =======================================================
-    // โหลดหน้าแรกครั้งเดียว รวบรวมทุกข้อมูล (Real-time & Reliable)
-    // =======================================================
     async function loadHomeDashboard(isSilent = false) {
       const spinner = document.getElementById('refresh-spinner');
       if (spinner && !isSilent) spinner.classList.add('fa-spin');
@@ -756,9 +731,8 @@
           roundStatusDataCache = res.roundStatus || null;
 
           updateVisitorCounter(res.visitorCount || 0);
-
-          renderGradeRoundStatusCards(); // 1. สถานะรอบคัดกรองรายชั้น ป.1-6
-          renderRoundsLineChart();       // 2. กราฟเส้นพัฒนาการคะแนนเฉลี่ยที่สวยงาม
+          renderGradeRoundStatusCards();
+          renderRoundsLineChart();
         } else {
           throw new Error(res.message || "โครงสร้างข้อมูลตอบกลับไม่ถูกต้อง");
         }
@@ -780,9 +754,6 @@
       if (footerElem) footerElem.textContent = Number(count).toLocaleString();
     }
 
-    // ==========================================
-    // แจ้งสถานะนักเรียนรายชั้นในรอบปัจจุบัน (ป.1 - ป.6)
-    // ==========================================
     function renderGradeRoundStatusCards() {
       const container = document.getElementById('grade-round-status-grid');
       const roundBadge = document.getElementById('home-round-badge');
@@ -838,9 +809,6 @@
       });
     }
 
-    // ==========================================
-    // กราฟเส้นพัฒนาการคะแนนเฉลี่ย ป.1-ป.6 ตามรอบ (Chart.js Line Chart)
-    // ==========================================
     function renderRoundsLineChart() {
       const canvas = document.getElementById('rounds-chart-canvas');
       if (!canvas) return;
@@ -939,9 +907,7 @@
             y: {
               min: 0,
               max: 10,
-              grid: {
-                color: 'rgba(226, 232, 240, 0.7)'
-              },
+              grid: { color: 'rgba(226, 232, 240, 0.7)' },
               ticks: {
                 stepSize: 2,
                 callback: function(value) { return value + ' คำ'; },
@@ -956,9 +922,7 @@
               }
             },
             x: {
-              grid: {
-                display: false
-              },
+              grid: { display: false },
               ticks: { 
                 font: { family: "'Sarabun', sans-serif", size: 12, weight: 'bold' },
                 color: '#475569'
@@ -1198,9 +1162,6 @@
       }
     }
 
-    // =======================================================
-    // ดึงข้อมูลเตรียมความพร้อมเข้าสู่เกมใน 1 Request
-    // =======================================================
     async function fetchStudentData(studentId) {
       Swal.fire({ 
         title: 'กำลังเตรียมด่านผจญภัยคำศัพท์...', 
@@ -1261,7 +1222,6 @@
       showView('profile');
       const video = document.getElementById('profile-video'), fallback = document.getElementById('profile-fallback');
       
-      // เตรียมกล้อง
       navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
       .then(stream => {
         cameraStream = stream;
@@ -1273,7 +1233,6 @@
         fallback.classList.remove('hidden');
       });
 
-      // เตรียมไมโครโฟนสำหรับสุ่มบันทึกเสียงตรวจสอบ
       navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
         audioStream = stream;
@@ -1282,16 +1241,17 @@
       });
     }
 
+    // ปรับการถ่ายภาพให้บีบอัดภาพ (200x200, 0.65 quality) เพื่อลดขนาด Payload จาก ~70KB เหลือ ~15KB
     function takeSnapshotAndStart() {
       if (cameraStream) {
         const video = document.getElementById('profile-video');
         const canvas = document.createElement('canvas');
-        canvas.width = 300; canvas.height = 300;
+        canvas.width = 200; canvas.height = 200;
         const ctx = canvas.getContext('2d');
         const size = Math.min(video.videoWidth, video.videoHeight);
         const x = (video.videoWidth - size) / 2, y = (video.videoHeight - size) / 2;
-        ctx.drawImage(video, x, y, size, size, 0, 0, 300, 300);
-        capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+        ctx.drawImage(video, x, y, size, size, 0, 0, 200, 200);
+        capturedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.65);
         stopAllCameras();
         const avatar = document.getElementById('player-avatar-tracker');
         avatar.src = capturedPhotoBase64;
@@ -1301,9 +1261,6 @@
       initLevel();
     }
     
-    // ==========================================
-    // สร้างกระดานคำศัพท์ 10 คำ (ตัดเครื่องหมาย - ออกเฉพาะการแสดงผล)
-    // ==========================================
     function initLevel() {
       timeRemaining = 60; 
       correctCount = 0;
@@ -1327,7 +1284,6 @@
 
       selectedWords.forEach((item, index) => {
         const rawWord = item.word ? item.word.trim() : "";
-        // ตัดเครื่องหมายขีด - และช่องว่างคั่นกลางออกเฉพาะการแสดงผลบนกระดาน
         const displayWord = rawWord.replace(/[\-–—\s]/g, "");
 
         const card = document.createElement('div');
@@ -1376,14 +1332,12 @@
         try { recognition.start(); } catch(e) {}
       }
 
-      // สุ่มช่วงเวลาบันทึกเสียงสั้น (ระหว่างวินาทีที่ 7 ถึง 16 ของการอ่าน)
       const randomRecordSecond = Math.floor(Math.random() * 10) + 7;
 
       gameTimer = setInterval(() => {
         timeRemaining--; 
         updateTimerUI();
 
-        // ทริกเกอร์สุ่มบันทึกเสียงตรวจสอบ 1 ครั้ง
         const elapsedSeconds = 60 - timeRemaining;
         if (!hasRecordedAudioSnippet && (elapsedSeconds >= randomRecordSecond || correctCount >= 2)) {
           if (audioStream) {
@@ -1523,11 +1477,11 @@
         const response = await apiRequest('saveSummaryResult', { 
           summary: summary, 
           base64Image: capturedPhotoBase64,
-          base64Audio: capturedAudioBase64 // ส่งไฟล์เสียงสั้นที่สุ่มบันทึกได้
+          base64Audio: capturedAudioBase64
         });
 
         if (response && response.success) {
-          statusContainer.innerHTML = `<span class="text-emerald-600 font-black"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> บันทึกข้อมูลคัดกรองและแนบไฟล์เสียงเรียบร้อย! (รอบที่ ${response.round || 1})</span>`;
+          statusContainer.innerHTML = `<span class="text-emerald-600 font-black"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> บันทึกข้อมูลคัดกรองเรียบร้อย! (รอบที่ ${response.round || 1} | ส่งชีตระบบเดิมรอบที่ ${response.oldSystemRound || '-'})</span>`;
           playSound('win');
           confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
         } else {
@@ -1538,9 +1492,6 @@
       }
     }
 
-    // ==========================================
-    // ระบบสำหรับครู (ประวัติผลการคัดกรอง / รายชื่อนักเรียนที่ยังไม่ได้คัดกรอง / ฟังเสียงสุ่มตรวจ)
-    // ==========================================
     function showTeacherLogin() {
       showView('teacher-login');
       document.getElementById('teacher-email-input').value = '';
