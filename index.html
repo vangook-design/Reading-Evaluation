@@ -121,7 +121,7 @@
               <p class="text-[10px] text-slate-400 mt-0.5">จำนวนนักเรียนทั้งหมด คัดกรองแล้ว และคงเหลือในรอบปัจจุบัน</p>
             </div>
             <div id="home-round-total-badge" class="text-[11px] font-bold text-slate-600 bg-indigo-50 px-3 py-1 rounded-xl border border-indigo-100">
-              ภาพรวม: กำลังประมวลผล...
+              ภาพรวม: กำลังเชื่อมต่อข้อมูล...
             </div>
           </div>
 
@@ -362,7 +362,7 @@
           </button>
         </div>
 
-        <!-- 1. แผงตารางประวัติผลการคัดกรอง (เดิม) -->
+        <!-- 1. แผงตารางประวัติผลการคัดกรอง -->
         <div id="teacher-panel-history" class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
             <h3 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
@@ -401,7 +401,7 @@
           </div>
         </div>
 
-        <!-- 2. แผงตารางรายชื่อนักเรียนที่ยังไม่ได้คัดกรองในรอบปัจจุบัน (เพิ่มเติม) -->
+        <!-- 2. แผงตารางรายชื่อนักเรียนที่ยังไม่ได้คัดกรองในรอบปัจจุบัน -->
         <div id="teacher-panel-unscreened" class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm hidden">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
             <div>
@@ -478,15 +478,14 @@
     let speechMode = "idle";
     let allStudentsCached = [];
     let dashboardDataCache = [];
-    let roundStatusDataCache = null; // แคชข้อมูลรอบและสถิตินักเรียนรายชั้น
+    let roundStatusDataCache = null;
     
     let roundsChartInstance = null;
-    let teacherActiveTab = 'history'; // 'history' | 'unscreened'
+    let teacherActiveTab = 'history';
 
     window.addEventListener('load', () => { 
       initSpeechRecognition(); 
-      fetchLeaderboard(); 
-      loadHomeDashboard(); 
+      loadHomeDashboard(); // ดึงข้อมูลทุกอย่างรอบเดียวจบ
     });
 
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -635,18 +634,40 @@
       };
     }
 
-    async function apiRequest(action, data = {}) {
-      const response = await fetch(BACKEND_URL, {
-        method: 'POST',
-        body: JSON.stringify({ token: SECRET_TOKEN, action, ...data }),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-      });
-      const text = await response.text();
-      const resData = JSON.parse(text);
-      if(resData.success === false && resData.message === "Unauthorized Request") {
-        throw new Error("API Token Mismatch");
+    // =======================================================
+    // API Request พร้อมระบบ Auto-Retry และป้องกัน HTML Error Crash
+    // =======================================================
+    async function apiRequest(action, data = {}, retries = 2) {
+      try {
+        const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          body: JSON.stringify({ token: SECRET_TOKEN, action, ...data }),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        
+        const text = await response.text();
+        
+        // ตรวจจับกรณี Google ส่งคืนหน้า HTML Error ชั่วคราว
+        if (text.trim().startsWith("<")) {
+          if (retries > 0) {
+            await new Promise(res => setTimeout(res, 1000));
+            return await apiRequest(action, data, retries - 1);
+          }
+          throw new Error("ระบบคลาวด์ Google มีปริมาณคำขอหนาแน่นชั่วคราว กรุณารองรับใหม่อีกครั้ง");
+        }
+        
+        const resData = JSON.parse(text);
+        if (resData.success === false && resData.message === "Unauthorized Request") {
+          throw new Error("API Token Mismatch");
+        }
+        return resData;
+      } catch (err) {
+        if (retries > 0) {
+          await new Promise(res => setTimeout(res, 1000));
+          return await apiRequest(action, data, retries - 1);
+        }
+        throw err;
       }
-      return resData;
     }
 
     function showView(viewId) {
@@ -654,12 +675,49 @@
       document.getElementById(`view-${viewId}`).classList.remove('hidden');
     }
 
-    async function fetchLeaderboard() {
+    // =======================================================
+    // โหลดหน้าแรกครั้งเดียว รวบรวมทุกข้อมูล (แก้ปัญหาความหน่วงและ Error)
+    // =======================================================
+    async function loadHomeDashboard() {
       try {
-        const topScorers = await apiRequest('getLeaderboard');
-        const container = document.getElementById('leaderboard-container');
-        container.innerHTML = '';
-        let hasData = false;
+        // ยิง Request เดียวได้ทั้งผลสะสม, สถานะรอบปัจจุบัน, ทำเนียบ และยอดผู้เข้าชม
+        const res = await apiRequest('getInitialHomeData');
+
+        if (res && res.success) {
+          dashboardDataCache = res.summaryData || [];
+          roundStatusDataCache = res.roundStatus || null;
+
+          updateVisitorCounter(res.visitorCount || 0);
+
+          renderGradeRoundStatusCards(); // 1. สถานะรอบคัดกรองรายชั้น ป.1-6
+          renderRoundsLineChart();       // 2. กราฟเส้นพัฒนาการคะแนนเฉลี่ย
+          renderDashboardStats();        // 3. แผนภูมิแท่งสัดส่วนสะสม
+          renderLeaderboardUI(res.leaderboard); // 4. ทำเนียบสถิติสูงสุด
+        } else {
+          throw new Error(res.message || "โครงสร้างข้อมูลตอบกลับไม่ถูกต้อง");
+        }
+      } catch (e) {
+        console.error("Dashboard Load Error: ", e);
+        const box = document.getElementById('chart-container-box');
+        if (box) {
+          box.innerHTML = `<p class="text-xs text-rose-500 text-center font-bold py-16"><i class="fa-solid fa-circle-exclamation mr-1"></i>ไม่สามารถดึงข้อมูลสถิติได้: ${e.message}</p>`;
+        }
+      }
+    }
+
+    function updateVisitorCounter(count) {
+      const headerElem = document.getElementById('header-visitor-count');
+      const footerElem = document.getElementById('footer-visitor-count');
+      if (headerElem) headerElem.textContent = Number(count).toLocaleString();
+      if (footerElem) footerElem.textContent = Number(count).toLocaleString();
+    }
+
+    function renderLeaderboardUI(topScorers) {
+      const container = document.getElementById('leaderboard-container');
+      if (!container) return;
+      container.innerHTML = '';
+      let hasData = false;
+      if (topScorers) {
         for (let grade = 1; grade <= 6; grade++) {
           if (topScorers[grade]) {
             hasData = true;
@@ -674,9 +732,258 @@
             container.appendChild(card);
           }
         }
-        if (!hasData) container.innerHTML = '<p class="text-xs text-slate-400 text-center w-full">ยังไม่มีสถิติผู้เล่นในระบบ</p>';
-      } catch (e) {
-        document.getElementById('leaderboard-container').innerHTML = '<p class="text-xs text-rose-400 text-center w-full">ไม่สามารถเชื่อมต่อทำเนียบได้</p>';
+      }
+      if (!hasData) container.innerHTML = '<p class="text-xs text-slate-400 text-center w-full">ยังไม่มีสถิติผู้เล่นในระบบ</p>';
+    }
+
+    // ==========================================
+    // แจ้งสถานะนักเรียนรายชั้นในรอบปัจจุบัน (ป.1 - ป.6)
+    // ==========================================
+    function renderGradeRoundStatusCards() {
+      const container = document.getElementById('grade-round-status-grid');
+      const roundBadge = document.getElementById('home-round-badge');
+      const totalBadge = document.getElementById('home-round-total-badge');
+      if (!container || !roundStatusDataCache) return;
+
+      const currentRound = roundStatusDataCache.currentRound || 1;
+      if (roundBadge) roundBadge.textContent = `รอบที่ ${currentRound}`;
+      if (totalBadge) {
+        totalBadge.innerHTML = `ภาพรวมรอบที่ ${currentRound}: คัดกรองแล้ว <strong class="text-emerald-600">${roundStatusDataCache.screenedCount}</strong> / ${roundStatusDataCache.totalStudents} คน (<span class="text-rose-500 font-bold">เหลืออีก ${roundStatusDataCache.remainingCount} คน</span>)`;
+      }
+
+      container.innerHTML = '';
+      const gradePalette = [
+        { grade: 1, label: 'ป.1', color: 'border-pink-300 text-pink-700' },
+        { grade: 2, label: 'ป.2', color: 'border-orange-300 text-orange-700' },
+        { grade: 3, label: 'ป.3', color: 'border-amber-300 text-amber-700' },
+        { grade: 4, label: 'ป.4', color: 'border-emerald-300 text-emerald-700' },
+        { grade: 5, label: 'ป.5', color: 'border-cyan-300 text-cyan-700' },
+        { grade: 6, label: 'ป.6', color: 'border-indigo-300 text-indigo-700' }
+      ];
+
+      gradePalette.forEach(gInfo => {
+        const stats = (roundStatusDataCache.gradeStats && roundStatusDataCache.gradeStats[gInfo.grade]) 
+                      ? roundStatusDataCache.gradeStats[gInfo.grade] 
+                      : { total: 0, screened: 0, remaining: 0, percent: 0 };
+
+        const card = document.createElement('div');
+        card.className = "bg-white p-3 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between";
+        card.innerHTML = `
+          <div class="flex justify-between items-center mb-1.5 border-b pb-1">
+            <span class="font-extrabold text-xs game-font ${gInfo.color.split(' ')[1]}">ชั้น ${gInfo.label}</span>
+            <span class="text-[9px] font-bold text-slate-500">รวม ${stats.total} คน</span>
+          </div>
+          <div class="space-y-1 text-[10px]">
+            <div class="flex justify-between text-slate-600">
+              <span>คัดกรองแล้ว:</span>
+              <strong class="text-emerald-600 font-bold">${stats.screened} คน</strong>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span>คงเหลือ:</span>
+              <strong class="${stats.remaining > 0 ? 'text-rose-500 font-bold' : 'text-slate-400'}">${stats.remaining} คน</strong>
+            </div>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
+              <div class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: ${stats.percent}%"></div>
+            </div>
+            <div class="text-right text-[8px] text-slate-400 font-bold mt-0.5">
+              ${stats.percent}% ${stats.remaining === 0 && stats.total > 0 ? '<span class="text-emerald-500 font-extrabold">(ครบ 100%)</span>' : ''}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ==========================================
+    // กราฟเส้นพัฒนาการคะแนนเฉลี่ย ป.1-ป.6 ตามรอบ (Chart.js Line Chart Only)
+    // ==========================================
+    function renderRoundsLineChart() {
+      const canvas = document.getElementById('rounds-chart-canvas');
+      if (!canvas) return;
+
+      if (!dashboardDataCache || dashboardDataCache.length === 0) {
+        document.getElementById('chart-container-box').innerHTML = '<p class="text-xs text-slate-400 text-center py-16">ยังไม่มีประวัติการประเมินเพื่อสร้างกราฟสถิติ</p>';
+        return;
+      }
+
+      const roundsSet = new Set();
+      dashboardDataCache.forEach(item => {
+        roundsSet.add(parseInt(item.round || 1));
+      });
+      const sortedRounds = Array.from(roundsSet).sort((a, b) => a - b);
+      if (sortedRounds.length === 0) sortedRounds.push(1);
+
+      const labels = sortedRounds.map(r => `รอบที่ ${r}`);
+
+      const gradePalette = [
+        { grade: 1, label: 'ป.1', color: '#ec4899' },
+        { grade: 2, label: 'ป.2', color: '#f97316' },
+        { grade: 3, label: 'ป.3', color: '#eab308' },
+        { grade: 4, label: 'ป.4', color: '#10b981' },
+        { grade: 5, label: 'ป.5', color: '#06b6d4' },
+        { grade: 6, label: 'ป.6', color: '#6366f1' }
+      ];
+
+      const datasets = gradePalette.map(gInfo => {
+        const dataPoints = sortedRounds.map(r => {
+          const matched = dashboardDataCache.filter(item => parseInt(item.round || 1) === r && parseInt(item.grade) === gInfo.grade);
+          if (matched.length === 0) return null;
+          const sumScore = matched.reduce((acc, curr) => acc + (parseFloat(curr.score) || 0), 0);
+          return Math.round((sumScore / matched.length) * 10) / 10;
+        });
+
+        return {
+          label: gInfo.label,
+          data: dataPoints,
+          borderColor: gInfo.color,
+          backgroundColor: gInfo.color,
+          tension: 0.35,
+          fill: false,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 2.5
+        };
+      });
+
+      if (roundsChartInstance) {
+        roundsChartInstance.destroy();
+      }
+
+      const ctx = canvas.getContext('2d');
+      roundsChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 14,
+                font: { family: "'Sarabun', 'Mali', sans-serif", size: 11, weight: 'bold' }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.parsed.y;
+                  return val !== null ? `${context.dataset.label}: เฉลี่ย ${val} / 10 คำ` : `${context.dataset.label}: ยังไม่มีข้อมูล`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: 0,
+              max: 10,
+              ticks: {
+                stepSize: 2,
+                callback: function(value) { return value + ' คำ'; },
+                font: { family: "'Sarabun', sans-serif", size: 10 }
+              },
+              title: {
+                display: true,
+                text: 'คะแนนการอ่านเฉลี่ย (คำ)',
+                font: { family: "'Sarabun', sans-serif", size: 10, weight: 'bold' }
+              }
+            },
+            x: {
+              ticks: { font: { family: "'Sarabun', sans-serif", size: 11, weight: 'bold' } }
+            }
+          }
+        }
+      });
+
+      renderRoundsAverageSummary(sortedRounds[sortedRounds.length - 1], gradePalette);
+    }
+
+    function renderRoundsAverageSummary(latestRound, gradePalette) {
+      const summaryContainer = document.getElementById('rounds-avg-summary');
+      if (!summaryContainer) return;
+      summaryContainer.innerHTML = '';
+
+      gradePalette.forEach(gInfo => {
+        const matched = dashboardDataCache.filter(item => parseInt(item.round || 1) === latestRound && parseInt(item.grade) === gInfo.grade);
+        let avgStr = "-";
+        let count = matched.length;
+        if (count > 0) {
+          const sum = matched.reduce((acc, curr) => acc + (parseFloat(curr.score) || 0), 0);
+          avgStr = (Math.round((sum / count) * 10) / 10).toFixed(1);
+        }
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 border border-slate-100 rounded-xl p-2 text-center shadow-xs";
+        card.innerHTML = `
+          <span class="text-[10px] font-extrabold block" style="color: ${gInfo.color};">ชั้น ${gInfo.label}</span>
+          <p class="text-base font-black text-slate-800 my-0.5">${avgStr} <span class="text-[10px] font-normal text-slate-400">คำ</span></p>
+          <span class="text-[9px] text-slate-400 block font-bold">รอบที่ ${latestRound} (${count} คน)</span>
+        `;
+        summaryContainer.appendChild(card);
+      });
+    }
+
+    function renderDashboardStats() {
+      const statsContainer = document.getElementById('db-stats-grid');
+      if(!statsContainer) return;
+      statsContainer.innerHTML = '';
+      
+      for (let g = 1; g <= 6; g++) {
+        const gradeData = dashboardDataCache.filter(item => parseInt(item.grade) === g);
+        const total = gradeData.length;
+        const good = gradeData.filter(item => item.level === 'ดี').length;
+        const fair = gradeData.filter(item => item.level === 'พอใช้').length;
+        const improve = gradeData.filter(item => item.level === 'ปรับปรุง').length;
+        
+        const goodPct = total > 0 ? Math.round((good / total) * 100) : 0;
+        const fairPct = total > 0 ? Math.round((fair / total) * 100) : 0;
+        const improvePct = total > 0 ? Math.round((improve / total) * 100) : 0;
+        
+        const card = document.createElement('div');
+        card.className = "bg-white p-3 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between";
+        card.innerHTML = `
+          <div class="flex justify-between items-center mb-2 border-b pb-1">
+            <span class="font-extrabold text-xs text-indigo-900 game-font">ป.${g}</span>
+            <span class="text-[9px] bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">ประเมินแล้ว ${total} ครั้ง</span>
+          </div>
+          <div class="space-y-2 text-[10px]">
+            <div>
+              <div class="flex justify-between font-bold mb-0.5 text-emerald-600">
+                <span>ดี (8-10 คำ)</span>
+                <span>${good} คน (${goodPct}%)</span>
+              </div>
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-emerald-500 h-full rounded-full" style="width: ${goodPct}%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between font-bold mb-0.5 text-amber-500">
+                <span>พอใช้ (5-7 คำ)</span>
+                <span>${fair} คน (${fairPct}%)</span>
+              </div>
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-amber-400 h-full rounded-full" style="width: ${fairPct}%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between font-bold mb-0.5 text-rose-500">
+                <span>ปรับปรุง (0-4 คำ)</span>
+                <span>${improve} คน (${improvePct}%)</span>
+              </div>
+              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-rose-500 h-full rounded-full" style="width: ${improvePct}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+        statsContainer.appendChild(card);
       }
     }
 
@@ -882,15 +1189,26 @@
       }
     }
 
+    // =======================================================
+    // ดึงข้อมูลเตรียมความพร้อมเข้าสู่เกมใน 1 Request (รวดเร็ว ไร้รอยต่อ)
+    // =======================================================
     async function fetchStudentData(studentId) {
-      Swal.fire({ title: 'กำลังโหลดข้อมูลนักผจญภัย...', didOpen: () => Swal.showLoading() });
+      Swal.fire({ 
+        title: 'กำลังเตรียมด่านผจญภัยคำศัพท์...', 
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading() 
+      });
+      
       try {
-        const student = await apiRequest('getStudentInfo', { studentId });
-        if (student && student.studentId) {
+        // ยิงครั้งเดียว ได้ทั้งสิทธิ์การสอบ, ข้อมูลนักเรียน และคำศัพท์ประจำชั้น
+        const res = await apiRequest('prepareStudentGame', { studentId });
+        Swal.close();
+
+        if (res && res.success) {
+          const student = res.student;
           
-          // ตรวจสอบเงื่อนไข: หากคัดกรองแล้วในรอบนี้ จะไม่สามารถคัดกรองได้อีกจนกว่าทุกคนจะครบ
-          if (student.roundInfo && student.roundInfo.alreadyScreened) {
-            Swal.close();
+          // ตรวจสอบสถานะการคัดกรองในรอบปัจจุบัน
+          if (res.alreadyScreened) {
             Swal.fire({
               icon: 'warning',
               title: 'คัดกรองครบแล้วในรอบนี้',
@@ -900,7 +1218,7 @@
                        <div>⏳ <strong>คงเหลือ:</strong> อีก ${student.roundInfo.remainingCount} คนที่ยังไม่ได้คัดกรอง</div>
                        <div class="text-[11px] text-amber-700 pt-1">* ระบบจะเปิดรอบที่ ${student.roundInfo.currentRound + 1} เมื่อนักเรียนทุกคนในโรงเรียนทำการคัดกรองครบทุกคน</div>
                      </div>`,
-              confirmButtonText: 'รับทราบและกลับหน้าหลัก',
+              confirmButtonText: 'กลับหน้าหลัก',
               confirmButtonColor: '#4f46e5'
             }).then(() => {
               showView('home');
@@ -910,25 +1228,19 @@
           }
 
           currentStudent = student;
-          const words = await apiRequest('getWordsForGrade', { grade: student.grade });
-          
-          masterWords = (words && words.length > 0) ? words : [
+          masterWords = (res.words && res.words.length > 0) ? res.words : [
             {word: "โรงเรียน"}, {word: "ดินสอ"}, {word: "กระดาษ"}, {word: "คุณครู"},
             {word: "ภาษาไทย"}, {word: "ความรู้"}, {word: "วิชา"}, {word: "หนังสือ"},
-            {word: "เพื่อน"}, {word: "ความรัก"}, {word: "การเรียน"}, {word: "กระดาน"},
-            {word: "สนามหญ้า"}, {word: "อาหาร"}, {word: "สุขภาพ"}, {word: "ครอบครัว"},
-            {word: "ประเทศไทย"}, {word: "ความดี"}, {word: "สติปัญญา"}, {word: "อนาคต"}
+            {word: "เพื่อน"}, {word: "ความรัก"}
           ];
-          
-          Swal.close();
+
           setupProfileScreen();
         } else {
-          Swal.close();
-          Swal.fire('ไม่พบข้อมูล', 'รหัสผู้เรียนไม่ถูกต้อง หรือถูกปิดใช้งาน', 'error').then(() => startScan());
+          Swal.fire('ไม่พบข้อมูล', res.message || 'รหัสผู้เรียนไม่ถูกต้อง', 'error').then(() => startScan());
         }
-      } catch(e) { 
-        Swal.close(); 
-        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ระบบคลาวด์ได้', 'error').then(() => startScan()); 
+      } catch(e) {
+        Swal.close();
+        Swal.fire('ข้อผิดพลาด', e.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error').then(() => startScan());
       }
     }
 
@@ -1181,295 +1493,6 @@
     }
 
     // ==========================================
-    // ดึงสถิติ, นับผู้ใช้งาน และเรนเดอร์แดชบอร์ดหน้าแรก
-    // ==========================================
-    async function loadHomeDashboard() {
-      try {
-        // ดึงสถิติผลการคัดกรอง, สถานะรอบปัจจุบัน และนับผู้ใช้งานพร้อมกัน
-        const [summaryData, roundStatus, visitData] = await Promise.all([
-          apiRequest('getSummaryResults'),
-          apiRequest('getRoundStatus'),
-          apiRequest('recordVisit')
-        ]);
-
-        dashboardDataCache = summaryData || [];
-        roundStatusDataCache = roundStatus || null;
-
-        // อัปเดตสถิติผู้ใช้งานสะสม
-        if (visitData && visitData.count !== undefined) {
-          updateVisitorCounter(visitData.count);
-        } else if (roundStatus && roundStatus.visitorCount !== undefined) {
-          updateVisitorCounter(roundStatus.visitorCount);
-        }
-
-        renderGradeRoundStatusCards(); // 1. เรนเดอร์การ์ดสถานะรายชั้นรอบปัจจุบัน
-        renderRoundsLineChart();       // 2. เรนเดอร์กราฟเส้นพัฒนาการคะแนนเฉลี่ย
-        renderDashboardStats();        // 3. เรนเดอร์แผนภูมิสัดส่วนสะสม
-      } catch (e) {
-        console.error("Dashboard Load Error: ", e);
-        document.getElementById('chart-container-box').innerHTML = `<p class="text-xs text-rose-500 text-center font-bold py-4">ไม่สามารถดึงข้อมูลสถิติได้: ${e.message}</p>`;
-      }
-    }
-
-    function updateVisitorCounter(count) {
-      const headerElem = document.getElementById('header-visitor-count');
-      const footerElem = document.getElementById('footer-visitor-count');
-      if (headerElem) headerElem.textContent = Number(count).toLocaleString();
-      if (footerElem) footerElem.textContent = Number(count).toLocaleString();
-    }
-
-    // ==========================================
-    // แจ้งสถานะนักเรียนรายชั้นในรอบปัจจุบัน (ป.1 - ป.6)
-    // ==========================================
-    function renderGradeRoundStatusCards() {
-      const container = document.getElementById('grade-round-status-grid');
-      const roundBadge = document.getElementById('home-round-badge');
-      const totalBadge = document.getElementById('home-round-total-badge');
-      if (!container || !roundStatusDataCache) return;
-
-      const currentRound = roundStatusDataCache.currentRound || 1;
-      if (roundBadge) roundBadge.textContent = `รอบที่ ${currentRound}`;
-      if (totalBadge) {
-        totalBadge.innerHTML = `ภาพรวมรอบที่ ${currentRound}: คัดกรองแล้ว <strong class="text-emerald-600">${roundStatusDataCache.screenedCount}</strong> / ${roundStatusDataCache.totalStudents} คน (<span class="text-rose-500 font-bold">เหลืออีก ${roundStatusDataCache.remainingCount} คน</span>)`;
-      }
-
-      container.innerHTML = '';
-      const gradePalette = [
-        { grade: 1, label: 'ป.1', color: 'border-pink-300 text-pink-700 bg-pink-50' },
-        { grade: 2, label: 'ป.2', color: 'border-orange-300 text-orange-700 bg-orange-50' },
-        { grade: 3, label: 'ป.3', color: 'border-amber-300 text-amber-700 bg-amber-50' },
-        { grade: 4, label: 'ป.4', color: 'border-emerald-300 text-emerald-700 bg-emerald-50' },
-        { grade: 5, label: 'ป.5', color: 'border-cyan-300 text-cyan-700 bg-cyan-50' },
-        { grade: 6, label: 'ป.6', color: 'border-indigo-300 text-indigo-700 bg-indigo-50' }
-      ];
-
-      gradePalette.forEach(gInfo => {
-        const stats = (roundStatusDataCache.gradeStats && roundStatusDataCache.gradeStats[gInfo.grade]) 
-                      ? roundStatusDataCache.gradeStats[gInfo.grade] 
-                      : { total: 0, screened: 0, remaining: 0, percent: 0 };
-
-        const card = document.createElement('div');
-        card.className = "bg-white p-3 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between";
-        card.innerHTML = `
-          <div class="flex justify-between items-center mb-1.5 border-b pb-1">
-            <span class="font-extrabold text-xs game-font ${gInfo.color.split(' ')[1]}">ชั้น ${gInfo.label}</span>
-            <span class="text-[9px] font-bold text-slate-500">รวม ${stats.total} คน</span>
-          </div>
-          <div class="space-y-1 text-[10px]">
-            <div class="flex justify-between text-slate-600">
-              <span>คัดกรองแล้ว:</span>
-              <strong class="text-emerald-600 font-bold">${stats.screened} คน</strong>
-            </div>
-            <div class="flex justify-between text-slate-600">
-              <span>คงเหลือ:</span>
-              <strong class="${stats.remaining > 0 ? 'text-rose-500 font-bold' : 'text-slate-400'}">${stats.remaining} คน</strong>
-            </div>
-            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
-              <div class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: ${stats.percent}%"></div>
-            </div>
-            <div class="text-right text-[8px] text-slate-400 font-bold mt-0.5">
-              ${stats.percent}% ${stats.remaining === 0 && stats.total > 0 ? '<span class="text-emerald-500 font-extrabold">(ครบ 100%)</span>' : ''}
-            </div>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    // ==========================================
-    // กราฟเส้นพัฒนาการคะแนนเฉลี่ย ป.1-ป.6 ตามรอบ (Chart.js Line Chart Only)
-    // ==========================================
-    function renderRoundsLineChart() {
-      const canvas = document.getElementById('rounds-chart-canvas');
-      if (!canvas) return;
-
-      if (!dashboardDataCache || dashboardDataCache.length === 0) {
-        document.getElementById('chart-container-box').innerHTML = '<p class="text-xs text-slate-400 text-center py-16">ยังไม่มีประวัติการประเมินเพื่อสร้างกราฟสถิติ</p>';
-        return;
-      }
-
-      const roundsSet = new Set();
-      dashboardDataCache.forEach(item => {
-        roundsSet.add(parseInt(item.round || 1));
-      });
-      const sortedRounds = Array.from(roundsSet).sort((a, b) => a - b);
-      if (sortedRounds.length === 0) sortedRounds.push(1);
-
-      const labels = sortedRounds.map(r => `รอบที่ ${r}`);
-
-      const gradePalette = [
-        { grade: 1, label: 'ป.1', color: '#ec4899' },
-        { grade: 2, label: 'ป.2', color: '#f97316' },
-        { grade: 3, label: 'ป.3', color: '#eab308' },
-        { grade: 4, label: 'ป.4', color: '#10b981' },
-        { grade: 5, label: 'ป.5', color: '#06b6d4' },
-        { grade: 6, label: 'ป.6', color: '#6366f1' }
-      ];
-
-      const datasets = gradePalette.map(gInfo => {
-        const dataPoints = sortedRounds.map(r => {
-          const matched = dashboardDataCache.filter(item => parseInt(item.round || 1) === r && parseInt(item.grade) === gInfo.grade);
-          if (matched.length === 0) return null;
-          const sumScore = matched.reduce((acc, curr) => acc + (parseFloat(curr.score) || 0), 0);
-          return Math.round((sumScore / matched.length) * 10) / 10;
-        });
-
-        return {
-          label: gInfo.label,
-          data: dataPoints,
-          borderColor: gInfo.color,
-          backgroundColor: gInfo.color,
-          tension: 0.35,
-          fill: false,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          borderWidth: 2.5
-        };
-      });
-
-      if (roundsChartInstance) {
-        roundsChartInstance.destroy();
-      }
-
-      const ctx = canvas.getContext('2d');
-      roundsChartInstance = new Chart(ctx, {
-        type: 'line', // กำหนดเป็นกราฟเส้นอย่างเดียว
-        data: {
-          labels: labels,
-          datasets: datasets
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: 'index',
-            intersect: false,
-          },
-          plugins: {
-            legend: {
-              position: 'top',
-              labels: {
-                boxWidth: 14,
-                font: { family: "'Sarabun', 'Mali', sans-serif", size: 11, weight: 'bold' }
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const val = context.parsed.y;
-                  return val !== null ? `${context.dataset.label}: เฉลี่ย ${val} / 10 คำ` : `${context.dataset.label}: ยังไม่มีข้อมูล`;
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              min: 0,
-              max: 10,
-              ticks: {
-                stepSize: 2,
-                callback: function(value) { return value + ' คำ'; },
-                font: { family: "'Sarabun', sans-serif", size: 10 }
-              },
-              title: {
-                display: true,
-                text: 'คะแนนการอ่านเฉลี่ย (คำ)',
-                font: { family: "'Sarabun', sans-serif", size: 10, weight: 'bold' }
-              }
-            },
-            x: {
-              ticks: { font: { family: "'Sarabun', sans-serif", size: 11, weight: 'bold' } }
-            }
-          }
-        }
-      });
-
-      renderRoundsAverageSummary(sortedRounds[sortedRounds.length - 1], gradePalette);
-    }
-
-    function renderRoundsAverageSummary(latestRound, gradePalette) {
-      const summaryContainer = document.getElementById('rounds-avg-summary');
-      if (!summaryContainer) return;
-      summaryContainer.innerHTML = '';
-
-      gradePalette.forEach(gInfo => {
-        const matched = dashboardDataCache.filter(item => parseInt(item.round || 1) === latestRound && parseInt(item.grade) === gInfo.grade);
-        let avgStr = "-";
-        let count = matched.length;
-        if (count > 0) {
-          const sum = matched.reduce((acc, curr) => acc + (parseFloat(curr.score) || 0), 0);
-          avgStr = (Math.round((sum / count) * 10) / 10).toFixed(1);
-        }
-
-        const card = document.createElement('div');
-        card.className = "bg-slate-50 border border-slate-100 rounded-xl p-2 text-center shadow-xs";
-        card.innerHTML = `
-          <span class="text-[10px] font-extrabold block" style="color: ${gInfo.color};">ชั้น ${gInfo.label}</span>
-          <p class="text-base font-black text-slate-800 my-0.5">${avgStr} <span class="text-[10px] font-normal text-slate-400">คำ</span></p>
-          <span class="text-[9px] text-slate-400 block font-bold">รอบที่ ${latestRound} (${count} คน)</span>
-        `;
-        summaryContainer.appendChild(card);
-      });
-    }
-
-    function renderDashboardStats() {
-      const statsContainer = document.getElementById('db-stats-grid');
-      if(!statsContainer) return;
-      statsContainer.innerHTML = '';
-      
-      for (let g = 1; g <= 6; g++) {
-        const gradeData = dashboardDataCache.filter(item => parseInt(item.grade) === g);
-        const total = gradeData.length;
-        const good = gradeData.filter(item => item.level === 'ดี').length;
-        const fair = gradeData.filter(item => item.level === 'พอใช้').length;
-        const improve = gradeData.filter(item => item.level === 'ปรับปรุง').length;
-        
-        const goodPct = total > 0 ? Math.round((good / total) * 100) : 0;
-        const fairPct = total > 0 ? Math.round((fair / total) * 100) : 0;
-        const improvePct = total > 0 ? Math.round((improve / total) * 100) : 0;
-        
-        const card = document.createElement('div');
-        card.className = "bg-white p-3 rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between";
-        card.innerHTML = `
-          <div class="flex justify-between items-center mb-2 border-b pb-1">
-            <span class="font-extrabold text-xs text-indigo-900 game-font">ป.${g}</span>
-            <span class="text-[9px] bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">ประเมินแล้ว ${total} ครั้ง</span>
-          </div>
-          <div class="space-y-2 text-[10px]">
-            <div>
-              <div class="flex justify-between font-bold mb-0.5 text-emerald-600">
-                <span>ดี (8-10 คำ)</span>
-                <span>${good} คน (${goodPct}%)</span>
-              </div>
-              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-emerald-500 h-full rounded-full" style="width: ${goodPct}%"></div>
-              </div>
-            </div>
-            <div>
-              <div class="flex justify-between font-bold mb-0.5 text-amber-500">
-                <span>พอใช้ (5-7 คำ)</span>
-                <span>${fair} คน (${fairPct}%)</span>
-              </div>
-              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-amber-400 h-full rounded-full" style="width: ${fairPct}%"></div>
-              </div>
-            </div>
-            <div>
-              <div class="flex justify-between font-bold mb-0.5 text-rose-500">
-                <span>ปรับปรุง (0-4 คำ)</span>
-                <span>${improve} คน (${improvePct}%)</span>
-              </div>
-              <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-rose-500 h-full rounded-full" style="width: ${improvePct}%"></div>
-              </div>
-            </div>
-          </div>
-        `;
-        statsContainer.appendChild(card);
-      }
-    }
-
-    // ==========================================
     // ระบบสำหรับครู (ประวัติผลการคัดกรอง / รายชื่อนักเรียนที่ยังไม่ได้คัดกรอง)
     // ==========================================
     function showTeacherLogin() {
@@ -1491,7 +1514,6 @@
           document.getElementById('teacher-welcome-text').textContent = `ยินดีต้อนรับ: ${response.teacherName}`;
           showView('teacher-dashboard');
           
-          // โหลดข้อมูลล่าสุดเข้าระบบครู
           if (!roundStatusDataCache) {
             roundStatusDataCache = await apiRequest('getRoundStatus');
           }
@@ -1590,9 +1612,6 @@
       });
     }
 
-    // ==========================================
-    // ตารางแสดงรายชื่อนักเรียนที่ยังไม่ได้คัดกรองในรอบปัจจุบัน
-    // ==========================================
     function renderUnscreenedTable() {
       const body = document.getElementById('unscreened-table-body');
       const searchVal = cleanThaiWord(document.getElementById('unscreened-search').value.trim());
