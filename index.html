@@ -23,6 +23,8 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Chart.js สำหรับแสดงกราฟเส้นและกราฟแท่งพัฒนาการรอบประเมิน -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
@@ -43,7 +45,7 @@
     #progress-tracker-container {
       position: relative;
       height: 100%;
-      width: 44px; /* ปรับขนาดหลอดคะแนนให้กว้างขึ้นตามต้องการเพื่อการมองเห็นที่ชัดเจน */
+      width: 44px;
       background: #e2e8f0;
       border-radius: 999px;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
@@ -73,7 +75,7 @@
 
   <main class="flex-grow w-full h-screen flex flex-col items-center justify-center p-2 relative">
 
-    <!-- VIEW 1: หน้าหลักสุด (รายงานสถิติการคัดกรองรายชั้นเรียน + แถบเข้าทดสอบ + พัฒนาการแต่ละรอบประเมิน) -->
+    <!-- VIEW 1: หน้าหลักสุด (รายงานสถิติรายชั้น + กราฟพัฒนาการคะแนนเฉลี่ยแต่ละรอบ + ทำเนียบ) -->
     <section id="view-home" class="view-section flex flex-col w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn overflow-hidden">
       <!-- ส่วนหัว Header และปุ่มทางเลือก -->
       <div class="w-full bg-indigo-900 text-white p-4 flex flex-col sm:flex-row justify-between items-center gap-3 z-20 shadow-md">
@@ -82,7 +84,7 @@
             <i class="fa-solid fa-gamepad text-xl"></i>
           </div>
           <div>
-            <h2 class="text-lg font-black game-font leading-none text-yellow-400">ระบบคัดกรองการอ่านโรงเรียนวัดยางขาว สพป.นว1</h2>
+            <h2 class="text-lg font-black game-font leading-none text-yellow-400">เกมผจญภัยการอ่าน</h2>
             <p class="text-[10px] text-indigo-200 mt-0.5">ระบบสรุปผลวิเคราะห์การคัดกรองการอ่านสะกดคำ ป.1-ป.6</p>
           </div>
         </div>
@@ -101,25 +103,45 @@
 
       <!-- ส่วนรายงานแสดงผลบนหน้าแรก -->
       <div class="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50/50">
-        <!-- 1. แผนภูมิวิเคราะห์ความสอดคล้องรายชั้น (ป.1 - ป.6) -->
+        
+        <!-- 1. กราฟเปรียบเทียบพัฒนาการผลการอ่านเฉลี่ย ป.1 - ป.6 ตามรอบการคัดกรอง -->
+        <div class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+            <div>
+              <h3 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+                <i class="fa-solid fa-chart-line text-indigo-500"></i>
+                <span>กราฟพัฒนาการผลการอ่านเฉลี่ย ระดับชั้น ป.1-6 ตามรอบการคัดกรอง</span>
+              </h3>
+              <p class="text-[10px] text-slate-400 mt-0.5">คะแนนการอ่านเฉลี่ย (เต็ม 10 คำ) จำแนกตามระดับชั้นในแต่ละรอบประเมิน</p>
+            </div>
+            <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl text-[10px] self-end sm:self-auto">
+              <button id="btn-chart-line" onclick="switchChartType('line')" class="px-2.5 py-1 rounded-lg font-bold bg-white text-indigo-600 shadow-sm transition">
+                <i class="fa-solid fa-chart-line mr-1"></i> กราฟเส้น
+              </button>
+              <button id="btn-chart-bar" onclick="switchChartType('bar')" class="px-2.5 py-1 rounded-lg font-bold text-slate-500 hover:text-slate-800 transition">
+                <i class="fa-solid fa-chart-simple mr-1"></i> กราฟแท่ง
+              </button>
+            </div>
+          </div>
+
+          <div id="chart-container-box" class="relative w-full h-64 sm:h-72">
+            <canvas id="rounds-chart-canvas"></canvas>
+          </div>
+
+          <!-- การ์ดสรุปคะแนนเฉลี่ยระดับชั้น -->
+          <div id="rounds-avg-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mt-4 pt-3 border-t border-slate-100">
+            <!-- ข้อมูลสรุปคะแนนเฉลี่ยรายชั้นจะแสดงที่นี่ -->
+          </div>
+        </div>
+
+        <!-- 2. แผนภูมิวิเคราะห์ความสอดคล้องรายชั้น (ป.1 - ป.6) -->
         <div>
           <h3 class="font-bold text-slate-700 text-xs mb-2 flex items-center gap-1.5">
             <i class="fa-solid fa-square-poll-vertical text-indigo-500"></i>
             <span>สัดส่วนผลการประเมินคัดกรองสะสมประถมศึกษาปีที่ 1-6</span>
           </h3>
           <div id="db-stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <!-- ข้อมูลแผนภูมิแท่งจะถูกเรนเดอร์โดย JavaScript -->
-          </div>
-        </div>
-
-        <!-- 2. กราฟเปรียบเทียบพัฒนาการแต่ละรอบการประเมิน -->
-        <div class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
-          <h3 class="font-bold text-slate-700 text-xs mb-3 flex items-center gap-1.5">
-            <i class="fa-solid fa-chart-line text-indigo-500"></i>
-            <span>สรุปเปรียบเทียบพัฒนาการจำแนกตามแต่ละรอบการคัดกรอง (Rounds Evaluation)</span>
-          </h3>
-          <div id="rounds-progress-container" class="space-y-3">
-            <!-- ข้อมูลพัฒนาการรอบประเมินจะเข้าแทนที่ตรงนี้โดย JavaScript -->
+            <!-- แผนภูมิแท่งสัดส่วนจะถูกเรนเดอร์โดย JavaScript -->
           </div>
         </div>
 
@@ -190,6 +212,7 @@
         <p class="text-sm text-slate-500 font-bold">ชื่อผู้เล่น</p>
         <h3 id="player-name" class="text-xl font-extrabold text-slate-800">-</h3>
         <p class="text-sm font-bold text-indigo-600" id="player-grade-room">ป. - / -</p>
+        <p class="text-xs font-extrabold text-amber-600 mt-1" id="player-round-badge">การคัดกรองรอบที่ 1</p>
       </div>
 
       <button onclick="takeSnapshotAndStart()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-4 px-6 rounded-2xl transition transform hover:scale-105 active:scale-95 text-xl shadow-xl flex items-center justify-center space-x-2 game-font">
@@ -198,7 +221,7 @@
       </button>
     </section>
 
-    <!-- VIEW 4: หน้า GAME PLAY (ตาราง 10 คำ 1 นาที + ขยายแถบความคืบหน้าด้านข้าง) -->
+    <!-- VIEW 4: หน้า GAME PLAY (ตาราง 10 คำ 1 นาที) -->
     <section id="view-game" class="view-section hidden w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
       <div class="w-full bg-indigo-900 text-white p-3 md:p-4 flex justify-between items-center z-20 shadow-md">
         <div class="flex flex-col">
@@ -218,7 +241,6 @@
       </div>
 
       <div class="flex-grow flex relative w-full h-full bg-white/40 overflow-hidden">
-        <!-- แถบด้านข้างระบุคะแนนสะสมเต็ม 10 (ขยายความกว้างเพื่อเพิ่มพื้นที่แสดงผลภาพและแถบกราฟ) -->
         <div class="w-24 md:w-32 border-r border-indigo-100 bg-white/60 flex flex-col items-center py-6 justify-between z-10 shadow-lg">
           <span class="text-xs font-bold text-slate-400">10 คำ</span>
           <div class="flex-grow my-2 relative">
@@ -234,10 +256,9 @@
           </div>
         </div>
 
-        <!-- หน้าจอกระดานตารางคำศัพท์ 1 หน้าจอ สุ่ม 10 คำศัพท์ -->
         <div id="game-grid-container" class="flex-grow flex flex-col justify-between p-4 bg-white/10 overflow-y-auto">
           <div id="word-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-3 md:gap-4 my-auto">
-            <!-- ข้อมูลตารางจะสุ่มป้อนที่นี่โดย JavaScript -->
+            <!-- การ์ดคำศัพท์ 10 คำจะถูกเรนเดอร์ที่นี่ -->
           </div>
           
           <div class="w-full flex flex-col items-center bg-white/80 px-6 py-2.5 rounded-2xl backdrop-blur border border-indigo-100 shadow-lg mt-4">
@@ -268,9 +289,7 @@
         </div>
       </div>
       <div class="w-full pt-4 space-y-3">
-        <div id="save-status-container" class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center text-xs">
-          <!-- สัญญาณแสดงผลบันทึกคะแนนเข้าเซิร์ฟเวอร์ -->
-        </div>
+        <div id="save-status-container" class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center text-xs"></div>
         <button onclick="window.location.reload()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-4 rounded-2xl text-lg shadow-lg transition transform hover:scale-105 active:scale-95 game-font">
           <i class="fa-solid fa-house mr-2"></i> กลับสู่หน้าหลัก
         </button>
@@ -299,7 +318,7 @@
       </div>
     </section>
 
-    <!-- VIEW 7: แดชบอร์ดของคุณครู (รายงานตารางประวัติ และพิมพ์รายงาน PDF) -->
+    <!-- VIEW 7: แดชบอร์ดของคุณครู (รายงานตารางประวัติรายบุคคล และพิมพ์รายงาน PDF) -->
     <section id="view-teacher-dashboard" class="view-section hidden w-full max-w-4xl h-[90vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
       <div class="w-full bg-indigo-900 text-white p-4 flex justify-between items-center z-20 shadow-md">
         <div class="flex items-center space-x-2">
@@ -315,7 +334,6 @@
       </div>
 
       <div class="flex-grow overflow-y-auto p-4 bg-slate-50/50">
-        <!-- ตารางรายละเอียดประวัติตัวตนคะแนนแบบรายบุคคล -->
         <div class="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
             <h3 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
@@ -349,9 +367,7 @@
                   <th class="p-3 text-center">สิทธิ์ PDF</th>
                 </tr>
               </thead>
-              <tbody id="teacher-table-body" class="divide-y divide-slate-100">
-                <!-- ข้อมูลตารางครูจะแสดงผลที่นี่ -->
-              </tbody>
+              <tbody id="teacher-table-body" class="divide-y divide-slate-100"></tbody>
             </table>
           </div>
         </div>
@@ -368,37 +384,30 @@
     // ==========================================
     // ตัวแปรระบบและค่าคงที่ (System & Constants)
     // ==========================================
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxnV9gtgbQ7ET7FTtXBBlWG_HfEFAoxxp3uMLN4lQ8ahFLlA2czeAW_e4EfZGDxf7tf/exec"; // *** เปลี่ยน URL API ของตนเองที่นี่ ***
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxnV9gtgbQ7ET7FTtXBBlWG_HfEFAoxxp3uMLN4lQ8ahFLlA2czeAW_e4EfZGDxf7tf/exec"; 
     const SECRET_TOKEN = "READING_GAME_BY_CHANAT_2024"; 
 
     let currentStudent = null;
     let masterWords = []; 
-    let recentSpawnedWords = [];
-    let html5QrcodeScanner = null;
     let cameraStream = null;
     let capturedPhotoBase64 = null;
     let recognition = null;
     let isListening = false;
     let currentLevel = 1;
-    let maxLevel = 1; 
     let gameTimer = null;
-    let spawnTimer = null;
     let timeRemaining = 0;
     
-    // ตั้งค่าเป้าหมาย: คัดกรอง 10 ข้อ กำหนดเวลา 1 นาที
     let correctCount = 0;
-    let wordsProcessed = 0;
-    let wordsSpawned = 0;
     const totalLevelWords = 10; 
-    let currentPercent = 0;
-    let targetPercent = 50; 
-
-    // รายการจำกัดคำบนกระดานตารางคัดกรอง
     let activeGridWords = [];
 
     let speechMode = "idle"; // "idle" | "login" | "game"
     let allStudentsCached = [];
     let dashboardDataCache = [];
+    
+    // ตัวแปรสำหรับ Chart.js
+    let roundsChartInstance = null;
+    let currentChartType = 'line'; // 'line' หรือ 'bar'
 
     window.addEventListener('load', () => { 
       initSpeechRecognition(); 
@@ -422,13 +431,6 @@
         gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
         osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-      } else if (type === 'drop' || type === 'wrong') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.2);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
       } else if (type === 'win') {
         osc.type = 'square';
         osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
@@ -441,14 +443,7 @@
       }
     }
 
-    // ==========================================
-    // การจัดการกล้องและการยกเลิก
-    // ==========================================
     function stopAllCameras() {
-      if (html5QrcodeScanner) {
-        try { html5QrcodeScanner.stop().catch(e => {}); } catch(e){}
-        html5QrcodeScanner = null;
-      }
       if (cameraStream) {
         cameraStream.getTracks().forEach(t => t.stop());
         cameraStream = null;
@@ -463,9 +458,6 @@
       loadHomeDashboard(); 
     }
 
-    // ==========================================
-    // อัลกอริทึม Phonetic ภาษาไทย
-    // ==========================================
     function normalizeThaiPhonetic(word) {
       if (!word) return "";
       let text = word.trim().replace(/[\s\-\_\.\,\?]/g, "").replace(/[ก-ฮ]์/g, "");
@@ -507,14 +499,8 @@
       return word.trim().replace(/[\s\-\_\.\,\?]/g, "").toLowerCase();
     }
 
-    // ==========================================
-    // ตัวรับสัญญาณและจัดสิทธิ์ไมโครโฟน
-    // ==========================================
     function initSpeechRecognition() {
-      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-        console.warn("เบราว์เซอร์ไม่สนับสนุน Web Speech API");
-        return;
-      }
+      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return;
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognition = new SpeechRecognition();
       recognition.continuous = true;
@@ -536,12 +522,8 @@
       recognition.onerror = function(event) {
         if (event.error !== 'no-speech') {
           isListening = false;
-          if (speechMode === "login") {
-            setLoginMicUI(false);
-            document.getElementById('login-mic-status').textContent = "เกิดข้อผิดพลาดในการฟังเสียง: " + event.error;
-          } else if (speechMode === "game") {
-            document.getElementById('mic-indicator').className = "w-4 h-4 rounded-full bg-rose-500";
-          }
+          if (speechMode === "login") setLoginMicUI(false);
+          else if (speechMode === "game") document.getElementById('mic-indicator').className = "w-4 h-4 rounded-full bg-rose-500";
         }
       };
 
@@ -552,9 +534,7 @@
         } else if (speechMode === "game") {
           document.getElementById('mic-indicator').className = "w-4 h-4 rounded-full bg-rose-500";
           if (timeRemaining > 0 && !document.getElementById('view-game').classList.contains('hidden')) {
-            try {
-              recognition.start();
-            } catch(e) {}
+            try { recognition.start(); } catch(e) {}
           }
         }
       };
@@ -576,14 +556,11 @@
             }
           }
         } catch (error) {
-          console.warn("Speech recognition handling error:", error);
+          console.warn("Speech recognition error:", error);
         }
       };
     }
 
-    // ==========================================
-    // API & Data Handling (POST เคร่งครัดเพื่อ Vercel)
-    // ==========================================
     async function apiRequest(action, data = {}) {
       const response = await fetch(BACKEND_URL, {
         method: 'POST',
@@ -629,9 +606,6 @@
       }
     }
 
-    // ==========================================
-    // ล็อกอินสะกดเสียงพูดผู้กล้า (แก้ไขปัญหารายชื่อซ้ำ)
-    // ==========================================
     async function startScan() {
       showView('scan');
       Swal.fire({
@@ -676,26 +650,20 @@
             return { success: true, empty: true };
           }
         } else {
-          const errMsg = (students && students.message) ? students.message : "การดึงข้อมูลรายชื่อล้มเหลว";
-          return { success: false, error: errMsg };
+          return { success: false, error: (students && students.message) ? students.message : "ล้มเหลว" };
         }
       } catch (e) {
-        console.error("ไม่สามารถ Cache รายชื่อได้: ", e);
         return { success: false, error: e.message };
       }
     }
 
     function toggleLoginSpeech() {
-      if (!recognition) {
-        initSpeechRecognition();
-      }
+      if (!recognition) initSpeechRecognition();
       speechMode = "login";
       if (isListening) {
         recognition.stop();
       } else {
-        try {
-          recognition.start();
-        } catch(e) {}
+        try { recognition.start(); } catch(e) {}
       }
     }
 
@@ -712,29 +680,19 @@
       }
     }
 
-    // แก้ไข 1: ค้นหาด้วยเสียง หากชื่อซ้ำกัน ระบบจะตรวจพบคะแนนใกล้เคียงและเปิดหน้าต่างให้เลือกเป็นรายบุคคล [3]
     function matchSpokenName(transcript) {
       if (!allStudentsCached || allStudentsCached.length === 0) return;
-      
       let candidates = [];
-      
       allStudentsCached.forEach(student => {
         const fullNameNoPrefix = `${student.firstName} ${student.lastName}`;
         const fullNameWithPrefix = `${student.prefix}${student.firstName} ${student.lastName}`;
-        
         const sim1 = getPhoneticSimilarity(fullNameNoPrefix, transcript);
         const sim2 = getPhoneticSimilarity(fullNameWithPrefix, transcript);
         const sim3 = getPhoneticSimilarity(student.firstName, transcript);
-        
         const maxSim = Math.max(sim1, sim2, sim3 * 0.82);
-        
-        // เก็บรายชื่อผู้สอบทุกคนที่มีความคล้ายคลึงเสียงสะกดใกล้เคียงเกณฑ์ขั้นต่ำ
-        if (maxSim >= 0.65) {
-          candidates.push({ student, score: maxSim });
-        }
+        if (maxSim >= 0.65) candidates.push({ student, score: maxSim });
       });
 
-      // จัดเรียงลำดับความแม่นยำของสัทศาสตร์จากมากไปน้อย
       candidates.sort((a, b) => b.score - a.score);
 
       if (candidates.length === 0) {
@@ -749,19 +707,11 @@
         return;
       }
 
-      // หากพบคู่ผู้สอบที่ออกเสียงใกล้เคียงกันมากกว่า 1 คน (หรือชื่อซ้ำกัน) ให้เปิดกล่องเลือกตัวเลือกทันที [3]
       if (candidates.length > 1) {
         speechMode = "idle";
-        if (isListening && recognition) {
-          recognition.stop();
-        }
-        
-        let optionsHtml = '<p class="text-xs text-slate-500 mb-3 text-center">ระบบตรวจพบรายชื่อผู้สอบที่ออกเสียงคล้ายกัน กรุณาเลือกตัวตนของคุณ:</p>';
-        optionsHtml += '<div class="space-y-2 max-h-60 overflow-y-auto pt-2">';
-        
-        // แสดงผลใกล้เคียงที่สุดสูงสุด 5 อันดับแรกเพื่อไม่ให้หน้าจอแออัด
-        const topCandidates = candidates.slice(0, 5);
-        topCandidates.forEach(cand => {
+        if (isListening && recognition) recognition.stop();
+        let optionsHtml = '<p class="text-xs text-slate-500 mb-3 text-center">ระบบตรวจพบรายชื่อที่ออกเสียงคล้ายกัน กรุณาเลือกตัวตนของคุณ:</p><div class="space-y-2 max-h-60 overflow-y-auto pt-2">';
+        candidates.slice(0, 5).forEach(cand => {
           const student = cand.student;
           optionsHtml += `
             <button onclick="selectManualMatchedStudent('${student.studentId}')" class="w-full p-3 text-left border rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition flex justify-between items-center text-xs font-sans">
@@ -770,11 +720,9 @@
                 <p class="text-[10px] text-slate-400 mt-0.5">รหัสประจำตัว: ${student.studentId}</p>
               </div>
               <span class="bg-indigo-100 text-indigo-700 py-1 px-2.5 rounded-full font-bold">ป.${student.grade}/${student.room}</span>
-            </button>
-          `;
+            </button>`;
         });
         optionsHtml += '</div>';
-        
         Swal.fire({
           title: 'ตรวจพบรายชื่อที่ใกล้เคียงกัน',
           html: optionsHtml,
@@ -784,16 +732,13 @@
           cancelButtonColor: '#EF4444'
         });
       } else {
-        // หากพบเพียงรายชื่อเดียวที่ตรงกัน ดำเนินขั้นตอนยืนยันคนเดียวทันที
         confirmStudentSelection(candidates[0].student);
       }
     }
 
     function confirmStudentSelection(student) {
       speechMode = "idle";
-      if (isListening && recognition) {
-        recognition.stop();
-      }
+      if (isListening && recognition) recognition.stop();
       Swal.fire({
         title: 'ยืนยันตัวตนผู้สอบ',
         html: `คุณคือ <strong class="text-indigo-600 text-lg">${student.prefix}${student.firstName} ${student.lastName}</strong> <br>ชั้นประถมศึกษาปีที่ ${student.grade}/${student.room} ใช่หรือไม่?`,
@@ -807,7 +752,7 @@
         if (result.isConfirmed) {
           fetchStudentData(student.studentId);
         } else {
-          document.getElementById('login-mic-status').textContent = "กรุณาคลิกไมค์แล้วออกเสียงชื่อ-นามสกุลใหม่อีกครั้ง";
+          document.getElementById('login-mic-status').textContent = "กรุณาคลิกไมค์แล้วออกเสียงชื่อใหม่อีกครั้ง";
           document.getElementById('login-transcript').innerHTML = '&nbsp;';
         }
       });
@@ -840,8 +785,7 @@
                 <p class="text-[10px] text-slate-400 mt-0.5">รหัสประจำตัว: ${student.studentId}</p>
               </div>
               <span class="bg-indigo-100 text-indigo-700 py-1 px-2.5 rounded-full font-bold">ป.${student.grade}/${student.room}</span>
-            </button>
-          `;
+            </button>`;
         });
         optionsHtml += '</div>';
         Swal.fire({
@@ -855,23 +799,43 @@
       }
     }
 
-    // แก้ไขจุดที่ 1 และ 2 แบบละเอียด: แปลงค่า studentId เป็น String เพื่อเทียบข้อมูล และไม่ต้องใช้ Swal.close() ซ้ำซ้อนก่อน confirm เพื่อให้แสดงกล่องยืนยันต่อเนื่องได้ทันที
     function selectManualMatchedStudent(studentId) {
-      // ค้นหารายชื่อนักเรียนในแคชโดยแปลงประเภทข้อมูลของทั้งคู่เป็น String และทำการตัดช่องว่าง เพื่อความแม่นยำในการเปรียบเทียบ
       const student = allStudentsCached.find(s => s.studentId.toString().trim() === studentId.toString().trim());
       if (student) {
-        // เมื่อเรียก confirmStudentSelection ตัว SweetAlert2 จะแสดงกล่องใหม่ขึ้นมาแทนกล่องตัวเลือกเดิมทันทีโดยไม่มีการปิดกะทันหัน
         confirmStudentSelection(student);
       } else {
         Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลประวัตินักเรียนในฐานข้อมูลแคชหลัก', 'error');
       }
     }
 
+    // ฟังก์ชันดึงข้อมูลนักเรียนพร้อมระบบตรวจสอบเงื่อนไขรอบการคัดกรอง
     async function fetchStudentData(studentId) {
       Swal.fire({ title: 'กำลังโหลดข้อมูลนักผจญภัย...', didOpen: () => Swal.showLoading() });
       try {
         const student = await apiRequest('getStudentInfo', { studentId });
         if (student && student.studentId) {
+          
+          // ตรวจสอบเงื่อนไข: หากคัดกรองแล้วในรอบนี้ จะไม่สามารถคัดกรองได้อีกจนกว่าทุกคนจะครบ
+          if (student.roundInfo && student.roundInfo.alreadyScreened) {
+            Swal.close();
+            Swal.fire({
+              icon: 'warning',
+              title: 'คัดกรองครบแล้วในรอบนี้',
+              html: `นักเรียน <strong class="text-indigo-600 font-bold">${student.prefix}${student.firstName} ${student.lastName}</strong><br>ได้ทำการประเมินใน <strong>การคัดกรองรอบที่ ${student.roundInfo.currentRound}</strong> เรียบร้อยแล้ว<br><br>
+                     <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 text-left space-y-1">
+                       <div>📌 <strong>ความคืบหน้ารอบที่ ${student.roundInfo.currentRound}:</strong> คัดกรองแล้ว ${student.roundInfo.screenedCount} จาก ${student.roundInfo.totalStudents} คน</div>
+                       <div>⏳ <strong>คงเหลือ:</strong> อีก ${student.roundInfo.remainingCount} คนที่ยังไม่ได้คัดกรอง</div>
+                       <div class="text-[11px] text-amber-700 pt-1">* ระบบจะเปิดรอบที่ ${student.roundInfo.currentRound + 1} เมื่อนักเรียนทุกคนในโรงเรียนทำการคัดกรองครบทุกคน</div>
+                     </div>`,
+              confirmButtonText: 'รับทราบและกลับหน้าหลัก',
+              confirmButtonColor: '#4f46e5'
+            }).then(() => {
+              showView('home');
+              loadHomeDashboard();
+            });
+            return;
+          }
+
           currentStudent = student;
           const words = await apiRequest('getWordsForGrade', { grade: student.grade });
           
@@ -889,12 +853,19 @@
           Swal.close();
           Swal.fire('ไม่พบข้อมูล', 'รหัสผู้เรียนไม่ถูกต้อง หรือถูกปิดใช้งาน', 'error').then(() => startScan());
         }
-      } catch(e) { Swal.close(); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ระบบคลาวด์ได้', 'error').then(() => startScan()); }
+      } catch(e) { 
+        Swal.close(); 
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ระบบคลาวด์ได้', 'error').then(() => startScan()); 
+      }
     }
 
     function setupProfileScreen() {
       document.getElementById('player-name').textContent = `${currentStudent.prefix}${currentStudent.firstName} ${currentStudent.lastName}`;
       document.getElementById('player-grade-room').textContent = `ป.${currentStudent.grade} ห้อง ${currentStudent.room}`;
+      
+      const roundNum = currentStudent.roundInfo ? currentStudent.roundInfo.currentRound : 1;
+      document.getElementById('player-round-badge').textContent = `การคัดกรองรอบที่ ${roundNum}`;
+      
       showView('profile');
       const video = document.getElementById('profile-video'), fallback = document.getElementById('profile-fallback');
       navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
@@ -928,22 +899,9 @@
       initLevel();
     }
     
-    // ==========================================
-    // กติกาประเมินคัดกรอง 10 คำ 1 นาทีบนกระดานตาราง
-    // ==========================================
-    function getLevelConfig() {
-      return { 
-        timeLimit: 60 
-      };
-    }
-
     function initLevel() {
-      const config = getLevelConfig();
-      
-      timeRemaining = config.timeLimit; 
+      timeRemaining = 60; 
       correctCount = 0;
-      wordsProcessed = 0;
-      wordsSpawned = 0;
       activeGridWords = [];
 
       document.getElementById('ui-level').textContent = `กระดานคัดกรอง`;
@@ -996,23 +954,18 @@
       speechMode = "game";
       document.getElementById('mic-indicator').className = "w-4 h-4 rounded-full bg-rose-500";
       
-      if (!recognition) {
-        initSpeechRecognition();
-      }
+      if (!recognition) initSpeechRecognition();
       
       if (isListening) {
         document.getElementById('mic-indicator').className = "w-4 h-4 rounded-full bg-emerald-500 animate-pulse";
         document.getElementById('speech-transcript').textContent = "ระบบเริ่มรับฟังเสียง... อ่านออกเสียงสะกดคำในกระดานได้เลย";
       } else {
-        try {
-          recognition.start();
-        } catch(e) {
-          console.error("ระบบไมโครโฟนล้มเหลว: ", e);
-        }
+        try { recognition.start(); } catch(e) {}
       }
 
       gameTimer = setInterval(() => {
-        timeRemaining--; updateTimerUI();
+        timeRemaining--; 
+        updateTimerUI();
         if(timeRemaining <= 0) { 
           stopGameplay(); 
           evaluateLevel(); 
@@ -1023,13 +976,10 @@
     function stopGameplay() {
       clearInterval(gameTimer); 
       speechMode = "idle";
-      if (isListening && recognition) {
-        recognition.stop();
-      }
+      if (isListening && recognition) recognition.stop();
       activeGridWords = [];
     }
 
-    // แก้ไข 2: หาคู่คำที่ออกเสียงใกล้เคียงแล้วเลือกคำที่มีระดับคะแนนความถูกต้องสูงที่สุดเพียงคำเดียวต่อเสียงอ่านหนึ่งครั้ง [3]
     function checkSpokenWords(spokenTranscript) {
       let bestMatch = null;
       let highestSimilarity = 0;
@@ -1038,7 +988,6 @@
         const wObj = activeGridWords[i];
         if (!wObj.correct) {
           const sim = getPhoneticSimilarity(wObj.word, spokenTranscript);
-          // เลือกคำที่มีความเหมือนสูงสุดในกรณีที่มีพยางค์คล้ายคลึงกันสะสยมบนหน้าจอ
           if (sim >= 0.70 && sim > highestSimilarity) { 
             highestSimilarity = sim;
             bestMatch = wObj;
@@ -1046,13 +995,9 @@
         }
       }
 
-      // หากมีผลลัพธ์คำที่แม่นยำที่สุดให้ระบบเช็คเป็นคำตอบถูกต้องเพียงคำเดียวเท่านั้น
-      if (bestMatch) {
-        handleWordCorrect(bestMatch);
-      }
+      if (bestMatch) handleWordCorrect(bestMatch);
     }
 
-    // เมื่อสะกดเสียงถูกต้อง ช่องคำศัพท์นั้นจะถูกปิดทับด้วยแถบสีเขียว
     function handleWordCorrect(wObj) {
       playSound('correct');
       wObj.correct = true;
@@ -1067,7 +1012,6 @@
       correctCount++;
       updateProgressUI();
 
-      // หากสะกดได้ถูกต้องครบถ้วนทั้ง 10 คำแล้ว จะสรุปทันทีโดยไม่ต้องรอเวลาหมด
       if (correctCount === 10) {
         setTimeout(() => {
           stopGameplay();
@@ -1085,7 +1029,6 @@
 
     function updateProgressUI() {
       document.getElementById('ui-current-percent').textContent = `${correctCount}/10 คำ`;
-      
       if (correctCount >= 8) {
         document.getElementById('ui-current-percent').className = "text-lg font-black text-emerald-500";
       } else if (correctCount >= 5) {
@@ -1099,10 +1042,6 @@
       document.getElementById('player-avatar-tracker').style.bottom = `${fillHeight}%`;
     }
 
-    // ==========================================
-    // ประเมินผล 3 ระดับเกณฑ์เฉลี่ยจาก 10 คำศัพท์
-    // ดี (8-10 คำ), พอใช้ (5-7 คำ), ปรับปรุง (0-4 คำ)
-    // ==========================================
     function evaluateLevel() {
       showView('result');
       document.getElementById('result-target').textContent = `5 คำ (พอใช้)`;
@@ -1157,20 +1096,19 @@
       try {
         const response = await apiRequest('saveSummaryResult', { summary, base64Image: capturedPhotoBase64 });
         if (response && response.success) {
-          statusContainer.innerHTML = `<span class="text-emerald-600 font-black"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> บันทึกข้อมูลคัดกรองเข้าระบบคลาวด์เรียบร้อย!</span>`;
+          statusContainer.innerHTML = `<span class="text-emerald-600 font-black"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> บันทึกข้อมูลคัดกรองเข้าระบบคลาวด์เรียบร้อย! (รอบที่ ${response.round || 1})</span>`;
           playSound('win');
           confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
         } else {
           statusContainer.innerHTML = `<span class="text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> การบันทึกติดขัด: ${response.message || 'โครงสร้าง API ผิดพลาด'}</span>`;
         }
       } catch (err) {
-        console.error("AutoSave Error: ", err);
-        statusContainer.innerHTML = `<span class="text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> เชื่อมต่อล้มเหลว (บันทึกเข้าระบบสำรองแล้วหากมีคีย์ตรงกัน)</span>`;
+        statusContainer.innerHTML = `<span class="text-rose-500 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> บันทึกข้อมูลส่งออกล้มเหลว</span>`;
       }
     }
 
     // ==========================================
-    // ดึงสถิติตารางและแผนภูมิแสดงผลบนหน้าแรกสุด
+    // ดึงสถิติและเรนเดอร์แดชบอร์ดหน้าแรก
     // ==========================================
     async function loadHomeDashboard() {
       try {
@@ -1180,7 +1118,7 @@
         renderRoundsProgressChart(); 
       } catch (e) {
         console.error(e);
-        document.getElementById('rounds-progress-container').innerHTML = `<p class="text-xs text-rose-500 text-center font-bold py-4"><i class="fa-solid fa-circle-xmark mr-1"></i> ไม่สามารถดึงรายงานพัฒนาการได้: ${e.message}</p>`;
+        document.getElementById('chart-container-box').innerHTML = `<p class="text-xs text-rose-500 text-center font-bold py-4">ไม่สามารถดึงข้อมูลสถิติได้: ${e.message}</p>`;
       }
     }
 
@@ -1205,13 +1143,13 @@
         card.innerHTML = `
           <div class="flex justify-between items-center mb-2 border-b pb-1">
             <span class="font-extrabold text-xs text-indigo-900 game-font">ป.${g}</span>
-            <span class="text-[9px] bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">ประเมินแล้ว ${total} คน</span>
+            <span class="text-[9px] bg-indigo-50 text-indigo-600 px-2.5 py-0.5 rounded-full font-bold">ประเมินแล้ว ${total} ครั้ง</span>
           </div>
           <div class="space-y-2 text-[10px]">
             <div>
               <div class="flex justify-between font-bold mb-0.5 text-emerald-600">
                 <span>ดี (8-10 คำ)</span>
-                <span>${good} คน (${goodPct}%)</span>
+                <span>${good} คน (${goodPct}% )</span>
               </div>
               <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div class="bg-emerald-500 h-full rounded-full" style="width: ${goodPct}%"></div>
@@ -1242,68 +1180,162 @@
     }
 
     // ==========================================
-    // กราฟสถิติจำแนกและเปรียบเทียบพัฒนาการแต่ละรอบคัดกรอง
+    // กราฟแท่ง/กราฟเส้น คะแนนเฉลี่ย ป.1-ป.6 ตามรอบประเมิน (Chart.js)
     // ==========================================
-    function renderRoundsProgressChart() {
-      const container = document.getElementById('rounds-progress-container');
-      if (!container) return;
-      container.innerHTML = '';
+    function switchChartType(type) {
+      currentChartType = type;
+      const btnLine = document.getElementById('btn-chart-line');
+      const btnBar = document.getElementById('btn-chart-bar');
+      if (type === 'line') {
+        btnLine.className = "px-2.5 py-1 rounded-lg font-bold bg-white text-indigo-600 shadow-sm transition";
+        btnBar.className = "px-2.5 py-1 rounded-lg font-bold text-slate-500 hover:text-slate-800 transition";
+      } else {
+        btnBar.className = "px-2.5 py-1 rounded-lg font-bold bg-white text-indigo-600 shadow-sm transition";
+        btnLine.className = "px-2.5 py-1 rounded-lg font-bold text-slate-500 hover:text-slate-800 transition";
+      }
+      renderRoundsProgressChart();
+    }
 
-      if (dashboardDataCache.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">ยังไม่มีสถิติมารายงานความก้าวหน้ารอบการประเมิน</p>';
+    function renderRoundsProgressChart() {
+      const canvas = document.getElementById('rounds-chart-canvas');
+      if (!canvas) return;
+
+      if (!dashboardDataCache || dashboardDataCache.length === 0) {
+        document.getElementById('chart-container-box').innerHTML = '<p class="text-xs text-slate-400 text-center py-16">ยังไม่มีประวัติการประเมินเพื่อสร้างกราฟสถิติ</p>';
         return;
       }
 
-      const roundsMap = {};
+      // 1. รวบรวมรอบการประเมินที่มีข้อมูล
+      const roundsSet = new Set();
       dashboardDataCache.forEach(item => {
-        const r = item.round || 1;
-        if (!roundsMap[r]) roundsMap[r] = [];
-        roundsMap[r].push(item);
+        roundsSet.add(parseInt(item.round || 1));
+      });
+      const sortedRounds = Array.from(roundsSet).sort((a, b) => a - b);
+      if (sortedRounds.length === 0) sortedRounds.push(1);
+
+      const labels = sortedRounds.map(r => `รอบที่ ${r}`);
+
+      // ชุดสีประจำระดับชั้น ป.1 - ป.6
+      const gradePalette = [
+        { grade: 1, label: 'ป.1', color: '#ec4899', bgColor: 'rgba(236, 72, 153, 0.2)' },
+        { grade: 2, label: 'ป.2', color: '#f97316', bgColor: 'rgba(249, 115, 22, 0.2)' },
+        { grade: 3, label: 'ป.3', color: '#eab308', bgColor: 'rgba(234, 179, 8, 0.2)' },
+        { grade: 4, label: 'ป.4', color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.2)' },
+        { grade: 5, label: 'ป.5', color: '#06b6d4', bgColor: 'rgba(6, 182, 212, 0.2)' },
+        { grade: 6, label: 'ป.6', color: '#6366f1', bgColor: 'rgba(99, 102, 241, 0.2)' }
+      ];
+
+      // 2. คำนวณคะแนนเฉลี่ยของแต่ละระดับชั้นในแต่ละรอบ (เต็ม 10 คำ)
+      const datasets = gradePalette.map(gInfo => {
+        const dataPoints = sortedRounds.map(r => {
+          const matched = dashboardDataCache.filter(item => parseInt(item.round || 1) === r && parseInt(item.grade) === gInfo.grade);
+          if (matched.length === 0) return null;
+          const sumScore = matched.reduce((acc, curr) => acc + (parseFloat(curr.score) || 0), 0);
+          return Math.round((sumScore / matched.length) * 10) / 10;
+        });
+
+        return {
+          label: gInfo.label,
+          data: dataPoints,
+          borderColor: gInfo.color,
+          backgroundColor: currentChartType === 'line' ? gInfo.color : gInfo.color,
+          tension: 0.3,
+          fill: false,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 2.5
+        };
       });
 
-      const roundsSorted = Object.keys(roundsMap).sort((a, b) => parseInt(a) - parseInt(b));
+      // 3. วาดกราฟด้วย Chart.js
+      if (roundsChartInstance) {
+        roundsChartInstance.destroy();
+      }
 
-      roundsSorted.forEach(r => {
-        const list = roundsMap[r];
-        const total = list.length;
-        const good = list.filter(item => item.level === 'ดี').length;
-        const fair = list.filter(item => item.level === 'พอใช้').length;
-        const improve = list.filter(item => item.level === 'ปรับปรุง').length;
+      const ctx = canvas.getContext('2d');
+      roundsChartInstance = new Chart(ctx, {
+        type: currentChartType,
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                font: { family: "'Sarabun', 'Mali', sans-serif", size: 11, weight: 'bold' }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.parsed.y;
+                  return val !== null ? `${context.dataset.label}: เฉลี่ย ${val} / 10 คำ` : `${context.dataset.label}: ยังไม่มีข้อมูล`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: 0,
+              max: 10,
+              ticks: {
+                stepSize: 2,
+                callback: function(value) { return value + ' คำ'; },
+                font: { family: "'Sarabun', sans-serif", size: 10 }
+              },
+              title: {
+                display: true,
+                text: 'คะแนนการอ่านเฉลี่ย (คำ)',
+                font: { family: "'Sarabun', sans-serif", size: 10, weight: 'bold' }
+              }
+            },
+            x: {
+              ticks: { font: { family: "'Sarabun', sans-serif", size: 11, weight: 'bold' } }
+            }
+          }
+        }
+      });
 
-        const goodPct = total > 0 ? Math.round((good / total) * 100) : 0;
-        const fairPct = total > 0 ? Math.round((fair / total) * 100) : 0;
-        const improvePct = total > 0 ? Math.round((improve / total) * 100) : 0;
+      // 4. แสดงการ์ดสรุปคะแนนเฉลี่ยรอบล่าสุด
+      renderRoundsAverageSummary(sortedRounds[sortedRounds.length - 1], gradePalette);
+    }
 
-        const roundBox = document.createElement('div');
-        roundBox.className = "bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4";
-        roundBox.innerHTML = `
-          <div class="md:w-1/4">
-            <span class="text-xs font-black text-indigo-900 bg-indigo-100/60 px-3 py-1.5 rounded-xl block w-fit game-font">การคัดกรองรอบที่ ${r}</span>
-            <span class="text-[9px] text-slate-400 font-bold mt-1.5 block">ประเมินเสร็จสิ้นแล้ว ${total} คน</span>
-          </div>
-          <div class="flex-grow space-y-1">
-            <div class="flex justify-between text-[10px] font-bold mb-1">
-              <span class="text-emerald-600">ดี (8-10 คำ): ${goodPct}%</span>
-              <span class="text-amber-500">พอใช้ (5-7 คำ): ${fairPct}%</span>
-              <span class="text-rose-500">ปรับปรุง (0-4 คำ): ${improvePct}%</span>
-            </div>
-            <div class="w-full bg-slate-200 h-4 rounded-full overflow-hidden flex">
-              <div class="bg-emerald-500 h-full transition-all duration-500" style="width: ${goodPct}%" title="ดี: ${goodPct}%"></div>
-              <div class="bg-amber-400 h-full transition-all duration-500" style="width: ${fairPct}%" title="พอใช้: ${fairPct}%"></div>
-              <div class="bg-rose-500 h-full transition-all duration-500" style="width: ${improvePct}%" title="ปรับปรุง: ${improvePct}%"></div>
-            </div>
-          </div>
-          <div class="md:w-1/5 text-right flex flex-col justify-center">
-            <span class="text-[9px] text-slate-400 block font-bold">อัตราการสอบผ่านเกณฑ์</span>
-            <span class="text-lg font-black text-emerald-600 font-sans">${goodPct + fairPct}%</span>
-          </div>
+    function renderRoundsAverageSummary(latestRound, gradePalette) {
+      const summaryContainer = document.getElementById('rounds-avg-summary');
+      if (!summaryContainer) return;
+      summaryContainer.innerHTML = '';
+
+      gradePalette.forEach(gInfo => {
+        const matched = dashboardDataCache.filter(item => parseInt(item.round || 1) === latestRound && parseInt(item.grade) === gInfo.grade);
+        let avgStr = "-";
+        let count = matched.length;
+        if (count > 0) {
+          const sum = matched.reduce((acc, curr) => acc + (parseFloat(curr.score) || 0), 0);
+          avgStr = (Math.round((sum / count) * 10) / 10).toFixed(1);
+        }
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 border border-slate-100 rounded-xl p-2 text-center shadow-xs";
+        card.innerHTML = `
+          <span class="text-[10px] font-extrabold block" style="color: ${gInfo.color};">ชั้น ${gInfo.label}</span>
+          <p class="text-base font-black text-slate-800 my-0.5">${avgStr} <span class="text-[10px] font-normal text-slate-400">คำ</span></p>
+          <span class="text-[9px] text-slate-400 block font-bold">รอบที่ ${latestRound} (${count} คน)</span>
         `;
-        container.appendChild(roundBox);
+        summaryContainer.appendChild(card);
       });
     }
 
     // ==========================================
-    // ระบบครูและสิทธิ์ควบคุมการพิมพ์ PDF
+    // ระบบสำหรับครูและพิมพ์รายงานผล PDF
     // ==========================================
     function showTeacherLogin() {
       showView('teacher-login');
@@ -1345,13 +1377,9 @@
       body.innerHTML = '';
       
       let filtered = dashboardDataCache;
-      if (gradeFilter) {
-        filtered = filtered.filter(item => item.grade.toString() === gradeFilter);
-      }
+      if (gradeFilter) filtered = filtered.filter(item => item.grade.toString() === gradeFilter);
       if (searchVal) {
-        filtered = filtered.filter(item => {
-          return cleanThaiWord(item.name).includes(searchVal) || item.studentId.toString().includes(searchVal);
-        });
+        filtered = filtered.filter(item => cleanThaiWord(item.name).includes(searchVal) || item.studentId.toString().includes(searchVal));
       }
       
       if (filtered.length === 0) {
@@ -1390,9 +1418,6 @@
       });
     }
 
-    // ==========================================
-    // อัลกอริทึมประกอบและพิมพ์ใบรายงานผลเป็น PDF (เฉลี่ยเกณฑ์เต็ม 10 คะแนน)
-    // ==========================================
     function printStudentReport(item) {
       const dateObj = new Date(item.date);
       const thaiYear = dateObj.getFullYear() + 543;
