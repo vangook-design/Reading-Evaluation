@@ -162,6 +162,19 @@
           </div>
         </div>
 
+        <!-- 4. ทำเนียบนักเรียนสถิติสูงสุด -->
+        <div class="pt-3 border-t border-slate-200/60">
+          <div class="flex items-center space-x-2 mb-2 justify-center">
+            <i class="fa-solid fa-trophy text-yellow-500"></i>
+            <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wide">ทำเนียบผู้พิทักษ์คำศัพท์สูงสุด</h3>
+          </div>
+          <div id="leaderboard-container" class="flex overflow-x-auto gap-3 pb-1 hide-scrollbar snap-x justify-center">
+            <p class="text-xs text-slate-400 text-center w-full">กำลังโหลดทำเนียบข้อมูล...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- VIEW 2: หน้าล็อกอินยืนยันตัวตนด้วยเสียงพูด -->
     <section id="view-scan" class="view-section hidden w-full max-w-md glass-panel p-6 rounded-3xl animate-fadeIn flex flex-col items-center relative space-y-4">
       <button onclick="cancelAndGoHome()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-500 text-3xl transition z-10">
