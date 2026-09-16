@@ -543,41 +543,55 @@
     // ==========================================
     // อัลกอริทึมจับคู่สัทศาสตร์ Thai-PMA
     // ==========================================
-    function normalizeThaiPhonetic(word) {
-      if (!word) return "";
-      let text = word.trim().replace(/[\s\-\_\.\,\?]/g, "").replace(/[ก-ฮ]์/g, "");
-      text = text.replace(/[่้๊๋]/g, "").replace(/ใ/g, "ไ");
-      text = text.replace(/ห([งญนมอียรลว])/g, "$1").replace(/อ(ย)/g, "$1");
-      text = text.replace(/([ก-ฮ])([รล])([ะ-ูเ-ไโ])/g, "$1$3").replace(/([เ-ไโ])([ก-ฮ])([รล])/g, "$1$2");
-      const phoneticsMap = {
-        'ข':'ค', 'ฆ':'ค', 'ฉ':'ช', 'ฌ':'ช', 'ซ':'ส', 'ศ':'ส', 'ษ':'ส', 'ฐ':'ท', 'ฑ':'ท', 'ฒ':'ท', 'ถ':'ท', 'ธ':'ท', 
-        'ฎ':'ด', 'ฏ':'ด', 'ผ':'พ', 'ภ':'พ', 'ฝ':'ฟ', 'ญ':'ย', 'ฬ':'ล', 'ร':'ล', 'ฮ':'ห', 'ณ':'น'
-      };
-      let arr = text.split("");
-      for(let i=0; i<arr.length; i++) if (phoneticsMap[arr[i]]) arr[i] = phoneticsMap[arr[i]];
-      return arr.join("");
-    }
+(function(_0x1a2b){
+  const _0x5c4d = [
+    "\x74\x72\x69\x6d", "\x72\x65\x70\x6c\x61\x63\x65", "\x73\x70\x6c\x69\x74", 
+    "\x6c\x65\x6e\x67\x74\x68", "\x6a\x6f\x69\x6e", "\x69\x6e\x63\x6c\x75\x64\x65\x73", "\x66\x69\x6c\x6c", "\x6d\x61\x70", "\x6d\x69\x6e", "\x6d\x61\x78"
+  ];
+  
+  const _0x3e1f = {
+    '\u0e02':'\u0e04','\u0e06':'\u0e04','\u0e09':'\u0e0a','\u0e0c':'\u0e0a','\u0e0b':'\u0e2a',
+    '\u0e28':'\u0e2a','\u0e29':'\u0e2a','\u0e10':'\u0e17','\u0e11':'\u0e17','\u0e12':'\u0e17',
+    '\u0e16':'\u0e17','\u0e18':'\u0e17','\u0e0e':'\u0e14','\u0e0f':'\u0e14','\u0e1c':'\u0e1e',
+    '\u0e20':'\u0e1e','\u0e1d':'\u0e1f','\u0e0d':'\u0e22','\u0e2c':'\u0e25','\u0e23':'\u0e25',
+    '\u0e2e':'\u0e2b','\u0e13':'\u0e19'
+  };
 
-    function getPhoneticSimilarity(targetText, spokenText) {
-      const target = normalizeThaiPhonetic(targetText);
-      const output = normalizeThaiPhonetic(spokenText);
-      if (target.length === 0 || output.length === 0) return 0;
-      if (target === output) return 1.0;
-      if (output.includes(target)) return 0.9;
-      const track = Array(output.length + 1).fill(null).map(() => Array(target.length + 1).fill(null));
-      for (let i = 0; i <= target.length; i++) track[0][i] = i;
-      for (let j = 0; j <= output.length; j++) track[j][0] = j;
-      for (let j = 1; j <= output.length; j++) {
-        for (let i = 1; i <= target.length; i++) {
-          const indicator = target[i - 1] === output[j - 1] ? 0 : 1;
-          track[j][i] = Math.min(track[j][i - 1] + 1, track[j - 1][i] + 1, track[j - 1][i - 1] + indicator);
-        }
-      }
-      const distance = track[output.length][target.length];
-      const longest = Math.max(target.length, output.length);
-      if (longest === 0) return 0;
-      return (longest - distance) / longest;
+  function _0x4d8a(_0x2f91) {
+    if (!_0x2f91) return "";
+    let _0x1c3e = _0x2f91[_0x5c4d[0]]()[_0x5c4d[1]](/[\s\-\_\.\,\?]/g, "")[_0x5c4d[1]](/[ก-ฮ]์/g, "");
+    _0x1c3e = _0x1c3e[_0x5c4d[1]](/[่้๊๋]/g, "")[_0x5c4d[1]](/ใ/g, "ไ");
+    _0x1c3e = _0x1c3e[_0x5c4d[1]](/ห([งญนมอียรลว])/g, "$1")[_0x5c4d[1]](/อ(ย)/g, "$1");
+    _0x1c3e = _0x1c3e[_0x5c4d[1]](/([ก-ฮ])([รล])([ะ-ูเ-ไโ])/g, "$1$3")[_0x5c4d[1]](/([เ-ไโ])([ก-ฮ])([รล])/g, "$1$2");
+    let _0x98ab = _0x1c3e[_0x5c4d[2]]("");
+    for (let _0x77ef = 0; _0x77ef < _0x98ab[_0x5c4d[3]]; _0x77ef++) {
+      if (_0x3e1f[_0x98ab[_0x77ef]]) _0x98ab[_0x77ef] = _0x3e1f[_0x98ab[_0x77ef]];
     }
+    return _0x98ab[_0x5c4d[4]]("");
+  }
+
+  _0x1a2b["getPhoneticSimilarity"] = function(_0x55aa, _0x66bb) {
+    const _0x1111 = _0x4d8a(_0x55aa);
+    const _0x2222 = _0x4d8a(_0x66bb);
+    if (_0x1111[_0x5c4d[3]] === 0 || _0x2222[_0x5c4d[3]] === 0) return 0;
+    if (_0x1111 === _0x2222) return 1.0;
+    if (_0x2222[_0x5c4d[5]](_0x1111)) return 0.9;
+    
+    const _0x3333 = Array(_0x2222[_0x5c4d[3]] + 1)[_0x5c4d[6]](null)[_0x5c4d[7]](() => Array(_0x1111[_0x5c4d[3]] + 1)[_0x5c4d[6]](null));
+    for (let _0x4444 = 0; _0x4444 <= _0x1111[_0x5c4d[3]]; _0x4444++) _0x3333[0][_0x4444] = _0x4444;
+    for (let _0x5555 = 0; _0x5555 <= _0x2222[_0x5c4d[3]]; _0x5555++) _0x3333[_0x5555][0] = _0x5555;
+    
+    for (let _0x5555 = 1; _0x5555 <= _0x2222[_0x5c4d[3]]; _0x5555++) {
+      for (let _0x4444 = 1; _0x4444 <= _0x1111[_0x5c4d[3]]; _0x4444++) {
+        const _0x8888 = _0x1111[_0x4444 - 1] === _0x2222[_0x5555 - 1] ? 0 : 1;
+        _0x3333[_0x5555][_0x4444] = Math[_0x5c4d[8]](_0x3333[_0x5555][_0x4444 - 1] + 1, _0x3333[_0x5555 - 1][_0x4444] + 1, _0x3333[_0x5555 - 1][_0x4444 - 1] + _0x8888);
+      }
+    }
+    const _0x9999 = _0x3333[_0x2222[_0x5c4d[3]]][_0x1111[_0x5c4d[3]]];
+    const _0xaaaa = Math[_0x5c4d[9]](_0x1111[_0x5c4d[3]], _0x2222[_0x5c4d[3]]);
+    return _0xaaaa === 0 ? 0 : (_0xaaaa - _0x9999) / _0xaaaa;
+  };
+})(window);
 
     function cleanThaiWord(word) {
       if (!word) return "";
